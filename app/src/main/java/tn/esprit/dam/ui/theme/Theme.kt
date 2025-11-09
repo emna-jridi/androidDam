@@ -1,0 +1,27 @@
+package tn.esprit.dam.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+private val LightColorScheme = lightColorScheme(
+    primary = Primary,
+    secondary = Secondary,
+    background = Background,
+    surface = Surface,
+    error = Error,
+    onPrimary = OnPrimary,
+    onBackground = OnBackground,
+)
+
+@Composable
+fun UserAppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    MaterialTheme(
+        colorScheme = LightColorScheme,
+        typography = Typography,
+        content = content
+    )
+}
