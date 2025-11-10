@@ -4,18 +4,29 @@ package tn.esprit.dam.Screens
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
@@ -28,6 +39,28 @@ import tn.esprit.dam.data.api.ApiProvider
 import tn.esprit.dam.data.appName
 import tn.esprit.dam.data.privacyScore
 import java.util.UUID
+
+// Modern Color Scheme
+object ScanTheme {
+    val PrimaryGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFF6366F1), Color(0xFF9333EA))
+    )
+    val DarkBg = Color(0xFF0F172A)
+    val CardBg = Color(0xFF1E293B)
+    val CardHover = Color(0xFF334155)
+    val TextPrimary = Color.White
+    val TextSecondary = Color(0xFF94A3B8)
+    val BorderColor = Color(0xFF334155)
+
+    val CriticalBg = Color(0x1AEF4444)
+    val CriticalText = Color(0xFFEF4444)
+    val HighBg = Color(0x1AFB923C)
+    val HighText = Color(0xFFFB923C)
+    val MediumBg = Color(0x1AFBBF24)
+    val MediumText = Color(0xFFFBBF24)
+    val LowBg = Color(0x1A10B981)
+    val LowText = Color(0xFF10B981)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,17 +78,14 @@ fun ScanScreen(
     var totalApps by remember { mutableStateOf(0) }
     var isScanning by remember { mutableStateOf(false) }
 
-    // ✅ Fonction pour récupérer les apps dans un thread IO
     suspend fun getInstalledApps(): List<InstalledAppDto> = withContext(Dispatchers.IO) {
         try {
             val pm = context.packageManager
             val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-
             Log.d("ScanScreen", "Total installed packages: ${packages.size}")
 
             packages
                 .filter { appInfo ->
-                    // Filtrer uniquement les apps utilisateur
                     (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
                 }
                 .mapNotNull { appInfo ->
@@ -85,230 +115,318 @@ fun ScanScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Scan Apps") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        isLoading = true
-                        isScanning = true
-                        error = null
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScanTheme.DarkBg)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Modern Header
+            ModernTopBar(onBack = onBack)
 
-                        try {
-                            Log.d("ScanScreen", "🔍 Starting scan...")
-
-                            val installedApps = getInstalledApps()
-                            totalApps = installedApps.size
-                            Log.d("ScanScreen", "✅ Found ${installedApps.size} user apps")
-
-                            if (installedApps.isEmpty()) {
-                                error = "No user apps found to scan"
-                                return@launch
-                            }
-
-                            val userHash = UUID.randomUUID().toString()
-                            val analyzeDto = AnalyzeInstalledAppsDto(
-                                userHash = userHash,
-                                apps = installedApps
-                            )
-                            Log.d("ScanScreen", "📤 Sending ${installedApps.size} apps to backend...")
-
-                            val response = withContext(Dispatchers.IO) {
-                                withTimeout(180_000) { // 3 minutes
-                                    api.analyzeInstalledApps(analyzeDto)
-                                }
-                            }
-
-                            scanResults = response.results
-                            Log.d("ScanScreen", "✅ Received ${response.results.size} results")
-
-                        } catch (e: TimeoutCancellationException) {
-                            error = "Request timeout - Backend took too long to respond (>3 min)"
-                            Log.e("ScanScreen", "❌ Timeout error", e)
-                        } catch (e: io.ktor.client.network.sockets.ConnectTimeoutException) {
-                            error = "Cannot connect to server. Check:\n• Backend is running\n• IP address is correct (${ApiProvider.BASE_URL})\n• Same WiFi network"
-                            Log.e("ScanScreen", "❌ Connection timeout", e)
-                        } catch (e: java.net.ConnectException) {
-                            error = "Connection refused. Backend may not be running on the expected address."
-                            Log.e("ScanScreen", "❌ Connection refused", e)
-                        } catch (e: io.ktor.serialization.JsonConvertException) {
-                            error = "Invalid response format from server. Check backend logs."
-                            Log.e("ScanScreen", "❌ JSON parsing error", e)
-                        } catch (e: Exception) {
-                            error = "Error: ${e.message ?: "Unknown error"}\n\nCheck Logcat for details."
-                            Log.e("ScanScreen", "❌ Unexpected error", e)
-                            e.printStackTrace()
-                        } finally {
-                            isLoading = false
-                            isScanning = false
-                        }
-                    }
-                },
-                icon = { Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Scan") },
-                text = { Text(text = if (isScanning) "Scanning..." else "Start Scan") }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Afficher le nombre d'apps trouvées
-            if (totalApps > 0 && !isLoading) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+            // Content
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                when {
+                    isLoading -> LoadingState(totalApps = totalApps)
+                    error != null -> ErrorState(
+                        error = error!!,
+                        onDismiss = { error = null }
                     )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Scan Complete",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Analyzed $totalApps user apps",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                    scanResults.isEmpty() -> EmptyState1()
+                    else -> ResultsList(
+                        results = scanResults,
+                        totalApps = totalApps,
+                        onAppClick = onAppDetails
+                    )
                 }
             }
+        }
 
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp)
+        // Floating Action Button
+        ModernFAB(
+            isScanning = isScanning,
+            onClick = {
+                scope.launch {
+                    isLoading = true
+                    isScanning = true
+                    error = null
+
+                    try {
+                        Log.d("ScanScreen", "🔍 Starting scan...")
+                        val installedApps = getInstalledApps()
+                        totalApps = installedApps.size
+                        Log.d("ScanScreen", "✅ Found ${installedApps.size} user apps")
+
+                        if (installedApps.isEmpty()) {
+                            error = "No user apps found to scan"
+                            return@launch
+                        }
+
+                        val userHash = UUID.randomUUID().toString()
+                        val analyzeDto = AnalyzeInstalledAppsDto(
+                            userHash = userHash,
+                            apps = installedApps
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = if (totalApps > 0) "Analyzing $totalApps apps..." else "Collecting installed apps...",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "This may take a few minutes...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth(0.7f)
-                        )
+                        Log.d("ScanScreen", "📤 Sending ${installedApps.size} apps to backend...")
+
+                        val response = withContext(Dispatchers.IO) {
+                            withTimeout(180_000) {
+                                api.analyzeInstalledApps(analyzeDto)
+                            }
+                        }
+
+                        scanResults = response.results
+                        Log.d("ScanScreen", "✅ Received ${response.results.size} results")
+
+                    } catch (e: TimeoutCancellationException) {
+                        error = "Request timeout - Backend took too long to respond (>3 min)"
+                        Log.e("ScanScreen", "❌ Timeout error", e)
+                    } catch (e: io.ktor.client.network.sockets.ConnectTimeoutException) {
+                        error = "Cannot connect to server. Check:\n• Backend is running\n• IP address is correct (${ApiProvider.BASE_URL})\n• Same WiFi network"
+                        Log.e("ScanScreen", "❌ Connection timeout", e)
+                    } catch (e: java.net.ConnectException) {
+                        error = "Connection refused. Backend may not be running on the expected address."
+                        Log.e("ScanScreen", "❌ Connection refused", e)
+                    } catch (e: io.ktor.serialization.JsonConvertException) {
+                        error = "Invalid response format from server. Check backend logs."
+                        Log.e("ScanScreen", "❌ JSON parsing error", e)
+                    } catch (e: Exception) {
+                        error = "Error: ${e.message ?: "Unknown error"}\n\nCheck Logcat for details."
+                        Log.e("ScanScreen", "❌ Unexpected error", e)
+                        e.printStackTrace()
+                    } finally {
+                        isLoading = false
+                        isScanning = false
                     }
                 }
-            } else if (error != null) {
-                Card(
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        )
+    }
+}
+
+@Composable
+fun ModernTopBar(onBack: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = ScanTheme.DarkBg
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ScanTheme.CardBg)
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = ScanTheme.TextPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(ScanTheme.PrimaryGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = "Analyse Complète",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = ScanTheme.TextPrimary
+                        )
+                    )
+                    Text(
+                        text = "Scanner les applications",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = ScanTheme.TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingState(totalApps: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(ScanTheme.PrimaryGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(56.dp),
+                    color = Color.White,
+                    strokeWidth = 3.dp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = if (totalApps > 0) "Analyse de $totalApps apps..." else "Collecte des applications...",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = ScanTheme.TextPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Cela peut prendre quelques minutes...",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = ScanTheme.TextSecondary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = Color(0xFF6366F1),
+                trackColor = ScanTheme.CardBg
+            )
+        }
+    }
+}
+
+@Composable
+fun ErrorState(error: String, onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = ScanTheme.CardBg
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(ScanTheme.CriticalBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = ScanTheme.CriticalText,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Erreur de Scan",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = ScanTheme.TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = ScanTheme.TextSecondary
+                    ),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    ),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Error",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = error!!,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { error = null },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(ScanTheme.PrimaryGradient),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Dismiss")
+                            Text("Réessayer", fontWeight = FontWeight.SemiBold)
                         }
-                    }
-                }
-            } else if (scanResults.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No scans yet",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap the button below to start scanning your installed apps for privacy issues",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(scanResults) { result ->
-                        ScanResultCard(
-                            result = result,
-                            onClick = { onAppDetails(result.packageName) }
-                        )
                     }
                 }
             }
@@ -317,80 +435,408 @@ fun ScanScreen(
 }
 
 @Composable
-fun ScanResultCard(result: ScanResult, onClick: () -> Unit) {
+fun EmptyState1() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(ScanTheme.PrimaryGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Aucun Scan Effectué",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = ScanTheme.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Appuyez sur le bouton ci-dessous pour\nanalyser vos applications installées",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = ScanTheme.TextSecondary
+                ),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun ResultsList(
+    results: List<ScanResult>,
+    totalApps: Int,
+    onAppClick: (String) -> Unit
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Stats Card
+        item {
+            StatsCard(totalApps = totalApps, results = results)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Results
+        items(results) { result ->
+            ModernScanResultCard(result = result, onClick = { onAppClick(result.packageName) })
+        }
+
+        // Bottom spacing for FAB
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+    }
+}
+
+@Composable
+fun StatsCard(totalApps: Int, results: List<ScanResult>) {
+    val criticalApps = results.count { it.riskLevel.lowercase() == "high" || it.riskLevel.lowercase() == "critical" }
+    val mediumApps = results.count { it.riskLevel.lowercase() == "medium" }
+    val safeApps = results.count { it.riskLevel.lowercase() == "low" }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = ScanTheme.LowText,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Scan Terminé",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = ScanTheme.TextPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                        Text(
+                            text = "$totalApps applications analysées",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = ScanTheme.TextSecondary
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatChip(
+                    count = criticalApps,
+                    label = "À risque",
+                    color = ScanTheme.CriticalText,
+                    bgColor = ScanTheme.CriticalBg,
+                    modifier = Modifier.weight(1f)
+                )
+                StatChip(
+                    count = mediumApps,
+                    label = "Modéré",
+                    color = ScanTheme.MediumText,
+                    bgColor = ScanTheme.MediumBg,
+                    modifier = Modifier.weight(1f)
+                )
+                StatChip(
+                    count = safeApps,
+                    label = "Sûres",
+                    color = ScanTheme.LowText,
+                    bgColor = ScanTheme.LowBg,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatChip(
+    count: Int,
+    label: String,
+    color: Color,
+    bgColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = bgColor
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = color,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = color.copy(alpha = 0.8f),
+                    fontSize = 10.sp
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = result.appName,  // ✅ Utilise l'extension property
-                    style = MaterialTheme.typography.titleMedium
+                    text = result.appName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = ScanTheme.TextPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = result.packageName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = ScanTheme.TextSecondary,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    // ✅ Utilise les nouvelles propriétés
-                    text = "${result.trackers.size} trackers • ${result.permissions.total} permissions",
-                    style = MaterialTheme.typography.bodySmall
-                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = ScanTheme.CardHover
+                    ) {
+                        Text(
+                            text = "${result.trackers.size} trackers",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = ScanTheme.TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = ScanTheme.CardHover
+                    ) {
+                        Text(
+                            text = "${result.permissions.total} permissions",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = ScanTheme.TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        )
+                    }
+                }
             }
 
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(horizontalAlignment = Alignment.End) {
-                PrivacyScoreChip(score = result.privacyScore)  // ✅ Utilise l'extension property
-                Spacer(modifier = Modifier.height(4.dp))
-                RiskLevelChip(riskLevel = result.riskLevel)
+                ModernPrivacyScore(score = result.privacyScore)
+                Spacer(modifier = Modifier.height(8.dp))
+                ModernRiskChip(riskLevel = result.riskLevel)
             }
         }
     }
 }
+
 @Composable
-fun PrivacyScoreChip(score: Int) {
-    val color = when {
-        score >= 70 -> Color(0xFF4CAF50)
-        score >= 40 -> Color(0xFFFFA726)
-        else -> Color(0xFFEF5350)
+fun ModernPrivacyScore(score: Int) {
+    val (color, bgColor) = when {
+        score >= 70 -> ScanTheme.LowText to ScanTheme.LowBg
+        score >= 40 -> ScanTheme.MediumText to ScanTheme.MediumBg
+        else -> ScanTheme.CriticalText to ScanTheme.CriticalBg
     }
 
     Surface(
-        color = color,
-        shape = MaterialTheme.shapes.small
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor
     ) {
         Text(
             text = "$score/100",
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            color = Color.White,
-            style = MaterialTheme.typography.labelMedium
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = color,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold
+            )
         )
     }
 }
 
 @Composable
-fun RiskLevelChip(riskLevel: String) {
-    val color = when (riskLevel.lowercase()) {
-        "low" -> Color(0xFF4CAF50)
-        "medium" -> Color(0xFFFFA726)
-        "high" -> Color(0xFFEF5350)
-        else -> Color.Gray
+fun ModernRiskChip(riskLevel: String) {
+    val (color, bgColor, label) = when (riskLevel.lowercase()) {
+        "low" -> Triple(ScanTheme.LowText, ScanTheme.LowBg, "Faible")
+        "medium" -> Triple(ScanTheme.MediumText, ScanTheme.MediumBg, "Moyen")
+        "high", "critical" -> Triple(ScanTheme.CriticalText, ScanTheme.CriticalBg, "Élevé")
+        else -> Triple(ScanTheme.TextSecondary, ScanTheme.CardHover, "Inconnu")
     }
 
-    AssistChip(
-        onClick = { },
-        label = { Text(riskLevel) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = color.copy(alpha = 0.2f),
-            labelColor = color
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = color,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp
+            )
         )
-    )
+    }
+}
+
+@Composable
+fun ModernFAB(
+    isScanning: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = modifier.size(68.dp),
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Color.Transparent,
+        contentColor = Color.White
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ScanTheme.PrimaryGradient),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isScanning) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color = Color.White,
+                    strokeWidth = 3.dp
+                )
+            } else {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = "Start Scan",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+    }
+}
+
+
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
+@Composable
+fun EmptyStatePreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ScanTheme.DarkBg)
+        ) {
+            Column {
+                ModernTopBar(onBack = {})
+                EmptyState1()
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
+@Composable
+fun LoadingStatePreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ScanTheme.DarkBg)
+        ) {
+            Column {
+                ModernTopBar(onBack = {})
+                LoadingState(totalApps = 24)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
+@Composable
+fun ErrorStatePreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ScanTheme.DarkBg)
+        ) {
+            Column {
+                ModernTopBar(onBack = {})
+                ErrorState(
+                    error = "Cannot connect to server. Check:\n• Backend is running\n• IP address is correct\n• Same WiFi network",
+                    onDismiss = {}
+                )
+            }
+        }
+    }
 }

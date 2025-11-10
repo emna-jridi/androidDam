@@ -114,7 +114,7 @@ fun AppNavigation(
         // ============================================
         composable("login") {
             LoginScreen(
-                onLoginSuccess = { navController.navigate("profile") },
+                onLoginSuccess = { navController.navigate("shadowguard/home") },
                 onNavigateToRegister = { navController.navigate("register") },
                 onNavigateToForgotPassword = { navController.navigate("forgot") }
             )
@@ -167,12 +167,17 @@ fun AppNavigation(
 
         // ShadowGuard Home
         composable("shadowguard/home") {
-            ShadowGuardHomeScreen(
+            HomeScreen(
                 onNavigateToScan = { navController.navigate("shadowguard/scan") },
                 onNavigateToSearch = { navController.navigate("shadowguard/search") },
                 onNavigateToHistory = { navController.navigate("shadowguard/history") },
                 onNavigateToTopApps = { navController.navigate("shadowguard/topapps") },
-                onBack = { navController.popBackStack() }
+                onNavigateToProfile = { navController.navigate("profile") },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -228,21 +233,3 @@ fun AppNavigation(
     }
 }
 
-// ============================================
-// ShadowGuard Home Screen Wrapper
-// ============================================
-@Composable
-fun ShadowGuardHomeScreen(
-    onNavigateToScan: () -> Unit,
-    onNavigateToSearch: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToTopApps: () -> Unit,
-    onBack: () -> Unit
-) {
-    HomeScreen(
-        onNavigateToScan = onNavigateToScan,
-        onNavigateToSearch = onNavigateToSearch,
-        onNavigateToHistory = onNavigateToHistory,
-        onNavigateToTopApps = onNavigateToTopApps
-    )
-}

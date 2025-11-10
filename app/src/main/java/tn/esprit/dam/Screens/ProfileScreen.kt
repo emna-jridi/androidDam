@@ -1,7 +1,6 @@
 package tn.esprit.dam.Screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,19 +14,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.ApiClient
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.data.UpdateUserRequest
 import tn.esprit.dam.data.User
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    onNavigateToSecurity: () -> Unit = {} // Pour Security Scan
+    onNavigateToSecurity: () -> Unit = {}
 ) {
     var user by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -36,7 +41,6 @@ fun ProfileScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Charger le profil
     fun loadProfile() {
         scope.launch {
             try {
@@ -58,38 +62,22 @@ fun ProfileScreen(
 
     LaunchedEffect(Unit) { loadProfile() }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(MaterialTheme.colorScheme.primary)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Mon Profil",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A0E27),
+                        Color(0xFF1A1F3A)
+                    )
                 )
-            }
-        }
-
+            )
+    ) {
         when {
             isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF7C3AED))
                 }
             }
             errorMessage != null -> {
@@ -99,115 +87,212 @@ fun ProfileScreen(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Filled.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF1E2139)
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { loadProfile() }) { Text("Réessayer") }
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                errorMessage!!,
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { loadProfile() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF7C3AED)
+                                )
+                            ) {
+                                Text("Réessayer", color = Color.White)
+                            }
+                        }
                     }
                 }
             }
             user != null -> {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    // Avatar
+                    // Header avec avatar
                     Box(
                         modifier = Modifier
-                            .offset(y = (-50).dp)
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .clickable { showEditDialog = true }
+                            .fillMaxWidth()
+                            .height(280.dp)
                     ) {
-                        val avatarUrl =
-                            user!!.avatar?.takeIf { it.isNotBlank() }
-                                ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user!!.email}"
-                        AsyncImage(
-                            model = avatarUrl,
-                            contentDescription = "Avatar",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        // Background gradient
                         Box(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color(0xFF7C3AED),
+                                            Color(0xFF9333EA)
+                                        )
+                                    )
+                                )
+                        )
+
+                        // Avatar et info
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "Modifier",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(20.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(140.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1E2139))
+                                    .padding(6.dp)
+                                    .clickable { showEditDialog = true }
+                            ) {
+                                val avatarUrl = user!!.avatar?.takeIf { it.isNotBlank() }
+                                    ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user!!.email}"
+
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Avatar",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF7C3AED))
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "Modifier",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                user!!.name ?: "Nom non défini",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
+                                ),
+                                color = Color.White
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                user!!.email,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFB4B4C6)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(-30.dp))
-                    Text(user!!.name ?: "Nom non défini", style = MaterialTheme.typography.headlineMedium)
-                    Text(user!!.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    ProfileInfoCard(Icons.Filled.Phone, "Téléphone", user!!.phone ?: "Non renseigné")
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ProfileInfoCard(Icons.Filled.Home, "Adresse", user!!.address ?: "Non renseignée")
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Button(
-                        onClick = { showEditDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp)
+                    // Contenu
+                    Column(
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        Icon(Icons.Filled.Edit, null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Modifier le profil")
-                    }
+                        // Informations personnelles
+                        Text(
+                            text = "Informations personnelles",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        ProfileInfoCard(
+                            icon = Icons.Filled.Phone,
+                            label = "Téléphone",
+                            value = user!!.phone ?: "Non renseigné"
+                        )
 
-                    // 🔒 Security Scan Button
-                    OutlinedButton(
-                        onClick = { onNavigateToSecurity() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Filled.Security, contentDescription = "Security Scan")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Security Scan")
-                    }
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        ProfileInfoCard(
+                            icon = Icons.Filled.Home,
+                            label = "Adresse",
+                            value = user!!.address ?: "Non renseignée"
+                        )
 
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                TokenManager.clearTokens(context)
-                                onLogout()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Filled.ExitToApp, null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Déconnexion")
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Actions
+                        Text(
+                            text = "Actions",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        // Modifier le profil
+                        ActionCard(
+                            icon = Icons.Filled.Edit,
+                            title = "Modifier le profil",
+                            description = "Mettre à jour vos informations",
+                            onClick = { showEditDialog = true },
+                            backgroundColor = Color(0xFF7C3AED)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Security Scan
+                        ActionCard(
+                            icon = Icons.Filled.Security,
+                            title = "Security Scan",
+                            description = "Analyser la sécurité de vos apps",
+                            onClick = onNavigateToSecurity,
+                            backgroundColor = Color(0xFF10B981)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Déconnexion
+                        ActionCard(
+                            icon = Icons.Filled.ExitToApp,
+                            title = "Déconnexion",
+                            description = "Se déconnecter de votre compte",
+                            onClick = {
+                                scope.launch {
+                                    TokenManager.clearTokens(context)
+                                    onLogout()
+                                }
+                            },
+                            backgroundColor = Color(0xFFEF4444)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -241,6 +326,7 @@ fun ProfileScreen(
         )
     }
 }
+
 @Composable
 fun ProfileInfoCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -250,8 +336,7 @@ fun ProfileInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2139))
     ) {
         Row(
             modifier = Modifier
@@ -259,24 +344,95 @@ fun ProfileInfoCard(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF7C3AED).copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF7C3AED),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline
+                    color = Color(0xFFB4B4C6)
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ActionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    backgroundColor: Color
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2139))
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(backgroundColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFB4B4C6)
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF6B7280),
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -300,12 +456,19 @@ fun EditProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Modifier le profil") },
+        containerColor = Color(0xFF1E2139),
+        title = {
+            Text(
+                "Modifier le profil",
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                // Avatar Preview avec bouton de génération
+                // Avatar Preview
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -316,7 +479,7 @@ fun EditProfileDialog(
                         modifier = Modifier
                             .size(100.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(Color(0xFF2D3250))
                     ) {
                         AsyncImage(
                             model = previewAvatarUrl,
@@ -328,17 +491,20 @@ fun EditProfileDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Bouton pour générer un nouvel avatar
                     Button(
                         onClick = {
                             val timestamp = System.currentTimeMillis()
                             previewAvatarUrl = "https://api.dicebear.com/8.x/adventurer/svg?seed=${user.email}-$timestamp"
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF7C3AED)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Filled.Refresh, contentDescription = null)
+                        Icon(Icons.Filled.Refresh, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Générer un nouvel avatar")
+                        Text("Générer un nouvel avatar", color = Color.White)
                     }
                 }
 
@@ -347,10 +513,20 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nom") },
+                    label = { Text("Nom", color = Color(0xFFB4B4C6)) },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Filled.Person, null) },
-                    singleLine = true
+                    leadingIcon = { Icon(Icons.Filled.Person, null, tint = Color(0xFF9CA3AF)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF7C3AED),
+                        unfocusedBorderColor = Color(0xFF374151),
+                        focusedContainerColor = Color(0xFF2D3250),
+                        unfocusedContainerColor = Color(0xFF2D3250),
+                        cursorColor = Color(0xFF7C3AED)
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -358,10 +534,20 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Téléphone") },
+                    label = { Text("Téléphone", color = Color(0xFFB4B4C6)) },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Filled.Phone, null) },
-                    singleLine = true
+                    leadingIcon = { Icon(Icons.Filled.Phone, null, tint = Color(0xFF9CA3AF)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF7C3AED),
+                        unfocusedBorderColor = Color(0xFF374151),
+                        focusedContainerColor = Color(0xFF2D3250),
+                        unfocusedContainerColor = Color(0xFF2D3250),
+                        cursorColor = Color(0xFF7C3AED)
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -369,17 +555,26 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
-                    label = { Text("Adresse") },
+                    label = { Text("Adresse", color = Color(0xFFB4B4C6)) },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Filled.Home, null) },
-                    singleLine = true
+                    leadingIcon = { Icon(Icons.Filled.Home, null, tint = Color(0xFF9CA3AF)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF7C3AED),
+                        unfocusedBorderColor = Color(0xFF374151),
+                        focusedContainerColor = Color(0xFF2D3250),
+                        unfocusedContainerColor = Color(0xFF2D3250),
+                        cursorColor = Color(0xFF7C3AED)
+                    )
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    // Envoyer seulement les champs qui ont changé
                     val currentName = user.name ?: ""
                     val currentPhone = user.phone ?: ""
                     val currentAddress = user.address ?: ""
@@ -390,15 +585,25 @@ fun EditProfileDialog(
                         if (address != currentAddress) address else null,
                         if (previewAvatarUrl != user.avatar) previewAvatarUrl else null
                     )
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF7C3AED)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Enregistrer")
+                Text("Enregistrer", color = Color.White)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFFB4B4C6)
+                )
+            ) {
                 Text("Annuler")
             }
-        }
+        },
+        shape = RoundedCornerShape(24.dp)
     )
 }

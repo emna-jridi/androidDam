@@ -136,7 +136,7 @@ data class AppStats(
     val avgScoreFromCommunity: Int?
 )
 @Serializable
-data class TrackersInfo(    
+data class TrackersInfo(
     val total: Int,
     val list: List<String>
 )

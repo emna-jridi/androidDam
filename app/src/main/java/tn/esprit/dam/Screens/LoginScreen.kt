@@ -1,27 +1,28 @@
 package tn.esprit.dam.Screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.ApiClient
 import tn.esprit.dam.data.LoginRequest
 import tn.esprit.dam.data.TokenManager
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -70,171 +71,286 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A0E27),
+                        Color(0xFF1A1F3A)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Logo et titre
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFF7C3AED)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Bienvenue",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                Text(
-                    text = "Connectez-vous à votre compte",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        if (emailError != null) validateEmail(it)
-                    },
-                    label = { Text("Email") },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Email, contentDescription = null)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = emailError != null,
-                    supportingText = emailError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        if (passwordError != null) validatePassword(it)
-                    },
-                    label = { Text("Mot de passe") },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Lock, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
-                    isError = passwordError != null,
-                    supportingText = passwordError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TextButton(
-                    onClick = onNavigateToForgotPassword,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Mot de passe oublié?")
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.Shield,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = Color.White
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = {
-                        val isEmailValid = validateEmail(email)
-                        val isPasswordValid = validatePassword(password)
+            Text(
+                text = "ShadowGuard",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
+                ),
+                color = Color.White
+            )
 
-                        if (isEmailValid && isPasswordValid) {
-                            scope.launch {
-                                try {
-                                    isLoading = true
-                                    errorMessage = null
-                                    val response = ApiClient.login(LoginRequest(email, password))
-                                    TokenManager.saveTokens(context, response.accessToken, response.refreshToken)
-                                    onLoginSuccess()
-                                } catch (e: Exception) {
-                                    errorMessage = e.message ?: "Connexion échouée"
-                                } finally {
-                                    isLoading = false
+            Text(
+                text = "Protégez votre vie privée ",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFB4B4C6)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Card de connexion
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E2139)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Connexion",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Email
+                    Text(
+                        text = "Email",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            if (emailError != null) validateEmail(it)
+                        },
+                        placeholder = { Text("votre@email.com", color = Color(0xFF6B7280)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = emailError != null,
+                        supportingText = emailError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Mot de passe
+                    Text(
+                        text = "Mot de passe",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            if (passwordError != null) validatePassword(it)
+                        },
+                        placeholder = { Text("••••••••", color = Color(0xFF6B7280)) },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = Color(0xFF9CA3AF)
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        isError = passwordError != null,
+                        supportingText = passwordError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = onNavigateToForgotPassword,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            "Mot de passe oublié ?",
+                            color = Color(0xFF7C3AED)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Bouton de connexion
+                    Button(
+                        onClick = {
+                            val isEmailValid = validateEmail(email)
+                            val isPasswordValid = validatePassword(password)
+
+                            if (isEmailValid && isPasswordValid) {
+                                scope.launch {
+                                    try {
+                                        isLoading = true
+                                        errorMessage = null
+                                        val response = ApiClient.login(LoginRequest(email, password))
+                                        TokenManager.saveTokens(context, response.accessToken, response.refreshToken)
+                                        onLoginSuccess()
+                                    } catch (e: Exception) {
+                                        errorMessage = e.message ?: "Connexion échouée"
+                                    } finally {
+                                        isLoading = false
+                                    }
                                 }
                             }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !isLoading,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF7C3AED),
+                            disabledContainerColor = Color(0xFF5B21B6)
                         )
-                    } else {
-                        Text("Se connecter", style = MaterialTheme.typography.bodyLarge)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                "Se connecter",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    errorMessage?.let {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = it,
+                            color = Color(0xFFEF4444),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // Ou continuer avec
+            Text(
+                text = "ou continuer avec",
+                color = Color(0xFFB4B4C6),
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            // Pas de compte
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Pas encore de compte ? ",
+                    color = Color(0xFFB4B4C6),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                TextButton(onClick = onNavigateToRegister) {
                     Text(
-                        text = "Pas de compte?",
-                        color = MaterialTheme.colorScheme.outline
+                        "Créer un compte",
+                        color = Color(0xFF7C3AED),
+                        fontWeight = FontWeight.SemiBold
                     )
-                    TextButton(onClick = onNavigateToRegister) {
-                        Text("S'inscrire")
-                    }
                 }
+            }
 
-                errorMessage?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Footer sécurité
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = Color(0xFF6B7280),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Connexion sécurisée et chiffrée",
+                    color = Color(0xFF6B7280),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
 }
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {
-    MaterialTheme {
-        LoginScreen(
-            onLoginSuccess = {},
-            onNavigateToRegister = {},
-            onNavigateToForgotPassword = {}
-        )
-    }
+    LoginScreen(
+        onLoginSuccess = {},
+        onNavigateToRegister = {},
+        onNavigateToForgotPassword = {}
+    )
 }

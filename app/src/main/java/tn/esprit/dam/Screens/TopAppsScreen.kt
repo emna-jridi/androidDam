@@ -86,9 +86,9 @@ fun TopAppsScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(apps) { app ->
+                      /*  items(apps) { app ->
                             AppCard(app = app, onClick = { onAppDetails(app.packageName) })
-                        }
+                        }*/
                     }
                 }
             }

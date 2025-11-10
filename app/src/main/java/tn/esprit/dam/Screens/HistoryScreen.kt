@@ -121,7 +121,7 @@ fun HistoryCard(item: HistoryItem) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            PrivacyScoreChip(score = item.averageScore)
+
         }
     }
 }

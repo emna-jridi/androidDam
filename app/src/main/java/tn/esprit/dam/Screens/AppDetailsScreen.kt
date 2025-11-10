@@ -2,6 +2,7 @@ package tn.esprit.dam.Screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -75,7 +76,7 @@ fun AppDetailsScreen(
                     LoadingState()
                 }
                 error != null -> {
-                    ErrorState(error = error!!) {
+                    ErrorState1(error = error!!) {
                         // Retry
                         scope.launch {
                             isLoading = true
@@ -513,6 +514,7 @@ fun PermissionsCard(permissions: tn.esprit.dam.data.PermissionsInfo) {
             }
             if (permissions.dangerous.size > 10) {
                 Text(
+                    text = "+ ${permissions.dangerous.size - 10} autres permissions...",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -825,7 +827,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: () -> Unit) {
+private fun ErrorState1(error: String, onRetry: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()

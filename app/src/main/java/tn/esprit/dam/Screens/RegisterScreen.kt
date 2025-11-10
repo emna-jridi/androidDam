@@ -1,27 +1,24 @@
 package tn.esprit.dam.Screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.ApiClient
 import tn.esprit.dam.data.RegisterRequest
@@ -103,187 +100,449 @@ fun RegisterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A0E27),
+                        Color(0xFF1A1F3A)
+                    )
+                )
+            )
             .verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp, vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Logo et titre
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFF7C3AED)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.PersonAdd,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.PersonAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "ShadowGuard",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
+                ),
+                color = Color.White
+            )
+
+            Text(
+                text = "Créez votre compte sécurisé",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFB4B4C6)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Card d'inscription
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E2139)
                 )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Inscription",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = "Créer un compte",
-                    style = MaterialTheme.typography.headlineLarge
-                )
+                    // Nom complet
+                    Text(
+                        text = "Nom complet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                        if (nameError != null && it.isNotEmpty()) nameError = null
-                    },
-                    label = { Text("Nom complet") },
-                    leadingIcon = { Icon(Icons.Filled.Person, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = nameError != null,
-                    supportingText = nameError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        if (emailError != null && it.isNotEmpty()) emailError = null
-                    },
-                    label = { Text("Email") },
-                    leadingIcon = { Icon(Icons.Filled.Email, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = emailError != null,
-                    supportingText = emailError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = {
-                        phone = it
-                        if (phoneError != null && it.isNotEmpty()) phoneError = null
-                    },
-                    label = { Text("Téléphone") },
-                    leadingIcon = { Icon(Icons.Filled.Phone, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = phoneError != null,
-                    supportingText = phoneError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = {
-                        address = it
-                        if (addressError != null && it.isNotEmpty()) addressError = null
-                    },
-                    label = { Text("Adresse") },
-                    leadingIcon = { Icon(Icons.Filled.Home, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = addressError != null,
-                    supportingText = addressError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        if (passwordError != null && it.isNotEmpty()) passwordError = null
-                    },
-                    label = { Text("Mot de passe") },
-                    leadingIcon = { Icon(Icons.Filled.Lock, null) },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            if (nameError != null && it.isNotEmpty()) nameError = null
+                        },
+                        placeholder = { Text("Votre nom", color = Color(0xFF6B7280)) },
+                        leadingIcon = {
                             Icon(
-                                if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                null
+                                Icons.Filled.Person,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
                             )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    isError = passwordError != null,
-                    supportingText = passwordError?.let { { Text(it) } },
-                    shape = RoundedCornerShape(12.dp)
-                )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = nameError != null,
+                        supportingText = nameError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        ),
+                        singleLine = true
+                    )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
-                        if (validateForm()) {
-                            scope.launch {
-                                try {
-                                    isLoading = true
-                                    errorMessage = null
-                                    ApiClient.register(RegisterRequest(email, password, name, phone, address))
-                                    successMessage = "Inscription réussie!"
-                                } catch (e: Exception) {
-                                    errorMessage = e.message ?: "Inscription échouée"
-                                } finally {
-                                    isLoading = false
+                    // Email
+                    Text(
+                        text = "Email",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            if (emailError != null && it.isNotEmpty()) emailError = null
+                        },
+                        placeholder = { Text("votre@email.com", color = Color(0xFF6B7280)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Email,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = emailError != null,
+                        supportingText = emailError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Téléphone
+                    Text(
+                        text = "Téléphone",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = {
+                            phone = it
+                            if (phoneError != null && it.isNotEmpty()) phoneError = null
+                        },
+                        placeholder = { Text("+216 XX XXX XXX", color = Color(0xFF6B7280)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Phone,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = phoneError != null,
+                        supportingText = phoneError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Adresse
+                    Text(
+                        text = "Adresse",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = {
+                            address = it
+                            if (addressError != null && it.isNotEmpty()) addressError = null
+                        },
+                        placeholder = { Text("Votre adresse", color = Color(0xFF6B7280)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Home,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = addressError != null,
+                        supportingText = addressError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Mot de passe
+                    Text(
+                        text = "Mot de passe",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            if (passwordError != null && it.isNotEmpty()) passwordError = null
+                        },
+                        placeholder = { Text("••••••••", color = Color(0xFF6B7280)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Lock,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = Color(0xFF9CA3AF)
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        isError = passwordError != null,
+                        supportingText = passwordError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF7C3AED),
+                            unfocusedBorderColor = Color(0xFF374151),
+                            focusedContainerColor = Color(0xFF2D3250),
+                            unfocusedContainerColor = Color(0xFF2D3250),
+                            cursorColor = Color(0xFF7C3AED)
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Bouton d'inscription
+                    Button(
+                        onClick = {
+                            if (validateForm()) {
+                                scope.launch {
+                                    try {
+                                        isLoading = true
+                                        errorMessage = null
+                                        ApiClient.register(RegisterRequest(email, password, name, phone, address))
+                                        successMessage = "Inscription réussie!"
+                                    } catch (e: Exception) {
+                                        errorMessage = e.message ?: "Inscription échouée"
+                                    } finally {
+                                        isLoading = false
+                                    }
                                 }
                             }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF7C3AED),
+                            disabledContainerColor = Color(0xFF5B21B6)
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                "S'inscrire",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = Color.White
+                            )
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !isLoading,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    } else {
-                        Text("S'inscrire")
+                    }
+
+                    successMessage?.let {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF10B981).copy(alpha = 0.1f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF10B981),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = it,
+                                    color = Color(0xFF10B981),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(2000)
+                            onRegisterSuccess()
+                        }
+                    }
+
+                    errorMessage?.let {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFEF4444).copy(alpha = 0.1f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = it,
+                                    color = Color(0xFFEF4444),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Déjà un compte?", color = MaterialTheme.colorScheme.outline)
-                    TextButton(onClick = onNavigateToLogin) {
-                        Text("Se connecter")
-                    }
+            // Déjà un compte
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Déjà un compte ? ",
+                    color = Color(0xFFB4B4C6),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                TextButton(onClick = onNavigateToLogin) {
+                    Text(
+                        "Se connecter",
+                        color = Color(0xFF7C3AED),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
+            }
 
-                successMessage?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = it, color = MaterialTheme.colorScheme.primary)
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(2000)
-                        onRegisterSuccess()
-                    }
-                }
+            Spacer(modifier = Modifier.height(16.dp))
 
-                errorMessage?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = it, color = MaterialTheme.colorScheme.error)
-                }
+            // Footer sécurité
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = Color(0xFF6B7280),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Vos données sont sécurisées et chiffrées",
+                    color = Color(0xFF6B7280),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
 }
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterScreenPreview() {
-    MaterialTheme {
-        RegisterScreen(
-            onRegisterSuccess = {},
-            onNavigateToLogin = {},
-        )
-    }
+    RegisterScreen(
+        onRegisterSuccess = {},
+        onNavigateToLogin = {}
+    )
 }
