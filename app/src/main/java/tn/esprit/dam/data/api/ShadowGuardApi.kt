@@ -72,12 +72,12 @@ class ShadowGuardApi(private val context: Context) {
     }
 
     // Search app by name
-    suspend fun searchApp(query: String): SearchResponse {
+    suspend fun searchApp(query: String, limit: Int = 10): SearchResponse {
         return client.get("$baseUrl/scan/search") {
             parameter("query", query)
+            parameter("limit", limit)
         }.body()
     }
-
     // Get app details
     suspend fun getAppDetails(packageName: String): AppDetails {
         return client.get("$baseUrl/scan/app/$packageName").body()

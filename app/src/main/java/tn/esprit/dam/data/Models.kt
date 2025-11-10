@@ -90,8 +90,8 @@ data class ScanRequest(
     val apps: List<AppInfo>
 )
 
-
 @Serializable
+
 data class AppDetails(
     val packageName: String,
     val name: String,
@@ -100,15 +100,45 @@ data class AppDetails(
     val version: String = "",
     val iconUrl: String = "",
     val description: String = "",
-    val privacyScore: Int = 0,
-    val permissions: List<String> = emptyList(),
-    val trackers: List<String> = emptyList(),
-    val isDebuggable: Boolean = false
-)
 
+    // Scores
+    val privacyScore: Int = 50,
+    val riskLevel: String = "MEDIUM",
+    val riskColor: String = "#F39C12",
+    val communityScore: Double = 0.0,
+
+    // Détails de sécurité (présents seulement dans getAppDetails)
+    val permissions: PermissionsInfo? = null,
+    val trackers: TrackersInfo? = null,
+    val flags: FlagsInfo? = null,
+    val recommendations: List<String>? = null,
+    val alternatives: List<AlternativeApp>? = null,
+    val stats: AppStats? = null
+)
 @Serializable
-data class SearchResponse(
-    val results: List<AppDetails>
+
+data class FlagsInfo(
+    val isDebuggable: Boolean,
+    val hasUnknownTrackers: Boolean
+)
+@Serializable
+
+data class AlternativeApp(
+    val packageName: String,
+    val name: String,
+    val privacyScore: Int,
+    val improvement: Int
+)
+@Serializable
+data class AppStats(
+    val totalScans: Int,
+    val lastScanned: String?,
+    val avgScoreFromCommunity: Int?
+)
+@Serializable
+data class TrackersInfo(    
+    val total: Int,
+    val list: List<String>
 )
 
 @Serializable
@@ -215,3 +245,35 @@ val ScanResult.appName: String
 
 val ScanResult.privacyScore: Int
     get() = score
+@Serializable
+data class SearchResponse(
+    val results: List<AppDetails>
+)
+@Serializable
+data class CompareAppsRequest(
+    val packageNames: List<String>
+)
+@Serializable
+
+data class CompareAppsResponse(
+    val apps: List<AppDetails>,
+    val comparison: ComparisonResult
+)
+@Serializable
+
+data class ComparisonResult(
+    val bestChoice: AppDetails,
+    val worstChoice: AppDetails,
+    val avgScore: Double,
+    val comparison: List<ComparisonItem>
+)
+@Serializable
+
+data class ComparisonItem(
+    val packageName: String,
+    val name: String,
+    val score: Int,
+    val trackers: Int,
+    val dangerousPermissions: Int
+)
+
