@@ -70,8 +70,10 @@ dependencies {
 
     // Coil for images
     implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("io.coil-kt:coil-svg:2.5.0") // 👈 nécessaire pour DiceBear SVG
-
+    implementation("io.coil-kt:coil-svg:2.5.0")
+    // Accompanist
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

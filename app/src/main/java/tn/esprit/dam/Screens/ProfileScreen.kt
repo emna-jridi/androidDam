@@ -18,26 +18,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
 import coil.compose.AsyncImage
-import coil.decode.SvgDecoder
-import coil.request.ImageRequest
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.ApiClient
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.data.UpdateUserRequest
 import tn.esprit.dam.data.User
-
 @Composable
-fun ProfileScreen(onLogout: () -> Unit) {
+fun ProfileScreen(
+    onLogout: () -> Unit,
+    onNavigateToSecurity: () -> Unit = {} // Pour Security Scan
+) {
     var user by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Charger le profil
     fun loadProfile() {
         scope.launch {
             try {
@@ -57,9 +56,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        loadProfile()
-    }
+    LaunchedEffect(Unit) { loadProfile() }
 
     Column(
         modifier = Modifier
@@ -91,14 +88,10 @@ fun ProfileScreen(onLogout: () -> Unit) {
 
         when {
             isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
-
             errorMessage != null -> {
                 Box(
                     modifier = Modifier
@@ -116,48 +109,32 @@ fun ProfileScreen(onLogout: () -> Unit) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { loadProfile() }) {
-                            Text("Réessayer")
-                        }
+                        Button(onClick = { loadProfile() }) { Text("Réessayer") }
                     }
                 }
             }
-
             user != null -> {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // ===== Avatar =====
-                    val imageLoader = ImageLoader.Builder(context)
-                        .components {
-                            add(SvgDecoder.Factory())
-                        }
-                        .build()
-
+                    // Avatar
                     Box(
                         modifier = Modifier
                             .offset(y = (-50).dp)
                             .size(120.dp)
                             .clip(CircleShape)
-                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
                             .clickable { showEditDialog = true }
                     ) {
-                        val avatarUrl = user!!.avatar?.takeIf { it.isNotBlank() }
-                            ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user!!.email}"
-
+                        val avatarUrl =
+                            user!!.avatar?.takeIf { it.isNotBlank() }
+                                ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user!!.email}"
                         AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(avatarUrl)
-                                .crossfade(true)
-                                .build(),
-                            imageLoader = imageLoader,
+                            model = avatarUrl,
                             contentDescription = "Avatar",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
-
-                        // Icone d’édition
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
@@ -177,34 +154,13 @@ fun ProfileScreen(onLogout: () -> Unit) {
                     }
 
                     Spacer(modifier = Modifier.height(-30.dp))
-
-                    Text(
-                        text = user!!.name,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-
-                    Text(
-                        text = user!!.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-
+                    Text(user!!.name ?: "Nom non défini", style = MaterialTheme.typography.headlineMedium)
+                    Text(user!!.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    ProfileInfoCard(
-                        icon = Icons.Filled.Phone,
-                        label = "Téléphone",
-                        value = user!!.phone
-                    )
-
+                    ProfileInfoCard(Icons.Filled.Phone, "Téléphone", user!!.phone ?: "Non renseigné")
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    ProfileInfoCard(
-                        icon = Icons.Filled.Home,
-                        label = "Adresse",
-                        value = user!!.address
-                    )
-
+                    ProfileInfoCard(Icons.Filled.Home, "Adresse", user!!.address ?: "Non renseignée")
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
@@ -221,6 +177,21 @@ fun ProfileScreen(onLogout: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // 🔒 Security Scan Button
+                    OutlinedButton(
+                        onClick = { onNavigateToSecurity() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Filled.Security, contentDescription = "Security Scan")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Security Scan")
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     OutlinedButton(
                         onClick = {
                             scope.launch {
@@ -232,9 +203,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
                         Icon(Icons.Filled.ExitToApp, null)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -245,27 +214,23 @@ fun ProfileScreen(onLogout: () -> Unit) {
         }
     }
 
-    // ===== Dialog d’édition =====
     if (showEditDialog && user != null) {
         EditProfileDialog(
             user = user!!,
             onDismiss = { showEditDialog = false },
-            onSave = { name, phone, address, newAvatarUrl ->
+            onSave = { newName, newPhone, newAddress, newAvatarUrl ->
                 scope.launch {
                     try {
                         val token = TokenManager.getAccessToken(context)
                         if (token != null) {
-                            // Mettre à jour l’avatar si changé
-                            if (newAvatarUrl != null && newAvatarUrl != user!!.avatar) {
-                                user = ApiClient.updateAvatar(token, newAvatarUrl)
-                            }
-
-                            // Mettre à jour les autres infos
-                            val updated = ApiClient.updateProfile(
-                                token,
-                                UpdateUserRequest(name, phone, address)
+                            val updateRequest = UpdateUserRequest(
+                                name = newName ?: user!!.name,
+                                phone = newPhone ?: user!!.phone,
+                                address = newAddress ?: user!!.address,
+                                avatar = newAvatarUrl ?: user!!.avatar
                             )
-                            user = updated
+                            val updatedUser = ApiClient.updateProfile(token, updateRequest)
+                            user = updatedUser
                             showEditDialog = false
                         }
                     } catch (e: Exception) {
@@ -276,7 +241,6 @@ fun ProfileScreen(onLogout: () -> Unit) {
         )
     }
 }
-
 @Composable
 fun ProfileInfoCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -323,9 +287,9 @@ fun EditProfileDialog(
     onDismiss: () -> Unit,
     onSave: (String?, String?, String?, String?) -> Unit
 ) {
-    var name by remember { mutableStateOf(user.name) }
-    var phone by remember { mutableStateOf(user.phone) }
-    var address by remember { mutableStateOf(user.address) }
+    var name by remember { mutableStateOf(user.name ?: "") }
+    var phone by remember { mutableStateOf(user.phone ?: "") }
+    var address by remember { mutableStateOf(user.address ?: "") }
 
     var previewAvatarUrl by remember {
         mutableStateOf(
@@ -334,11 +298,6 @@ fun EditProfileDialog(
         )
     }
 
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .components { add(SvgDecoder.Factory()) }
-        .build()
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Modifier le profil") },
@@ -346,7 +305,7 @@ fun EditProfileDialog(
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                // Avatar Preview
+                // Avatar Preview avec bouton de génération
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -360,11 +319,7 @@ fun EditProfileDialog(
                             .background(MaterialTheme.colorScheme.primaryContainer)
                     ) {
                         AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(previewAvatarUrl)
-                                .crossfade(true)
-                                .build(),
-                            imageLoader = imageLoader,
+                            model = previewAvatarUrl,
                             contentDescription = "Avatar preview",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -373,11 +328,11 @@ fun EditProfileDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Bouton pour générer un nouvel avatar
                     Button(
                         onClick = {
                             val timestamp = System.currentTimeMillis()
-                            previewAvatarUrl =
-                                "https://api.dicebear.com/8.x/adventurer/svg?seed=${user.email}-$timestamp"
+                            previewAvatarUrl = "https://api.dicebear.com/8.x/adventurer/svg?seed=${user.email}-$timestamp"
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -424,10 +379,15 @@ fun EditProfileDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    // Envoyer seulement les champs qui ont changé
+                    val currentName = user.name ?: ""
+                    val currentPhone = user.phone ?: ""
+                    val currentAddress = user.address ?: ""
+
                     onSave(
-                        if (name != user.name) name else null,
-                        if (phone != user.phone) phone else null,
-                        if (address != user.address) address else null,
+                        if (name != currentName) name else null,
+                        if (phone != currentPhone) phone else null,
+                        if (address != currentAddress) address else null,
                         if (previewAvatarUrl != user.avatar) previewAvatarUrl else null
                     )
                 }

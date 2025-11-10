@@ -1,12 +1,12 @@
 package tn.esprit.dam.data
 
+import android.util.Log
 import io.ktor.client.*
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android  // ← Your built-in engine (no extra dependency!)
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -131,12 +131,31 @@ object ApiClient {
 
 
     suspend fun updateProfile(token: String, request: UpdateUserRequest): User {
-        return client.patch("$BASE_URL/users/me") {
-            bearerAuth(token)
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.body()
+        return try {
+
+            val response = client.patch("$BASE_URL/users/me") {
+                bearerAuth(token)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+
+            // 🟢 Log HTTP status and raw text response
+            val rawResponse = response.bodyAsText()
+            Log.d("UpdateProfile", "✅ Response status: ${response.status}")
+            Log.d("UpdateProfile", "📩 Raw response: $rawResponse")
+
+            // 🔵 Try to parse to User
+            val user = response.body<User>()
+            Log.d("UpdateProfile", "👤 Parsed User: $user")
+
+            user
+        } catch (e: Exception) {
+            // 🔴 Log detailed error for debugging
+            Log.e("UpdateProfile", "❌ Error during profile update: ${e.message}", e)
+            throw e
+        }
     }
+
     suspend fun updateAvatar(token: String, avatarUrl: String): User {
         val response = client.patch("$BASE_URL/users/avatar") {
             contentType(ContentType.Application.Json)

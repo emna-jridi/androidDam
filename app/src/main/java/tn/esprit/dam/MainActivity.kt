@@ -11,15 +11,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import tn.esprit.dam.Screens.AppDetailsScreen
 import tn.esprit.dam.Screens.ForgotPasswordScreen
+import tn.esprit.dam.Screens.HistoryScreen
+import tn.esprit.dam.Screens.HomeScreen
 import tn.esprit.dam.Screens.LoginScreen
 import tn.esprit.dam.Screens.ProfileScreen
 import tn.esprit.dam.Screens.RegisterScreen
 import tn.esprit.dam.Screens.ResetPasswordScreen
+import tn.esprit.dam.Screens.ScanScreen
+import tn.esprit.dam.Screens.SearchScreen
+import tn.esprit.dam.Screens.TopAppsScreen
+import tn.esprit.dam.data.api.ApiProvider
 
 class MainActivity : ComponentActivity() {
 
@@ -27,6 +33,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // ✅ Initialiser ApiProvider au démarrage
+        ApiProvider.initialize(this)
 
         // Gérer le deep link au démarrage
         handleDeepLink(intent)
@@ -37,7 +46,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(initialDeepLinkToken = pendingDeepLink)
+                    AppNavigation(
+                        initialDeepLinkToken = pendingDeepLink
+                    )
                 }
             }
         }
@@ -48,6 +59,12 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         // Gérer le deep link quand l'app est déjà ouverte
         handleDeepLink(intent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // ✅ Nettoyer les ressources de l'API
+        ApiProvider.cleanup()
     }
 
     private fun handleDeepLink(intent: Intent?) {
@@ -71,16 +88,20 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(initialDeepLinkToken: String?) {
+fun AppNavigation(
+    initialDeepLinkToken: String?
+) {
     val navController = rememberNavController()
     var hasNavigated by remember { mutableStateOf(false) }
+
+    // ✅ Récupérer l'API depuis ApiProvider (à utiliser dans les composables)
+    val api = remember { ApiProvider.getApi() }
 
     // Gérer la navigation automatique vers reset-password si un token existe
     LaunchedEffect(initialDeepLinkToken) {
         if (initialDeepLinkToken != null && !hasNavigated) {
             Log.d("Navigation", "Navigation vers reset-password avec token")
             navController.navigate("reset-password/$initialDeepLinkToken") {
-                // Optionnel: éviter de s'empiler sur login
                 popUpTo("login") { inclusive = false }
             }
             hasNavigated = true
@@ -88,6 +109,9 @@ fun AppNavigation(initialDeepLinkToken: String?) {
     }
 
     NavHost(navController, startDestination = "login") {
+        // ============================================
+        // AUTHENTICATION ROUTES
+        // ============================================
         composable("login") {
             LoginScreen(
                 onLoginSuccess = { navController.navigate("profile") },
@@ -103,23 +127,12 @@ fun AppNavigation(initialDeepLinkToken: String?) {
             )
         }
 
-        composable("profile") {
-            ProfileScreen(
-                onLogout = {
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                }
-            )
-        }
-
         composable("forgot") {
             ForgotPasswordScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // Route corrigée pour le reset password avec paramètre
         composable("reset-password/{token}") { backStackEntry ->
             val token = backStackEntry.arguments?.getString("token") ?: ""
             Log.d("ResetPassword", "Affichage de l'écran avec token: $token")
@@ -133,5 +146,103 @@ fun AppNavigation(initialDeepLinkToken: String?) {
                 }
             )
         }
+
+        // ============================================
+        // PROFILE ROUTE
+        // ============================================
+        composable("profile") {
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToSecurity = { navController.navigate("shadowguard/home") }
+            )
+        }
+
+        // ============================================
+        // SHADOWGUARD SECURITY ROUTES
+        // ============================================
+
+        // ShadowGuard Home
+        composable("shadowguard/home") {
+            ShadowGuardHomeScreen(
+                onNavigateToScan = { navController.navigate("shadowguard/scan") },
+                onNavigateToSearch = { navController.navigate("shadowguard/search") },
+                onNavigateToHistory = { navController.navigate("shadowguard/history") },
+                onNavigateToTopApps = { navController.navigate("shadowguard/topapps") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Scan Screen - ✅ Plus besoin de passer api en paramètre
+        composable("shadowguard/scan") {
+            ScanScreen(
+                onBack = { navController.popBackStack() },
+                onAppDetails = { packageName ->
+                    navController.navigate("shadowguard/app-details/$packageName")
+                }
+            )
+        }
+
+        // Search Screen
+        composable("shadowguard/search") {
+            SearchScreen(
+                api = api,
+                onBack = { navController.popBackStack() },
+                onAppDetails = { packageName ->
+                    navController.navigate("shadowguard/app-details/$packageName")
+                }
+            )
+        }
+
+        // App Details Screen
+        composable("shadowguard/app-details/{packageName}") { backStackEntry ->
+            val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
+            AppDetailsScreen(
+                packageName = packageName,
+                api = api,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // History Screen
+        composable("shadowguard/history") {
+            HistoryScreen(
+                api = api,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Top Apps Screen
+        composable("shadowguard/topapps") {
+            TopAppsScreen(
+                api = api,
+                onBack = { navController.popBackStack() },
+                onAppDetails = { packageName ->
+                    navController.navigate("shadowguard/app-details/$packageName")
+                }
+            )
+        }
     }
+}
+
+// ============================================
+// ShadowGuard Home Screen Wrapper
+// ============================================
+@Composable
+fun ShadowGuardHomeScreen(
+    onNavigateToScan: () -> Unit,
+    onNavigateToSearch: () -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToTopApps: () -> Unit,
+    onBack: () -> Unit
+) {
+    HomeScreen(
+        onNavigateToScan = onNavigateToScan,
+        onNavigateToSearch = onNavigateToSearch,
+        onNavigateToHistory = onNavigateToHistory,
+        onNavigateToTopApps = onNavigateToTopApps
+    )
 }
