@@ -1,4 +1,4 @@
-package tn.esprit.dam.Screens
+package tn.esprit.dam.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

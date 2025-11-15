@@ -1,4 +1,4 @@
-package tn.esprit.dam.Screens
+package tn.esprit.dam.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,14 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
-import tn.esprit.dam.data.ApiClient
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.data.UpdateUserRequest
 import tn.esprit.dam.data.User
@@ -48,7 +46,7 @@ fun ProfileScreen(
                 errorMessage = null
                 val token = TokenManager.getAccessToken(context)
                 if (token != null) {
-                    user = ApiClient.getProfile(token)
+                  //  user = ApiClient.getProfile(token)
                 } else {
                     errorMessage = "Token non trouvé"
                 }
@@ -165,17 +163,9 @@ fun ProfileScreen(
                                     .padding(6.dp)
                                     .clickable { showEditDialog = true }
                             ) {
-                                val avatarUrl = user!!.avatar?.takeIf { it.isNotBlank() }
-                                    ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user!!.email}"
 
-                                AsyncImage(
-                                    model = avatarUrl,
-                                    contentDescription = "Avatar",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                )
+
+
 
                                 Box(
                                     modifier = Modifier
@@ -220,7 +210,6 @@ fun ProfileScreen(
                     Column(
                         modifier = Modifier.padding(24.dp)
                     ) {
-                        // Informations personnelles
                         Text(
                             text = "Informations personnelles",
                             style = MaterialTheme.typography.titleMedium.copy(
@@ -228,20 +217,6 @@ fun ProfileScreen(
                             ),
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 16.dp)
-                        )
-
-                        ProfileInfoCard(
-                            icon = Icons.Filled.Phone,
-                            label = "Téléphone",
-                            value = user!!.phone ?: "Non renseigné"
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        ProfileInfoCard(
-                            icon = Icons.Filled.Home,
-                            label = "Adresse",
-                            value = user!!.address ?: "Non renseignée"
                         )
 
                         Spacer(modifier = Modifier.height(32.dp))
@@ -285,7 +260,7 @@ fun ProfileScreen(
                             description = "Se déconnecter de votre compte",
                             onClick = {
                                 scope.launch {
-                                    TokenManager.clearTokens(context)
+                                  //  TokenManager.clearTokens(context)
                                     onLogout()
                                 }
                             },
@@ -303,19 +278,17 @@ fun ProfileScreen(
         EditProfileDialog(
             user = user!!,
             onDismiss = { showEditDialog = false },
-            onSave = { newName, newPhone, newAddress, newAvatarUrl ->
+            onSave = { newName ->
                 scope.launch {
                     try {
                         val token = TokenManager.getAccessToken(context)
                         if (token != null) {
                             val updateRequest = UpdateUserRequest(
                                 name = newName ?: user!!.name,
-                                phone = newPhone ?: user!!.phone,
-                                address = newAddress ?: user!!.address,
-                                avatar = newAvatarUrl ?: user!!.avatar
+
                             )
-                            val updatedUser = ApiClient.updateProfile(token, updateRequest)
-                            user = updatedUser
+                           // val updatedUser = ApiClient.updateProfile(token, updateRequest)
+                            //user = updatedUser
                             showEditDialog = false
                         }
                     } catch (e: Exception) {
@@ -329,7 +302,7 @@ fun ProfileScreen(
 
 @Composable
 fun ProfileInfoCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     value: String
 ) {
@@ -378,7 +351,7 @@ fun ProfileInfoCard(
 
 @Composable
 fun ActionCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     description: String,
     onClick: () -> Unit,
@@ -441,18 +414,11 @@ fun ActionCard(
 fun EditProfileDialog(
     user: User,
     onDismiss: () -> Unit,
-    onSave: (String?, String?, String?, String?) -> Unit
+    onSave: (String?) -> Unit
 ) {
     var name by remember { mutableStateOf(user.name ?: "") }
-    var phone by remember { mutableStateOf(user.phone ?: "") }
-    var address by remember { mutableStateOf(user.address ?: "") }
 
-    var previewAvatarUrl by remember {
-        mutableStateOf(
-            user.avatar?.takeIf { it.isNotBlank() }
-                ?: "https://api.dicebear.com/8.x/adventurer/svg?seed=${user.email}"
-        )
-    }
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -475,40 +441,9 @@ fun EditProfileDialog(
                         .padding(vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2D3250))
-                    ) {
-                        AsyncImage(
-                            model = previewAvatarUrl,
-                            contentDescription = "Avatar preview",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            val timestamp = System.currentTimeMillis()
-                            previewAvatarUrl = "https://api.dicebear.com/8.x/adventurer/svg?seed=${user.email}-$timestamp"
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF7C3AED)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Filled.Refresh, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Générer un nouvel avatar", color = Color.White)
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = name,
@@ -529,61 +464,17 @@ fun EditProfileDialog(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = { Text("Téléphone", color = Color(0xFFB4B4C6)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Filled.Phone, null, tint = Color(0xFF9CA3AF)) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF7C3AED),
-                        unfocusedBorderColor = Color(0xFF374151),
-                        focusedContainerColor = Color(0xFF2D3250),
-                        unfocusedContainerColor = Color(0xFF2D3250),
-                        cursorColor = Color(0xFF7C3AED)
-                    )
-                )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    label = { Text("Adresse", color = Color(0xFFB4B4C6)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Filled.Home, null, tint = Color(0xFF9CA3AF)) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF7C3AED),
-                        unfocusedBorderColor = Color(0xFF374151),
-                        focusedContainerColor = Color(0xFF2D3250),
-                        unfocusedContainerColor = Color(0xFF2D3250),
-                        cursorColor = Color(0xFF7C3AED)
-                    )
-                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val currentName = user.name ?: ""
-                    val currentPhone = user.phone ?: ""
-                    val currentAddress = user.address ?: ""
 
                     onSave(
-                        if (name != currentName) name else null,
-                        if (phone != currentPhone) phone else null,
-                        if (address != currentAddress) address else null,
-                        if (previewAvatarUrl != user.avatar) previewAvatarUrl else null
+                        if (name != currentName) name else null
                     )
                 },
                 colors = ButtonDefaults.buttonColors(

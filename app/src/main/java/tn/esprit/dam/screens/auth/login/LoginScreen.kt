@@ -1,4 +1,4 @@
-package tn.esprit.dam.Screens
+package tn.esprit.dam.screens.auth.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,60 +11,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import tn.esprit.dam.data.ApiClient
-import tn.esprit.dam.data.LoginRequest
-import tn.esprit.dam.data.TokenManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit
+    onNavigateToForgotPassword: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Validation
-    var emailError by remember { mutableStateOf<String?>(null) }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    fun validateEmail(email: String): Boolean {
-        return if (email.isEmpty()) {
-            emailError = "Email requis"
-            false
-        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailError = "Email invalide"
-            false
-        } else {
-            emailError = null
-            true
-        }
-    }
-
-    fun validatePassword(password: String): Boolean {
-        return if (password.isEmpty()) {
-            passwordError = "Mot de passe requis"
-            false
-        } else if (password.length < 6) {
-            passwordError = "Minimum 6 caractères"
-            false
-        } else {
-            passwordError = null
-            true
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            onLoginSuccess()
         }
     }
 
@@ -115,7 +81,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Protégez votre vie privée ",
+                text = "Protégez votre vie privée",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB4B4C6)
             )
@@ -153,16 +119,16 @@ fun LoginScreen(
                     )
 
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            if (emailError != null) validateEmail(it)
-                        },
+                        value = uiState.email,
+                        onValueChange = { viewModel.onEmailChange(it) },
                         placeholder = { Text("votre@email.com", color = Color(0xFF6B7280)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        isError = emailError != null,
-                        supportingText = emailError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        enabled = !uiState.isLoading,
+                        isError = uiState.emailError != null,
+                        supportingText = uiState.emailError?.let {
+                            { Text(it, color = Color(0xFFEF4444)) }
+                        },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -186,26 +152,35 @@ fun LoginScreen(
                     )
 
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            if (passwordError != null) validatePassword(it)
-                        },
+                        value = uiState.password,
+                        onValueChange = { viewModel.onPasswordChange(it) },
                         placeholder = { Text("••••••••", color = Color(0xFF6B7280)) },
                         trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            IconButton(
+                                onClick = { viewModel.togglePasswordVisibility() },
+                                enabled = !uiState.isLoading
+                            ) {
                                 Icon(
-                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    imageVector = if (uiState.passwordVisible)
+                                        Icons.Filled.Visibility
+                                    else
+                                        Icons.Filled.VisibilityOff,
                                     contentDescription = null,
                                     tint = Color(0xFF9CA3AF)
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (uiState.passwordVisible)
+                            VisualTransformation.None
+                        else
+                            PasswordVisualTransformation(),
                         singleLine = true,
-                        isError = passwordError != null,
-                        supportingText = passwordError?.let { { Text(it, color = Color(0xFFEF4444)) } },
+                        enabled = !uiState.isLoading,
+                        isError = uiState.passwordError != null,
+                        supportingText = uiState.passwordError?.let {
+                            { Text(it, color = Color(0xFFEF4444)) }
+                        },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -222,7 +197,8 @@ fun LoginScreen(
 
                     TextButton(
                         onClick = onNavigateToForgotPassword,
-                        modifier = Modifier.align(Alignment.End)
+                        modifier = Modifier.align(Alignment.End),
+                        enabled = !uiState.isLoading
                     ) {
                         Text(
                             "Mot de passe oublié ?",
@@ -234,37 +210,18 @@ fun LoginScreen(
 
                     // Bouton de connexion
                     Button(
-                        onClick = {
-                            val isEmailValid = validateEmail(email)
-                            val isPasswordValid = validatePassword(password)
-
-                            if (isEmailValid && isPasswordValid) {
-                                scope.launch {
-                                    try {
-                                        isLoading = true
-                                        errorMessage = null
-                                        val response = ApiClient.login(LoginRequest(email, password))
-                                        TokenManager.saveTokens(context, response.accessToken, response.refreshToken)
-                                        onLoginSuccess()
-                                    } catch (e: Exception) {
-                                        errorMessage = e.message ?: "Connexion échouée"
-                                    } finally {
-                                        isLoading = false
-                                    }
-                                }
-                            }
-                        },
+                        onClick = { viewModel.login() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        enabled = !isLoading,
+                        enabled = !uiState.isLoading,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF7C3AED),
                             disabledContainerColor = Color(0xFF5B21B6)
                         )
                     ) {
-                        if (isLoading) {
+                        if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = Color.White
@@ -280,13 +237,35 @@ fun LoginScreen(
                         }
                     }
 
-                    errorMessage?.let {
+                    // Message d'erreur
+                    uiState.errorMessage?.let { error ->
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = it,
-                            color = Color(0xFFEF4444),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFEF4444).copy(alpha = 0.1f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = error,
+                                    color = Color(0xFFEF4444),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -302,7 +281,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-
             // Pas de compte
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -312,7 +290,10 @@ fun LoginScreen(
                     color = Color(0xFFB4B4C6),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                TextButton(onClick = onNavigateToRegister) {
+                TextButton(
+                    onClick = onNavigateToRegister,
+                    enabled = !uiState.isLoading
+                ) {
                     Text(
                         "Créer un compte",
                         color = Color(0xFF7C3AED),
