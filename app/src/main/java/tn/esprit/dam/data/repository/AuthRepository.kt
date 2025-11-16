@@ -2,6 +2,13 @@ package tn.esprit.dam.data.repository
 import android.content.Context
 import android.util.Log
 import tn.esprit.dam.data.*
+import tn.esprit.dam.data.model.LoginResponse
+import tn.esprit.dam.data.model.RegisterResponse
+import tn.esprit.dam.data.model.RequestPasswordResetResponse
+import tn.esprit.dam.data.model.ResendOTPResponse
+import tn.esprit.dam.data.model.ResetPasswordResponse
+import tn.esprit.dam.data.model.User
+import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 
 class AuthRepository(private val context: Context) {
 
@@ -206,38 +213,6 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    suspend fun getProfile(): Result<User> {
-        return try {
-            Log.d(TAG, " Repository: Fetching user profile")
-
-            val user = apiClient.getProfile()
-
-            Log.d(TAG, " Repository: Profile fetched successfully")
-            Result.success(user)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Repository: Get profile failed - ${e.message}", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun updateProfile(
-        name: String? = null,
-        email: String? = null
-    ): Result<User> {
-        return try {
-            Log.d(TAG, "️ Repository: Updating user profile")
-
-            val user = apiClient.updateProfile(name, email)
-
-            Log.d(TAG, " Repository: Profile updated successfully")
-            Result.success(user)
-
-        } catch (e: Exception) {
-            Log.e(TAG, " Repository: Update profile failed - ${e.message}", e)
-            Result.failure(e)
-        }
-    }
 
     // ========================================
     // UTILITAIRES

@@ -1,5 +1,5 @@
 package tn.esprit.dam.screens
-
+/*
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,8 +25,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import tn.esprit.dam.data.AppDetails
-import tn.esprit.dam.data.api.ShadowGuardApi
+import tn.esprit.dam.data.model.AppDetails
 
 // Modern Theme Colors
 object SearchTheme {
@@ -818,3 +817,4 @@ fun ModernAppCard(app: AppDetails, onClick: () -> Unit) {
         }
     }
 
+*/

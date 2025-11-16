@@ -1,10 +1,13 @@
 package tn.esprit.dam.screens.auth.login
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
 import android.util.Patterns
-import androidx.lifecycle.AndroidViewModel
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,50 +34,50 @@ data class LoginUiState(
 )
 
 /**
- * ViewModel pour l'écran de connexion
- * Gère toute la logique métier et l'état de l'UI
+ * ✅ VERSION SANS FACTORY - Utilise ViewModel au lieu de AndroidViewModel
  */
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
+class LoginViewModel : ViewModel() {
 
     companion object {
         private const val TAG = "LoginViewModel"
     }
 
-    private val repository = AuthRepository(application.applicationContext)
+    // ✅ Repository sera initialisé depuis le Composable
+    private lateinit var repository: AuthRepository
 
     // État de l'UI exposé aux Composables
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    /**
+     * ✅ Initialiser le repository avec le context
+     * Appelé une seule fois depuis le Composable
+     */
+    fun initialize(context: Context) {
+        if (!::repository.isInitialized) {
+            repository = AuthRepository(context)
+            Log.d(TAG, "✅ Repository initialized")
+        }
+    }
+
     // ========================================
     // GESTION DES CHANGEMENTS DE CHAMPS
     // ========================================
 
-    /**
-     * Appelé quand l'utilisateur tape son email
-     */
     fun onEmailChange(email: String) {
         _uiState.value = _uiState.value.copy(
             email = email,
-            // Effacer l'erreur si l'utilisateur corrige
             emailError = if (_uiState.value.emailError != null) null else _uiState.value.emailError
         )
     }
 
-    /**
-     * Appelé quand l'utilisateur tape son mot de passe
-     */
     fun onPasswordChange(password: String) {
         _uiState.value = _uiState.value.copy(
             password = password,
-            // Effacer l'erreur si l'utilisateur corrige
             passwordError = if (_uiState.value.passwordError != null) null else _uiState.value.passwordError
         )
     }
 
-    /**
-     * Toggle visibilité du mot de passe
-     */
     fun togglePasswordVisibility() {
         _uiState.value = _uiState.value.copy(
             passwordVisible = !_uiState.value.passwordVisible
@@ -85,10 +88,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     // VALIDATION
     // ========================================
 
-    /**
-     * Valider l'email
-     * @return true si valide
-     */
     private fun validateEmail(): Boolean {
         val email = _uiState.value.email
 
@@ -102,10 +101,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         return error == null
     }
 
-    /**
-     * Valider le mot de passe
-     * @return true si valide
-     */
     private fun validatePassword(): Boolean {
         val password = _uiState.value.password
 
@@ -119,10 +114,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         return error == null
     }
 
-    /**
-     * Valider tout le formulaire
-     * @return true si tout est valide
-     */
     private fun validateForm(): Boolean {
         val isEmailValid = validateEmail()
         val isPasswordValid = validatePassword()
@@ -133,11 +124,18 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     // LOGIN
     // ========================================
 
-    /**
-     * Tenter la connexion
-     * Appelé quand l'utilisateur clique sur "Se connecter"
-     */
     fun login() {
+        Log.d(TAG, "🔵 login() called")
+
+        // Vérifier que le repository est initialisé
+        if (!::repository.isInitialized) {
+            Log.e(TAG, "❌ Repository not initialized!")
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Erreur d'initialisation"
+            )
+            return
+        }
+
         // Valider d'abord
         if (!validateForm()) {
             Log.d(TAG, "❌ Validation failed")
@@ -196,16 +194,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     // UTILITAIRES
     // ========================================
 
-    /**
-     * Effacer le message d'erreur
-     */
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
-    /**
-     * Réinitialiser l'état (pour retour depuis un autre écran)
-     */
     fun resetState() {
         _uiState.value = LoginUiState()
     }

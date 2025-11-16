@@ -1,5 +1,5 @@
 package tn.esprit.dam.screens
-
+/*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -11,8 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import kotlinx.coroutines.launch
-import tn.esprit.dam.data.AppDetails
-import tn.esprit.dam.data.api.ShadowGuardApi
+import tn.esprit.dam.data.model.AppDetails
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,3 +93,4 @@ fun TopAppsScreen(
         }
     }
 }
+*/

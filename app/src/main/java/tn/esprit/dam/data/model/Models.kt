@@ -1,29 +1,19 @@
 // data/Models.kt
 
-package tn.esprit.dam.data
+package tn.esprit.dam.data.model
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 // ================== USER ===================
 
-@Serializable
-data class User(
-    @SerialName("_id")
-    val id: String? = null,
-    val email: String,
-    val name: String,
-    val role: String = "user",
-    val avatarUrl: String? = null,
-    val userHash: String? = null,
-    val provider: String = "local",
-    val isEmailVerified: Boolean = false,
-    val isVerified: Boolean = false,
-    val createdAt: String? = null,
-    val updatedAt: String? = null
-)
+
 
 // ================== AUTH REQUESTS ===================
 
@@ -79,7 +69,7 @@ data class UpdateUserRequest(
     val email: String? = null,
     val phone: String? = null,
     val address: String? = null,
-    val avatar: String? = null
+    val avatarUrl: String? = null
 )
 
 // ================== AUTH RESPONSES ===================
@@ -150,16 +140,16 @@ data class ApiError(
 )
 
 object FlexibleMessageSerializer : KSerializer<String?> {
-    override val descriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
+    override val descriptor = PrimitiveSerialDescriptor(
         "FlexibleMessage",
-        kotlinx.serialization.descriptors.PrimitiveKind.STRING
+        PrimitiveKind.STRING
     )
 
-    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: String?) {
+    override fun serialize(encoder: Encoder, value: String?) {
         value?.let { encoder.encodeString(it) } ?: encoder.encodeNull()
     }
 
-    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): String? {
+    override fun deserialize(decoder: Decoder): String? {
         val element = decoder.decodeSerializableValue(JsonElement.serializer())
 
         return when {
@@ -260,7 +250,7 @@ data class AppStats(
 @Serializable
 data class InstalledAppDto(
     val packageName: String,
-    val appName: String,
+    val name: String,
     val versionName: String,
     val versionCode: Int,
     val permissions: List<String> = emptyList()
@@ -272,33 +262,24 @@ data class AnalyzeInstalledAppsDto(
     val apps: List<InstalledAppDto>
 )
 
-@Serializable
-data class AnalyzeInstalledAppsResponse(
-    val scanId: String,
-    val totalApps: Int,
-    val results: List<ScanResult>,
-    val summary: ScanSummary? = null
-)
 
 @Serializable
-data class ScanSummary(
-    val avgPrivacyScore: Double? = null,
-    val totalTrackers: Int? = null,
-    val totalPermissions: Int? = null,
-    val riskDistribution: Map<String, Int>? = null
+data class ScanSummaryResponse(
+    val avgScore: Double? = null,
+    val riskDistribution: RiskDistribution? = null,
+    val totalAlerts: Int? = null,
+    val mostDangerousApps: List<DangerousApp>? = null
 )
 
+
+
 @Serializable
-data class ScanResult(
+data class DangerousApp(
     val packageName: String,
     val name: String,
-    val score: Int,
-    val riskLevel: String,
-    val alerts: List<String> = emptyList(),
-    val breakdown: BreakdownInfo? = null,
-    val trackers: List<String> = emptyList(),
-    val permissions: PermissionsInfo
+    val score: Int
 )
+
 
 @Serializable
 data class BreakdownInfo(
@@ -319,79 +300,83 @@ data class TrackerBreakdown(
     val count: Int
 )
 
-// Extensions pour ScanResult
-val ScanResult.appName: String
-    get() = name
 
-val ScanResult.privacyScore: Int
-    get() = score
 
-// ================== SEARCH & COMPARE ===================
+// ================== SCAN STORAGE ===================
 
 @Serializable
-data class SearchResponse(
-    val results: List<AppDetails>
+data class SavedScan(
+    val _id: String? = null,
+    val userHash: String,
+    val scanDate: String,
+    val totalApps: Int,
+    val results: List<AppAnalysisResult>,
+    val summary: ScanSummary? = null,
+    val scanId: String,
+    val createdAt: String? = null
 )
 
 @Serializable
-data class CompareRequest(
-    val packageNames: List<String>
+data class SaveScanRequest(
+    val userHash: String,
+    val scanId: String,
+    val totalApps: Int,
+    val results: List<AppAnalysisResult>,
+    val summary:ScanSummary? = null
 )
 
 @Serializable
-data class CompareResult(
-    val apps: List<AppComparison>
+data class SaveScanResponse(
+    val success: Boolean,
+    val scan: SavedScan,
+    val message: String? = null
 )
 
 @Serializable
-data class AppComparison(
+data class GetScansResponse(
+    val scans: List<SavedScan>
+)
+@Serializable
+data class ScanResultResponse(
+    val scanId: String,
+    val userHash: String,
+    val totalApps: Int,
+    val results: List<AppAnalysisResult>,
+    val summary: ScanSummary
+)
+
+@Serializable
+data class AppAnalysisResult(
     val packageName: String,
     val name: String,
-    val privacyScore: Int,
-    val trackerCount: Int,
-    val permissionCount: Int
+    val permissions: List<String>,  // ✅ Doit être List<String>, pas un objet
+    val trackers: List<TrackerInfo>,
+    val totalTrackers: Int
 )
 
 @Serializable
-data class CompareAppsRequest(
-    val packageNames: List<String>
+data class TrackerInfo(
+    val _id: String? = null,  // ✅ Ajouter l'ID MongoDB si nécessaire
+    val name: String? = null,
+    val company: String? = null,
+    val category: String? = null,
+    val websiteUrl: String? = null,
+    val networkSignature: String? = null,
+    val codeSignature: String? = null,
+    val description: String? = null
 )
 
 @Serializable
-data class CompareAppsResponse(
-    val apps: List<AppDetails>,
-    val comparison: ComparisonResult
+data class ScanSummary(
+    val totalTrackers: Int,
+    val avgScore: Double? = null,
+    val riskDistribution: RiskDistribution? = null
 )
 
 @Serializable
-data class ComparisonResult(
-    val bestChoice: AppDetails,
-    val worstChoice: AppDetails,
-    val avgScore: Double,
-    val comparison: List<ComparisonItem>
-)
-
-@Serializable
-data class ComparisonItem(
-    val packageName: String,
-    val name: String,
-    val score: Int,
-    val trackers: Int,
-    val dangerousPermissions: Int
-)
-
-// ================== SCAN HISTORY ===================
-
-@Serializable
-data class ScanHistory(
-    val scans: List<HistoryItem>
-)
-
-@Serializable
-data class HistoryItem(
-    val id: String,
-    val deviceId: String,
-    val timestamp: String,
-    val appsScanned: Int,
-    val averageScore: Int
+data class RiskDistribution(
+    val critical: Int = 0,
+    val high: Int = 0,
+    val medium: Int = 0,
+    val low: Int = 0
 )

@@ -1,10 +1,5 @@
-// Screens/ScanScreen.kt
-package tn.esprit.dam.screens
+package tn.esprit.dam.screens.scan
 
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.util.Log
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,23 +17,101 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import tn.esprit.dam.data.AnalyzeInstalledAppsDto
-import tn.esprit.dam.data.InstalledAppDto
-import tn.esprit.dam.data.ScanResult
-import tn.esprit.dam.data.api.ApiProvider
-import tn.esprit.dam.data.appName
-import tn.esprit.dam.data.privacyScore
-import java.util.UUID
+import androidx.lifecycle.viewmodel.compose.viewModel
+import tn.esprit.dam.data.model.SavedScan
+import tn.esprit.dam.data.model.AppAnalysisResult // ✅ CHANGÉ
 
-// Modern Color Scheme
+@Composable
+fun ScanScreen(
+    onNavigateBack: () -> Unit,
+    onAppDetails: (String) -> Unit,
+    userHash: String,
+    viewModel: ScanViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val stats by viewModel.stats.collectAsState()
+
+    // Initialiser le ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+        // Charger le dernier scan au démarrage
+        viewModel.loadLastScan(context, userHash)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScanTheme.DarkBg)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            ScanHeader(onBack = onNavigateBack)
+
+            // Content selon l'état
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                when (val state = uiState) {
+                    is ScanUiState.Initial -> {
+                        ScanEmptyState()
+                    }
+
+                    is ScanUiState.LoadingLastScan -> {
+                        ScanLoadingState(
+                            message = "Chargement du dernier scan...",
+                            showProgress = false
+                        )
+                    }
+
+                    is ScanUiState.Scanning -> {
+                        ScanLoadingState(
+                            message = state.progress,
+                            totalApps = state.totalApps,
+                            showProgress = true
+                        )
+                    }
+
+                    is ScanUiState.Success -> {
+                        ScanResultsList(
+                            scan = state.scan,
+                            stats = stats,
+                            isFromCache = state.isFromCache,
+                            onAppClick = onAppDetails
+                        )
+                    }
+
+                    is ScanUiState.Error -> {
+                        ScanErrorState(
+                            error = state.message,
+                            onRetry = { viewModel.clearError() }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Floating Action Button
+        ScanFAB(
+            isScanning = uiState is ScanUiState.Scanning,
+            isDisabled = uiState is ScanUiState.LoadingLastScan,
+            onClick = {
+                viewModel.startScan(context, userHash)
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        )
+    }
+}
+
+// ==================== THEME ====================
+
 object ScanTheme {
     val PrimaryGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF6366F1), Color(0xFF9333EA))
@@ -60,157 +133,10 @@ object ScanTheme {
     val LowText = Color(0xFF10B981)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ScanScreen(
-    onBack: () -> Unit,
-    onAppDetails: (String) -> Unit
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val api = remember { ApiProvider.getApi() }
-
-    var scanResults by remember { mutableStateOf<List<ScanResult>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var totalApps by remember { mutableStateOf(0) }
-    var isScanning by remember { mutableStateOf(false) }
-
-    suspend fun getInstalledApps(): List<InstalledAppDto> = withContext(Dispatchers.IO) {
-        try {
-            val pm = context.packageManager
-            val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            Log.d("ScanScreen", "Total installed packages: ${packages.size}")
-
-            packages
-                .filter { appInfo ->
-                    (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
-                }
-                .mapNotNull { appInfo ->
-                    try {
-                        val packageInfo = pm.getPackageInfo(appInfo.packageName, 0)
-                        val permissionInfo = try {
-                            pm.getPackageInfo(appInfo.packageName, PackageManager.GET_PERMISSIONS)
-                        } catch (e: Exception) {
-                            null
-                        }
-
-                        InstalledAppDto(
-                            packageName = appInfo.packageName,
-                            appName = pm.getApplicationLabel(appInfo).toString(),
-                            versionName = packageInfo.versionName ?: "Unknown",
-                            versionCode = packageInfo.versionCode,
-                            permissions = permissionInfo?.requestedPermissions?.toList() ?: emptyList()
-                        )
-                    } catch (e: Exception) {
-                        Log.e("ScanScreen", "Error processing ${appInfo.packageName}", e)
-                        null
-                    }
-                }
-        } catch (e: Exception) {
-            Log.e("ScanScreen", "Error getting installed apps", e)
-            emptyList()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ScanTheme.DarkBg)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Modern Header
-            ModernTopBar(onBack = onBack)
-
-            // Content
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                when {
-                    isLoading -> LoadingState(totalApps = totalApps)
-                    error != null -> ErrorState(
-                        error = error!!,
-                        onDismiss = { error = null }
-                    )
-                    scanResults.isEmpty() -> EmptyState1()
-                    else -> ResultsList(
-                        results = scanResults,
-                        totalApps = totalApps,
-                        onAppClick = onAppDetails
-                    )
-                }
-            }
-        }
-
-        // Floating Action Button
-        ModernFAB(
-            isScanning = isScanning,
-            onClick = {
-                scope.launch {
-                    isLoading = true
-                    isScanning = true
-                    error = null
-
-                    try {
-                        Log.d("ScanScreen", "🔍 Starting scan...")
-                        val installedApps = getInstalledApps()
-                        totalApps = installedApps.size
-                        Log.d("ScanScreen", "✅ Found ${installedApps.size} user apps")
-
-                        if (installedApps.isEmpty()) {
-                            error = "No user apps found to scan"
-                            return@launch
-                        }
-
-                        val userHash = UUID.randomUUID().toString()
-                        val analyzeDto = AnalyzeInstalledAppsDto(
-                            userHash = userHash,
-                            apps = installedApps
-                        )
-                        Log.d("ScanScreen", "📤 Sending ${installedApps.size} apps to backend...")
-
-                        val response = withContext(Dispatchers.IO) {
-                            withTimeout(180_000) {
-                                api.analyzeInstalledApps(analyzeDto)
-                            }
-                        }
-
-                        scanResults = response.results
-                        Log.d("ScanScreen", "✅ Received ${response.results.size} results")
-
-                    } catch (e: TimeoutCancellationException) {
-                        error = "Request timeout - Backend took too long to respond (>3 min)"
-                        Log.e("ScanScreen", "❌ Timeout error", e)
-                    } catch (e: io.ktor.client.network.sockets.ConnectTimeoutException) {
-                        error = "Cannot connect to server. Check:\n• Backend is running\n• IP address is correct (${ApiProvider.BASE_URL})\n• Same WiFi network"
-                        Log.e("ScanScreen", "❌ Connection timeout", e)
-                    } catch (e: java.net.ConnectException) {
-                        error = "Connection refused. Backend may not be running on the expected address."
-                        Log.e("ScanScreen", "❌ Connection refused", e)
-                    } catch (e: io.ktor.serialization.JsonConvertException) {
-                        error = "Invalid response format from server. Check backend logs."
-                        Log.e("ScanScreen", "❌ JSON parsing error", e)
-                    } catch (e: Exception) {
-                        error = "Error: ${e.message ?: "Unknown error"}\n\nCheck Logcat for details."
-                        Log.e("ScanScreen", "❌ Unexpected error", e)
-                        e.printStackTrace()
-                    } finally {
-                        isLoading = false
-                        isScanning = false
-                    }
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-        )
-    }
-}
+// ==================== COMPONENTS ====================
 
 @Composable
-fun ModernTopBar(onBack: () -> Unit) {
+fun ScanHeader(onBack: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = ScanTheme.DarkBg
@@ -221,6 +147,7 @@ fun ModernTopBar(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Back button
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
@@ -230,13 +157,14 @@ fun ModernTopBar(onBack: () -> Unit) {
             ) {
                 Icon(
                     Icons.Default.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = "Retour",
                     tint = ScanTheme.TextPrimary
                 )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // Title section
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -277,18 +205,59 @@ fun ModernTopBar(onBack: () -> Unit) {
 }
 
 @Composable
-fun LoadingState(totalApps: Int) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+fun ScanEmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(ScanTheme.PrimaryGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = Color.White
+                )
+            }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Aucun Scan Effectué",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = ScanTheme.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Appuyez sur le bouton ci-dessous pour\nanalyser vos applications installées",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = ScanTheme.TextSecondary
+                ),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun ScanLoadingState(
+    message: String,
+    totalApps: Int = 0,
+    showProgress: Boolean = true
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -314,11 +283,16 @@ fun LoadingState(totalApps: Int) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (totalApps > 0) "Analyse de $totalApps apps..." else "Collecte des applications...",
+                text = if (totalApps > 0) {
+                    "Analyse de $totalApps applications..."
+                } else {
+                    message
+                },
                 style = MaterialTheme.typography.titleMedium.copy(
                     color = ScanTheme.TextPrimary,
                     fontWeight = FontWeight.SemiBold
-                )
+                ),
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -327,25 +301,31 @@ fun LoadingState(totalApps: Int) {
                 text = "Cela peut prendre quelques minutes...",
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = ScanTheme.TextSecondary
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            if (showProgress) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = Color(0xFF6366F1),
+                    trackColor = ScanTheme.CardBg
                 )
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = Color(0xFF6366F1),
-                trackColor = ScanTheme.CardBg
-            )
+            }
         }
     }
 }
 
 @Composable
-fun ErrorState(error: String, onDismiss: () -> Unit) {
+fun ScanErrorState(
+    error: String,
+    onRetry: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -395,13 +375,13 @@ fun ErrorState(error: String, onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = ScanTheme.TextSecondary
                     ),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = onDismiss,
+                    onClick = onRetry,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -433,72 +413,35 @@ fun ErrorState(error: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun EmptyState1() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(ScanTheme.PrimaryGradient),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = Color.White
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Aucun Scan Effectué",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    color = ScanTheme.TextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Appuyez sur le bouton ci-dessous pour\nanalyser vos applications installées",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = ScanTheme.TextSecondary
-                ),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun ResultsList(
-    results: List<ScanResult>,
-    totalApps: Int,
+fun ScanResultsList(
+    scan: SavedScan,
+    stats: ScanStatsData,
+    isFromCache: Boolean,
     onAppClick: (String) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Badge "Dernier scan" si chargé depuis le cache
+        if (isFromCache) {
+            item {
+                ScanCacheBadge(scanDate = scan.scanDate)
+            }
+        }
+
         // Stats Card
         item {
-            StatsCard(totalApps = totalApps, results = results)
+            ScanStatsCard(stats = stats)
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         // Results
-        items(results) { result ->
-            ModernScanResultCard(result = result, onClick = { onAppClick(result.packageName) })
+        items(scan.results) { result ->
+            ScanResultCard(
+                result = result,
+                onClick = { onAppClick(result.packageName) }
+            )
         }
 
         // Bottom spacing for FAB
@@ -509,11 +452,49 @@ fun ResultsList(
 }
 
 @Composable
-fun StatsCard(totalApps: Int, results: List<ScanResult>) {
-    val criticalApps = results.count { it.riskLevel.lowercase() == "high" || it.riskLevel.lowercase() == "critical" }
-    val mediumApps = results.count { it.riskLevel.lowercase() == "medium" }
-    val safeApps = results.count { it.riskLevel.lowercase() == "low" }
+fun ScanCacheBadge(scanDate: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ScanTheme.LowBg
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = ScanTheme.LowText,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Dernier scan chargé",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = ScanTheme.LowText,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+                Text(
+                    text = "Scanné le $scanDate",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = ScanTheme.LowText.copy(alpha = 0.8f),
+                        fontSize = 11.sp
+                    )
+                )
+            }
+        }
+    }
+}
 
+@Composable
+fun ScanStatsCard(stats: ScanStatsData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -542,7 +523,7 @@ fun StatsCard(totalApps: Int, results: List<ScanResult>) {
                             )
                         )
                         Text(
-                            text = "$totalApps applications analysées",
+                            text = "${stats.totalApps} applications analysées",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = ScanTheme.TextSecondary
                             )
@@ -557,22 +538,24 @@ fun StatsCard(totalApps: Int, results: List<ScanResult>) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val criticalCount = stats.criticalApps + stats.highRiskApps
+
                 StatChip(
-                    count = criticalApps,
+                    count = criticalCount,
                     label = "À risque",
                     color = ScanTheme.CriticalText,
                     bgColor = ScanTheme.CriticalBg,
                     modifier = Modifier.weight(1f)
                 )
                 StatChip(
-                    count = mediumApps,
+                    count = stats.mediumRiskApps,
                     label = "Modéré",
                     color = ScanTheme.MediumText,
                     bgColor = ScanTheme.MediumBg,
                     modifier = Modifier.weight(1f)
                 )
                 StatChip(
-                    count = safeApps,
+                    count = stats.lowRiskApps,
                     label = "Sûres",
                     color = ScanTheme.LowText,
                     bgColor = ScanTheme.LowBg,
@@ -619,7 +602,23 @@ fun StatChip(
 }
 
 @Composable
-fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
+fun ScanResultCard(
+    result: AppAnalysisResult, // ✅ CHANGÉ de ScanResult à AppAnalysisResult
+    onClick: () -> Unit
+) {
+    // ✅ Calculer des valeurs par défaut pour les champs manquants
+    val score = when {
+        result.totalTrackers > 10 -> 20
+        result.totalTrackers > 5 -> 50
+        else -> 80
+    }
+
+    val riskLevel = when {
+        result.totalTrackers > 10 -> "HIGH"
+        result.totalTrackers > 5 -> "MEDIUM"
+        else -> "LOW"
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -635,7 +634,7 @@ fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = result.appName,
+                    text = result.name,
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = ScanTheme.TextPrimary,
                         fontWeight = FontWeight.SemiBold
@@ -661,7 +660,7 @@ fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
                         color = ScanTheme.CardHover
                     ) {
                         Text(
-                            text = "${result.trackers.size} trackers",
+                            text = "${result.totalTrackers} trackers", // ✅ CHANGÉ
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = ScanTheme.TextSecondary,
@@ -677,7 +676,7 @@ fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
                         color = ScanTheme.CardHover
                     ) {
                         Text(
-                            text = "${result.permissions.total} permissions",
+                            text = "${result.permissions.size} permissions", // ✅ CHANGÉ
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = ScanTheme.TextSecondary,
@@ -691,16 +690,16 @@ fun ModernScanResultCard(result: ScanResult, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(horizontalAlignment = Alignment.End) {
-                ModernPrivacyScore(score = result.privacyScore)
+                PrivacyScoreChip(score = score) // ✅ Utiliser le score calculé
                 Spacer(modifier = Modifier.height(8.dp))
-                ModernRiskChip(riskLevel = result.riskLevel)
+                RiskLevelChip(riskLevel = riskLevel) // ✅ Utiliser le riskLevel calculé
             }
         }
     }
 }
 
 @Composable
-fun ModernPrivacyScore(score: Int) {
+fun PrivacyScoreChip(score: Int) {
     val (color, bgColor) = when {
         score >= 70 -> ScanTheme.LowText to ScanTheme.LowBg
         score >= 40 -> ScanTheme.MediumText to ScanTheme.MediumBg
@@ -723,7 +722,7 @@ fun ModernPrivacyScore(score: Int) {
 }
 
 @Composable
-fun ModernRiskChip(riskLevel: String) {
+fun RiskLevelChip(riskLevel: String) {
     val (color, bgColor, label) = when (riskLevel.lowercase()) {
         "low" -> Triple(ScanTheme.LowText, ScanTheme.LowBg, "Faible")
         "medium" -> Triple(ScanTheme.MediumText, ScanTheme.MediumBg, "Moyen")
@@ -748,8 +747,9 @@ fun ModernRiskChip(riskLevel: String) {
 }
 
 @Composable
-fun ModernFAB(
+fun ScanFAB(
     isScanning: Boolean,
+    isDisabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -763,10 +763,21 @@ fun ModernFAB(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ScanTheme.PrimaryGradient),
+                .background(
+                    if (isDisabled) {
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF6366F1).copy(alpha = 0.5f),
+                                Color(0xFF9333EA).copy(alpha = 0.5f)
+                            )
+                        )
+                    } else {
+                        ScanTheme.PrimaryGradient
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
-            if (isScanning) {
+            if (isScanning || isDisabled) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(28.dp),
                     color = Color.White,
@@ -775,64 +786,8 @@ fun ModernFAB(
             } else {
                 Icon(
                     Icons.Default.PlayArrow,
-                    contentDescription = "Start Scan",
+                    contentDescription = "Démarrer le scan",
                     modifier = Modifier.size(32.dp)
-                )
-            }
-        }
-    }
-}
-
-
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
-@Composable
-fun EmptyStatePreview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ScanTheme.DarkBg)
-        ) {
-            Column {
-                ModernTopBar(onBack = {})
-                EmptyState1()
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
-@Composable
-fun LoadingStatePreview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ScanTheme.DarkBg)
-        ) {
-            Column {
-                ModernTopBar(onBack = {})
-                LoadingState(totalApps = 24)
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F172A)
-@Composable
-fun ErrorStatePreview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ScanTheme.DarkBg)
-        ) {
-            Column {
-                ModernTopBar(onBack = {})
-                ErrorState(
-                    error = "Cannot connect to server. Check:\n• Backend is running\n• IP address is correct\n• Same WiFi network",
-                    onDismiss = {}
                 )
             }
         }

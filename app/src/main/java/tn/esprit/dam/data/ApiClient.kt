@@ -17,11 +17,27 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import tn.esprit.dam.data.model.ApiError
+import tn.esprit.dam.data.model.GoogleLoginRequest
+import tn.esprit.dam.data.model.LoginRequest
+import tn.esprit.dam.data.model.LoginResponse
+import tn.esprit.dam.data.model.RegisterRequest
+import tn.esprit.dam.data.model.RegisterResponse
+import tn.esprit.dam.data.model.RequestPasswordResetRequest
+import tn.esprit.dam.data.model.RequestPasswordResetResponse
+import tn.esprit.dam.data.model.ResendOTPRequest
+import tn.esprit.dam.data.model.ResendOTPResponse
+import tn.esprit.dam.data.model.ResetPasswordResponse
+import tn.esprit.dam.data.model.UpdateUserRequest
+import tn.esprit.dam.data.model.User
+import tn.esprit.dam.data.model.VerifyEmailMessageResponse
+import tn.esprit.dam.data.model.VerifyPasswordResetOTPRequest
+import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 
 class ApiClient private constructor(private val context: Context) {
 
     companion object {
-        private const val BASE_URL = "http://192.168.1.115:3000"
+        private const val BASE_URL = "http://192.168.1.6:3000"
         private const val TAG = "ApiClient"
 
         @Volatile
@@ -151,9 +167,6 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * 🔄 Resend OTP
-     */
     suspend fun resendVerificationOTP(email: String): ResendOTPResponse {
         return try {
             Log.d(TAG, "📤 POST /auth/resend-otp - Email: $email")
@@ -182,9 +195,7 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * 🔐 Login
-     */
+
     suspend fun login(email: String, password: String): LoginResponse {
         return try {
             val cleanEmail = email.trim().lowercase()
@@ -228,9 +239,6 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * 🔑 Request Password Reset
-     */
     suspend fun requestPasswordReset(email: String): RequestPasswordResetResponse {
         return try {
             Log.d(TAG, "📤 POST /auth/request-password-reset - Email: $email")
@@ -260,9 +268,7 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * ✅ Verify Password Reset OTP
-     */
+
     suspend fun verifyPasswordResetOTP(email: String, otp: String): VerifyPasswordResetOTPResponse {
         return try {
             Log.d(TAG, "📤 POST /auth/verify-reset-otp - Email: $email, OTP: $otp")
@@ -291,9 +297,7 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     *  Reset Password
-     */
+
     suspend fun resetPassword(
         email: String,
         code: String,
@@ -334,9 +338,7 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * 🔐 Google Login
-     */
+
     suspend fun googleLogin(idToken: String): LoginResponse {
         return try {
             Log.d(TAG, "📤 POST /auth/google")
@@ -374,22 +376,27 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * 🚪 Logout
-     */
     suspend fun logout() {
         Log.d(TAG, "🚪 Logging out...")
         TokenManager.clearAll(context)
         Log.d(TAG, "✅ Logged out successfully")
     }
 
+
+
+    suspend fun isLoggedIn(): Boolean {
+        return TokenManager.isLoggedIn(context)
+    }
+
+    // ================== USER PROFILE ==================
+
     /**
-     * 👤 Get Profile
+     * 👤 Get user profile
      */
-    suspend fun getProfile(): User {
+    suspend fun getUserProfile(): User {
         return try {
             val token = TokenManager.getAccessToken(context)
-                ?: throw AuthException("No access token. Please login again.")
+                ?: throw AuthException("No access token")
 
             Log.d(TAG, "📤 GET /users/profile")
 
@@ -398,21 +405,19 @@ class ApiClient private constructor(private val context: Context) {
             }
 
             when (response.status) {
-                HttpStatusCode.OK ,  HttpStatusCode.Created  -> {
+                HttpStatusCode.OK -> {
                     val user = response.body<User>()
-                    Log.d(TAG, "✅ Profile retrieved")
-                    TokenManager.saveUser(context, user)
+                    Log.d(TAG, "✅ Profile retrieved: ${user.name}")
+                    TokenManager.saveUser(context, user) // Mettre à jour le cache
                     user
                 }
                 HttpStatusCode.Unauthorized -> {
-                    Log.e(TAG, "❌ Unauthorized - Token expired")
                     TokenManager.clearAll(context)
-                    throw AuthException("Session expired. Please login again.")
+                    throw AuthException("Session expired")
                 }
                 else -> {
-                    val rawBody = response.bodyAsText()
-                    Log.e(TAG, "❌ Error ${response.status}: $rawBody")
-                    throw ApiException("Failed to get profile", response.status)
+                    val error = response.body<ApiError>()
+                    throw ApiException(error.message ?: "Failed to get profile", response.status)
                 }
             }
         } catch (e: AuthException) {
@@ -424,24 +429,24 @@ class ApiClient private constructor(private val context: Context) {
     }
 
     /**
-     * ✏️ Update Profile
+     * ✏️ Update user profile (name + avatarUrl)
      */
-    suspend fun updateProfile(name: String? = null, email: String? = null): User {
+    suspend fun updateUserProfile(request: UpdateUserRequest): User {
         return try {
             val token = TokenManager.getAccessToken(context)
                 ?: throw AuthException("No access token")
 
-            Log.d(TAG, "📤 PATCH /users/me")
+            Log.d(TAG, "📤 PATCH /users/me - Request: $request")
 
             val response: HttpResponse = client.patch("/users/me") {
                 bearerAuth(token)
-                setBody(UpdateUserRequest(name = name, email = email))
+                setBody(request)
             }
 
             when (response.status) {
-                HttpStatusCode.OK ,  HttpStatusCode.Created -> {
+                HttpStatusCode.OK -> {
                     val user = response.body<User>()
-                    Log.d(TAG, "✅ Profile updated")
+                    Log.d(TAG, "✅ Profile updated: ${user.name}")
                     TokenManager.saveUser(context, user)
                     user
                 }
@@ -450,7 +455,8 @@ class ApiClient private constructor(private val context: Context) {
                     throw AuthException("Session expired")
                 }
                 else -> {
-                    throw ApiException("Failed to update profile", response.status)
+                    val error = response.body<ApiError>()
+                    throw ApiException(error.message ?: "Failed to update profile", response.status)
                 }
             }
         } catch (e: AuthException) {
@@ -460,14 +466,6 @@ class ApiClient private constructor(private val context: Context) {
             throw AuthException("Network error: ${e.message}")
         }
     }
-
-    suspend fun isLoggedIn(): Boolean {
-        return TokenManager.isLoggedIn(context)
-    }
-
-    /**
-     * 👤 Get current user from cache
-     */
     suspend fun getCurrentUser(): User? {
         return TokenManager.getUser(context)
     }

@@ -1,5 +1,5 @@
 package tn.esprit.dam.screens
-
+/*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,8 +17,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import tn.esprit.dam.data.AppDetails
-import tn.esprit.dam.data.api.ShadowGuardApi
+import tn.esprit.dam.data.model.AlternativeApp
+import tn.esprit.dam.data.model.AppDetails
+import tn.esprit.dam.data.model.AppStats
+import tn.esprit.dam.data.model.FlagsInfo
+import tn.esprit.dam.data.model.PermissionsInfo
+import tn.esprit.dam.data.model.TrackersInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -421,7 +425,7 @@ fun StatItem(
 }
 
 @Composable
-fun PermissionsCard(permissions: tn.esprit.dam.data.PermissionsInfo) {
+fun PermissionsCard(permissions: PermissionsInfo) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -523,7 +527,7 @@ fun PermissionsCard(permissions: tn.esprit.dam.data.PermissionsInfo) {
 }
 
 @Composable
-fun TrackersCard(trackers: tn.esprit.dam.data.TrackersInfo) {
+fun TrackersCard(trackers: TrackersInfo) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -589,7 +593,7 @@ fun TrackersCard(trackers: tn.esprit.dam.data.TrackersInfo) {
 }
 
 @Composable
-fun FlagsCard(flags: tn.esprit.dam.data.FlagsInfo) {
+fun FlagsCard(flags: FlagsInfo) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -665,7 +669,7 @@ fun FlagRow(label: String, value: Boolean, trueIsGood: Boolean) {
 @Composable
 fun AlternativesCard(
     currentApp: String,
-    alternatives: List<tn.esprit.dam.data.AlternativeApp>
+    alternatives: List<AlternativeApp>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -747,7 +751,7 @@ fun AlternativesCard(
 }
 
 @Composable
-fun CommunityStatsCard(stats: tn.esprit.dam.data.AppStats) {
+fun CommunityStatsCard(stats: AppStats) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -871,4 +875,4 @@ fun formatPermission(permission: String): String {
         .replace("_", " ")
         .lowercase()
         .replaceFirstChar { it.uppercase() }
-}
+}*/
