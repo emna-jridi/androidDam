@@ -37,7 +37,7 @@ import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 class ApiClient private constructor(private val context: Context) {
 
     companion object {
-        private const val BASE_URL = "http://192.168.1.6:3000"
+        private const val BASE_URL = "http://172.18.4.239:3000"
         private const val TAG = "ApiClient"
 
         @Volatile

@@ -283,24 +283,41 @@ data class DangerousApp(
 
 @Serializable
 data class BreakdownInfo(
-    val permissions: PermissionBreakdown,
-    val trackers: TrackerBreakdown
+    val permissions: PermissionBreakdown? = null,
+    val trackers: TrackerBreakdown? = null,
+    val debug: DebugBreakdown? = null,
+    val community: CommunityBreakdown? = null,
+    val unknownTrackers: UnknownTrackersBreakdown? = null
 )
 
 @Serializable
 data class PermissionBreakdown(
-    val penalty: Int,
-    val count: Int,
+    val penalty: Int = 0,
+    val count: Int = 0,
     val list: List<String> = emptyList()
+)
+@Serializable
+data class TrackerBreakdown(
+    val penalty: Int = 0,
+    val count: Int = 0
+)
+@Serializable
+data class DebugBreakdown(
+    val penalty: Int = 0,
+    val isDebuggable: Boolean = false
 )
 
 @Serializable
-data class TrackerBreakdown(
-    val penalty: Int,
-    val count: Int
+data class CommunityBreakdown(
+    val bonus: Int = 0,
+    val score: Double? = null
 )
 
-
+@Serializable
+data class UnknownTrackersBreakdown(
+    val penalty: Int = 0,
+    val hasUnknown: Boolean = false
+)
 
 // ================== SCAN STORAGE ===================
 
@@ -334,26 +351,59 @@ data class SaveScanResponse(
 
 @Serializable
 data class GetScansResponse(
-    val scans: List<SavedScan>
+    val success: Boolean,
+    val data: ScanDataWrapper
+)
+@Serializable
+data class ScanDataWrapper(
+    val scans: List<SavedScan>,
+    val pagination: Pagination,
+    val stats: ScanStats
+)
+@Serializable
+data class Pagination(
+    val total: Int,
+    val page: Int,
+    val limit: Int,
+    val totalPages: Int,
+    val hasNext: Boolean,
+    val hasPrev: Boolean
+)
+
+@Serializable
+data class ScanStats(
+    val totalScans: Int,
+    val avgAppsPerScan: Int,
+    val avgScore: Int,
+    val totalAppsScanned: Int
 )
 @Serializable
 data class ScanResultResponse(
     val scanId: String,
-    val userHash: String,
+    val userHash: String? = null,
     val totalApps: Int,
     val results: List<AppAnalysisResult>,
-    val summary: ScanSummary
+    val summary: ScanSummary,
+    val createdAt: String? = null
 )
-
 @Serializable
 data class AppAnalysisResult(
     val packageName: String,
     val name: String,
-    val permissions: List<String>,  // ✅ Doit être List<String>, pas un objet
-    val trackers: List<TrackerInfo>,
-    val totalTrackers: Int
+    val version: String? = null,
+    val score: Int,
+    val riskLevel: String,
+    val alerts: List<String> = emptyList(),
+    val breakdown: BreakdownInfo? = null,
+    val trackers: List<String> = emptyList(),
+    val permissions: PermissionDetails,
+    val error: String? = null
 )
-
+@Serializable
+data class PermissionDetails(
+    val dangerous: List<String> = emptyList(),
+    val total: Int = 0
+)
 @Serializable
 data class TrackerInfo(
     val _id: String? = null,  // ✅ Ajouter l'ID MongoDB si nécessaire
@@ -368,11 +418,12 @@ data class TrackerInfo(
 
 @Serializable
 data class ScanSummary(
-    val totalTrackers: Int,
-    val avgScore: Double? = null,
-    val riskDistribution: RiskDistribution? = null
+    val avgScore: Int = 0,
+    val riskDistribution: RiskDistribution = RiskDistribution(),
+    val totalAlerts: Int = 0,
+    val totalTrackers: Int = 0,
+    val mostDangerousApps: List<DangerousApp> = emptyList()
 )
-
 @Serializable
 data class RiskDistribution(
     val critical: Int = 0,
@@ -380,3 +431,75 @@ data class RiskDistribution(
     val medium: Int = 0,
     val low: Int = 0
 )
+@Serializable
+data class AddPackageMappingDto(
+    val packageName: String,
+    val trackers: List<String>
+)
+@Serializable
+data class ExodusStatsResponse(
+    val cacheSize: Int,
+    val mappingsSize: Int
+)
+@Serializable
+data class MetadataDto(
+    val packageName: String,
+    val permissions: List<String> = emptyList(),
+    val isDebuggable: Boolean = false
+)
+@Serializable
+data class ScanItem(
+    val _id: String,
+    val type: String,
+    val userHash: String,
+    val totalApps: Int,
+    val report: ScanReport,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+@Serializable
+data class LatestScanResponse(
+    val success: Boolean,
+    val data: ScanItem? = null,
+    val message: String? = null
+)
+@Serializable
+data class SingleScanResponse(
+    val success: Boolean,
+    val data: ScanItem
+)
+@Serializable
+data class ScanReport(
+    val results: List<AppAnalysisResult> = emptyList()
+)
+
+/**
+ * ✅ Convertir ScanItem en SavedScan
+ */
+fun ScanItem.toSavedScan(): SavedScan {
+    return SavedScan(
+        _id = this._id,
+        userHash = this.userHash,
+        scanDate = this.createdAt ?: "",
+        totalApps = this.totalApps,
+        results = this.report.results,
+        summary = null, // Calculer si nécessaire
+        scanId = this._id,
+        createdAt = this.createdAt
+    )
+}
+
+/**
+ * ✅ Convertir SavedScan en ScanItem
+ */
+fun SavedScan.toScanItem(): ScanItem {
+    return ScanItem(
+        _id = this._id ?: this.scanId,
+        type = "batch_installed",
+        userHash = this.userHash,
+        totalApps = this.totalApps,
+        report = ScanReport(results = this.results),
+        createdAt = this.createdAt,
+        updatedAt = null
+    )
+}

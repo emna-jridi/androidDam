@@ -1,4 +1,5 @@
 package tn.esprit.dam
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,9 +14,18 @@ import coil.decode.SvgDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.runBlocking
+import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.navigation.AppNavGraph
+import tn.esprit.dam.navigation.Screens
 import tn.esprit.dam.ui.theme.ShadowGuardTheme
 
+/**
+ * ✅ AJOUT: @AndroidEntryPoint
+ * Ceci permet à Hilt d'injecter les dépendances
+ */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,30 +38,37 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                 ) {
                     val navController = rememberNavController()
 
+                    // ✅ Déterminer la destination de départ
+                    val startDestination = runBlocking {
+                        val token = TokenManager.getAccessToken(this@MainActivity)
+                        if (token != null) Screens.Home.route else Screens.Login.route
+                    }
+
+                    // ✅ SIMPLIFICATION: Plus besoin de passer les ViewModels !
+                    // Hilt les injecte automatiquement
                     AppNavGraph(
                         navController = navController,
-                        startDestination = "home"
+                        startDestination = Screens.Login.route
                     )
                 }
             }
         }
     }
 
-    // ✅ AJOUTER : Configuration de Coil avec support SVG
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
             .components {
-                add(SvgDecoder.Factory()) // ✅ Support SVG
+                add(SvgDecoder.Factory())
             }
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(0.25) // 25% de la RAM
+                    .maxSizePercent(0.25)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(50 * 1024 * 1024) // 50 MB
+                    .maxSizeBytes(50 * 1024 * 1024)
                     .build()
             }
             .memoryCachePolicy(CachePolicy.ENABLED)
@@ -60,5 +77,3 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
             .build()
     }
 }
-
-

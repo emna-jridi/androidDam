@@ -1,6 +1,5 @@
 package tn.esprit.dam.data.model
 
-
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,13 +17,10 @@ data class User(
     val isVerified: Boolean = false,
     val createdAt: String? = null,
     val updatedAt: String? = null
-)
-
-{
-
-fun getAvatarUrl(baseUrl: String = "http://172.18.4.239:3000"): String? {
-    return avatarFileName?.let {
-        "$baseUrl/uploads/avatars/$it"
+) {
+    fun getAvatarUrl(baseUrl: String = "http://172.18.4.239:3000"): String? {
+        return avatarFileName?.let {
+            "$baseUrl/uploads/avatars/$it"
+        }
     }
-}
 }
