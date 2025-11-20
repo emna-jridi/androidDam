@@ -32,17 +32,20 @@ import tn.esprit.dam.screens.profile.ProfileScreen
 import tn.esprit.dam.screens.scan.ScanScreen
 import tn.esprit.dam.screens.history.ScanHistoryScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import tn.esprit.dam.screens.SearchScreen
 import tn.esprit.dam.screens.history.ScanDetailScreen
 import tn.esprit.dam.screens.history.ScanDetailViewModel
 import tn.esprit.dam.screens.comparison.ComparisonScreen
 import tn.esprit.dam.screens.comparison.ComparisonViewModel
 import tn.esprit.dam.screens.history.ScanHistoryViewModel
+import tn.esprit.dam.data.remote.api.ScanApiService
 
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
     startDestination: String = Screens.Login.route,
+    api: ScanApiService,
 
 ) {
     val forgotPasswordViewModel: ForgotPasswordViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -343,13 +346,16 @@ fun AppNavGraph(
         }
 
         // ========== AUTRES ROUTES ==========
-
         composable(Screens.Search.route) {
-            EmptyComingSoonScreen(
-                title = "Recherche",
-                onBack = { navController.popBackStack() }
+            SearchScreen(
+                api = api,
+                onBack = { navController.popBackStack() },
+                onAppDetails = { packageName ->
+                    navController.navigate("appDetails/$packageName")
+                }
             )
         }
+
 
         composable(Screens.History.route) {
             EmptyComingSoonScreen(

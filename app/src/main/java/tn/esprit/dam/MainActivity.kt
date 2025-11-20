@@ -17,9 +17,11 @@ import coil.request.CachePolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.runBlocking
 import tn.esprit.dam.data.TokenManager
+import tn.esprit.dam.data.remote.api.ScanApiService
 import tn.esprit.dam.navigation.AppNavGraph
 import tn.esprit.dam.navigation.Screens
 import tn.esprit.dam.ui.theme.ShadowGuardTheme
+import javax.inject.Inject
 
 /**
  * ✅ AJOUT: @AndroidEntryPoint
@@ -27,7 +29,8 @@ import tn.esprit.dam.ui.theme.ShadowGuardTheme
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
-
+    @Inject
+    lateinit var scanApiService: ScanApiService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -48,7 +51,8 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                     // Hilt les injecte automatiquement
                     AppNavGraph(
                         navController = navController,
-                        startDestination = Screens.Login.route
+                        startDestination = Screens.Login.route,
+                        api = scanApiService
                     )
                 }
             }

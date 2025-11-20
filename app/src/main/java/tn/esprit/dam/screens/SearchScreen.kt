@@ -1,5 +1,5 @@
 package tn.esprit.dam.screens
-/*
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.model.AppDetails
+import tn.esprit.dam.data.remote.api.ScanApiService
 
 // Modern Theme Colors
 object SearchTheme {
@@ -53,7 +54,7 @@ object SearchTheme {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    api: ShadowGuardApi,
+    api: ScanApiService,   // ✅ Remplace ShadowGuardApi
     onBack: () -> Unit,
     onAppDetails: (String) -> Unit
 ) {
@@ -64,26 +65,28 @@ fun SearchScreen(
     val scope = rememberCoroutineScope()
 
     fun performSearch() {
-        if (query.isEmpty()) return
+        if (query.isBlank()) return
 
         scope.launch {
             isLoading = true
             error = null
-            searchResults = emptyList()
 
             try {
-                val response = api.searchApp(query, limit = 20)
-                searchResults = response.results
+                // ✅ TON API RETOURNE DIRECTEMENT UNE LISTE DE AppDetails
+                val results = api.searchApps(query, 20)
 
-                if (searchResults.isEmpty()) {
+                searchResults = results
+
+                if (results.isEmpty()) {
                     error = "Aucune application trouvée"
                 }
+
             } catch (e: Exception) {
-                error = "Erreur: ${e.message ?: "Impossible de rechercher"}"
-                e.printStackTrace()
-            } finally {
-                isLoading = false
+                searchResults = emptyList()
+                error = "Erreur: ${e.message}"
             }
+
+            isLoading = false
         }
     }
 
@@ -93,10 +96,9 @@ fun SearchScreen(
             .background(SearchTheme.DarkBg)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Modern Header
+
             ModernSearchHeader(onBack = onBack)
 
-            // Search Input Section
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
@@ -122,7 +124,7 @@ fun SearchScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Hint Card
+                // Hint
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -142,7 +144,7 @@ fun SearchScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Entrez le nom ou le package (ex: tiktok, com.tiktok.app)",
+                            text = "Entrez le nom ou le package (ex: tiktok, com.app...)",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = SearchTheme.TextSecondary,
                                 fontSize = 11.sp
@@ -817,4 +819,3 @@ fun ModernAppCard(app: AppDetails, onClick: () -> Unit) {
         }
     }
 
-*/

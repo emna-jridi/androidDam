@@ -18,7 +18,7 @@ data class User(
     val createdAt: String? = null,
     val updatedAt: String? = null
 ) {
-    fun getAvatarUrl(baseUrl: String = "http://172.18.4.239:3000"): String? {
+    fun getAvatarUrl(baseUrl: String = "http://172.20.10.8:3000"): String? {
         return avatarFileName?.let {
             "$baseUrl/uploads/avatars/$it"
         }

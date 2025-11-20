@@ -21,7 +21,8 @@ class ScanApiService @Inject constructor(
         private const val TAG = "ScanApiService"
 
         // Racine du backend
-        private const val ROOT_URL = "http://172.18.4.239:3000"
+        private const val ROOT_URL = "http://172.20.10.8" +
+                ":3000"
 
         private const val SCAN_BASE_URL = "$ROOT_URL/api/v1/scan"
 
@@ -347,4 +348,18 @@ class ScanApiService @Inject constructor(
             Result.failure(e)
         }
     }
+    suspend fun searchApps(query: String, limit: Int = 20): List<AppDetails> {
+        return try {
+            client.get("http://172.18.4.239:3000/api/v1/scan/search") {
+                url {
+                    parameters.append("query", query)
+                    parameters.append("limit", limit.toString())
+                }
+            }.body()
+        } catch (e: Exception) {
+            Log.e("ScanApiService", "❌ Search failed: ${e.message}")
+            emptyList()
+        }
+    }
+
 }
