@@ -13,7 +13,7 @@ object AvatarCache {
     private const val KEY_AVATAR_FILE = "avatar_file_"
 
     // ✅ Configurable BASE_URL
-    private const val BASE_URL = "http://172.18.4.239:3000"
+    private const val BASE_URL = "http://172.20.10.3:3000"
 
     /**
      * Télécharger et mettre en cache un avatar

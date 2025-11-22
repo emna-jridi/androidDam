@@ -9,7 +9,9 @@ import tn.esprit.dam.data.model.ResendOTPResponse
 import tn.esprit.dam.data.model.ResetPasswordResponse
 import tn.esprit.dam.data.model.User
 import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
-
+import tn.esprit.dam.data.TokenManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 class AuthRepository(private val context: Context) {
 
     companion object {
@@ -228,5 +230,20 @@ class AuthRepository(private val context: Context) {
     }
     fun isValidOTP(otp: String): Boolean {
         return otp.length == 6 && otp.all { it.isDigit() }
+    }
+    fun getContext(): Context = context
+
+    suspend fun saveTokensAndUser(response: LoginResponse) {
+        // This stores access/refresh tokens and the user in DataStore
+        // then logs the action.
+        try {
+            withContext(Dispatchers.IO) {
+                TokenManager.saveTokens(context, response.accessToken, response.refreshToken)
+                TokenManager.saveUser(context, response.user)
+            }
+            Log.d(TAG, "✅ Tokens & user saved by AuthRepository")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to save tokens/user: ${e.message}", e)
+        }
     }
 }

@@ -37,7 +37,7 @@ import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 class ApiClient private constructor(private val context: Context) {
 
     companion object {
-        private const val BASE_URL = "http://172.18.4.239:3000"
+        private const val BASE_URL = "http://172.20.10.3:3000"
         private const val TAG = "ApiClient"
 
         @Volatile
@@ -77,21 +77,26 @@ class ApiClient private constructor(private val context: Context) {
 
         install(Auth) {
             bearer {
+                // ✅ FIX: Removed runBlocking.
+                // We call suspend functions directly here.
                 loadTokens {
-                    runBlocking {
-                        TokenManager.getAccessToken(context)?.let {
-                            BearerTokens(it, "")
-                        }
+                    val accessToken = TokenManager.getAccessToken(context)
+                    if (accessToken != null) {
+                        BearerTokens(accessToken, "")
+                    } else {
+                        null
                     }
                 }
 
+                // ✅ FIX: Removed runBlocking.
                 refreshTokens {
-                    val refreshToken = runBlocking {
-                        TokenManager.getRefreshToken(context)
-                    }
+                    val refreshToken = TokenManager.getRefreshToken(context)
 
                     if (refreshToken != null) {
-                        // TODO: Appeler endpoint /auth/refresh
+                        // TODO: Add logic here to call your backend /auth/refresh endpoint
+                        // using a separate client or a specific request to get new tokens.
+
+                        // For now, return null to indicate refresh is not yet implemented
                         null
                     } else {
                         null

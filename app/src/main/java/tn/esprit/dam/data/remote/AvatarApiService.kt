@@ -6,7 +6,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import tn.esprit.dam.data.model.*
 object AvatarApiService {
-    private const val BASE_URL = "http://172.18.4.239/api/v1/avatar"
+    private const val BASE_URL = "http://172.20.10.3/api/v1/avatar"
 
     private val client = HttpClient {
         // Même configuration que ApiClient

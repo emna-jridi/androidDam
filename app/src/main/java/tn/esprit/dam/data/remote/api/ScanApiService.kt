@@ -21,7 +21,7 @@ class ScanApiService @Inject constructor(
         private const val TAG = "ScanApiService"
 
         // Racine du backend
-        private const val ROOT_URL = "http://172.18.4.239:3000"
+        private const val ROOT_URL = "http://172.20.10.3:3000"
 
         private const val SCAN_BASE_URL = "$ROOT_URL/api/v1/scan"
 
