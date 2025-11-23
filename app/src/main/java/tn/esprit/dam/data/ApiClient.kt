@@ -17,6 +17,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import tn.esprit.dam.data.model.Alert
 import tn.esprit.dam.data.model.ApiError
 import tn.esprit.dam.data.model.GoogleLoginRequest
 import tn.esprit.dam.data.model.LoginRequest
@@ -37,7 +38,7 @@ import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 class ApiClient private constructor(private val context: Context) {
 
     companion object {
-        private const val BASE_URL = "http://172.20.10.3:3000"
+        private const val BASE_URL = "http://192.168.100.30:3000"
         private const val TAG = "ApiClient"
 
         @Volatile
@@ -473,5 +474,38 @@ class ApiClient private constructor(private val context: Context) {
     }
     suspend fun getCurrentUser(): User? {
         return TokenManager.getUser(context)
+    }
+    // ... inside ApiClient class
+// Inside ApiClient.kt
+
+    suspend fun getAlertHistory(): List<tn.esprit.dam.data.model.Alert> {
+        return try {
+            // 1. Get the token explicitly
+            val token = TokenManager.getAccessToken(context)
+
+            if (token.isNullOrEmpty()) {
+                Log.e(TAG, "❌ Cannot get alerts: No access token found")
+                return emptyList()
+            }
+
+            Log.d(TAG, "📤 GET /alerts (Token: ${token.take(10)}...)")
+
+            // 2. Attach the token using bearerAuth
+            val response: HttpResponse = client.get("/alerts") {
+                bearerAuth(token) // 👈 THIS IS THE FIX
+            }
+
+            if (response.status == HttpStatusCode.OK) {
+                val alerts = response.body<List<tn.esprit.dam.data.model.Alert>>()
+                Log.d(TAG, "✅ Loaded ${alerts.size} alerts")
+                alerts
+            } else {
+                Log.e(TAG, "❌ Failed to load alerts: ${response.status}")
+                throw ApiException("Failed to load alerts", response.status)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading alerts", e)
+            emptyList()
+        }
     }
 }

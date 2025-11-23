@@ -25,6 +25,7 @@ fun HomeScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToTopApps: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToAlerts: () -> Unit, // 👈 NEW PARAMETER
     onLogout: () -> Unit,
     currentRoute: String = "home"
 ) {
@@ -278,6 +279,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // 1. Scan
                     item {
                         FeatureCard(
                             title = "Scan Apps",
@@ -287,6 +289,19 @@ fun HomeScreen(
                             gradientColors = listOf(Color(0xFF7C3AED), Color(0xFF9333EA))
                         )
                     }
+
+                    // 2. Journal de Sécurité (NEW) 🚨
+                    item {
+                        FeatureCard(
+                            title = "Alertes",
+                            icon = Icons.Default.NotificationsActive,
+                            description = "Journal de sécurité",
+                            onClick = onNavigateToAlerts,
+                            gradientColors = listOf(Color(0xFFEF4444), Color(0xFFDC2626)) // Red Gradient
+                        )
+                    }
+
+                    // 3. Recherche
                     item {
                         FeatureCard(
                             title = "Recherche",
@@ -296,6 +311,8 @@ fun HomeScreen(
                             gradientColors = listOf(Color(0xFF3B82F6), Color(0xFF2563EB))
                         )
                     }
+
+                    // 4. Historique
                     item {
                         FeatureCard(
                             title = "Historique",
@@ -305,6 +322,8 @@ fun HomeScreen(
                             gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669))
                         )
                     }
+
+                    // 5. Top Apps
                     item {
                         FeatureCard(
                             title = "Top Apps",

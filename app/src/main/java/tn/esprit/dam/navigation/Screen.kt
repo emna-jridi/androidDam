@@ -24,10 +24,9 @@ sealed class Screens(val route: String) {
   object Search : Screens("search")
   object History : Screens("history")
   object TopApps : Screens("topApps")
-
+     object AlertsHistory : Screens("alerts_history")
   // SCAN HISTORY
   object ScanHistory : Screens("scan_history")
-
   object ScanDetail : Screens("scan_detail/{scanId}") {
     fun createRoute(scanId: String) = "scan_detail/$scanId"
   }

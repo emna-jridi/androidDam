@@ -32,6 +32,8 @@ import tn.esprit.dam.screens.profile.ProfileScreen
 import tn.esprit.dam.screens.scan.ScanScreen
 import tn.esprit.dam.screens.history.ScanHistoryScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import tn.esprit.dam.screens.AlertScreen.AlertsScreen
+// ✅ Make sure this import matches where you created the file
 import tn.esprit.dam.screens.history.ScanDetailScreen
 import tn.esprit.dam.screens.history.ScanDetailViewModel
 import tn.esprit.dam.screens.comparison.ComparisonScreen
@@ -43,7 +45,6 @@ import tn.esprit.dam.screens.history.ScanHistoryViewModel
 fun AppNavGraph(
     navController: NavHostController,
     startDestination: String = Screens.Login.route,
-
 ) {
     val forgotPasswordViewModel: ForgotPasswordViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val context = LocalContext.current
@@ -201,6 +202,10 @@ fun AppNavGraph(
                 onNavigateToProfile = {
                     navController.navigate(Screens.Profile.route)
                 },
+                // 👇✅ ADDED THIS MISSING PARAMETER
+                onNavigateToAlerts = {
+                    navController.navigate(Screens.AlertsHistory.route)
+                },
                 onLogout = {
                     runBlocking {
                         TokenManager.clearAll(context)
@@ -223,9 +228,16 @@ fun AppNavGraph(
                     }
                 },
                 onNavigateToSecurity = {
-                    // TODO: Implement security screen
+                    // Navigate to Alerts History
+                    navController.navigate(Screens.AlertsHistory.route)
                 }
             )
+        }
+
+        // ========== SECURITY & ALERTS ROUTE ==========
+
+        composable(Screens.AlertsHistory.route) {
+            AlertsScreen(navController = navController)
         }
 
         // ========== SCAN ROUTE ==========
@@ -249,9 +261,7 @@ fun AppNavGraph(
 
         // ========== SCAN HISTORY ROUTES ==========
 
-        // ✅ SCAN HISTORY SCREEN
         composable(Screens.ScanHistory.route) {
-
             var token = ""
             var userHash = ""
 
@@ -278,9 +288,6 @@ fun AppNavGraph(
             )
         }
 
-
-
-        // ✅ 2. SCAN DETAIL SCREEN
         composable(
             route = Screens.ScanDetail.route,
             arguments = listOf(
@@ -294,7 +301,6 @@ fun AppNavGraph(
                 token = TokenManager.getAccessToken(context) ?: ""
             }
 
-            // ✅ UTILISER: hiltViewModel() au lieu du paramètre
             val viewModel: ScanDetailViewModel = hiltViewModel()
 
             ScanDetailScreen(
@@ -307,7 +313,6 @@ fun AppNavGraph(
             )
         }
 
-        // ✅ 3. SCAN COMPARISON SCREEN
         composable(
             route = Screens.ScanComparison.route,
             arguments = listOf(
@@ -327,7 +332,6 @@ fun AppNavGraph(
                 userHash = user?.userHash ?: user?.id ?: ""
             }
 
-            // ✅ UTILISER: hiltViewModel() au lieu du paramètre
             val viewModel: ComparisonViewModel = hiltViewModel()
 
             ComparisonScreen(
@@ -342,7 +346,7 @@ fun AppNavGraph(
             )
         }
 
-        // ========== AUTRES ROUTES ==========
+        // ========== OTHER ROUTES ==========
 
         composable(Screens.Search.route) {
             EmptyComingSoonScreen(
@@ -380,7 +384,7 @@ fun AppNavGraph(
     }
 }
 
-// ========== ÉCRAN TEMPORAIRE ==========
+// ========== TEMPORARY SCREEN ==========
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
