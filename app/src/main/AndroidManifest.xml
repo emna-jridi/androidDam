@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
@@ -40,12 +40,21 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/purple_500" />
-
+        <receiver
+            android:name=".report.receiver.AppInstallReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".alert.PrivacyMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera|microphone" />
+        <service android:name=".report.SecurityBubbleService" />
 
         <activity
             android:name=".MainActivity"

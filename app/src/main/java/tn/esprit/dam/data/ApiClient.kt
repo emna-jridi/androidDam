@@ -38,7 +38,7 @@ import tn.esprit.dam.data.model.VerifyPasswordResetOTPResponse
 class ApiClient private constructor(private val context: Context) {
 
     companion object {
-        private const val BASE_URL = "http://192.168.100.30:3000"
+        private const val BASE_URL = "http://172.20.10.3:3000"
         private const val TAG = "ApiClient"
 
         @Volatile
@@ -506,6 +506,23 @@ class ApiClient private constructor(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error loading alerts", e)
             emptyList()
+        }
+    }
+    suspend fun getAppSafetyReport(packageName: String): tn.esprit.dam.data.model.AppSafetyReport? {
+        return try {
+            // ⚠️ REPLACE WITH YOUR PC'S LOCAL IP (e.g., 192.168.1.5)
+            // Do not use "localhost" because that refers to the phone itself!
+            val response: HttpResponse = client.get("http://192.168.100.30:3000/report/$packageName")
+
+            if (response.status == HttpStatusCode.OK) {
+                response.body()
+            } else {
+                Log.e(TAG, "❌ Server error: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Network error fetching report", e)
+            null
         }
     }
 }

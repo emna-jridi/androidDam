@@ -69,15 +69,25 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
             }
         }
 
-        // ✅ 3. Check Permissions and Start Privacy Monitor
-        // 👇 CHANGED: First we check for Usage Stats (Critical for identifying apps)
+        // ✅ 3. Check Permissions Sequence
+
+        // 3a. First: Usage Stats (Critical for finding WHO is using camera)
         if (!hasUsageStatsPermission()) {
             Log.w("MainActivity", "Usage Stats permission missing! Redirecting user.")
-            // Direct the user to the specific settings page
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             startActivity(intent)
-        } else {
-            // If Usage Stats are granted, we check for Notifications and start the service
+        }
+        // 3b. Second: Overlay Permission (Critical for App Install Bubble)
+        else if (!Settings.canDrawOverlays(this)) {
+            Log.w("MainActivity", "Overlay permission missing! Redirecting user.")
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+        }
+        // 3c. If both special permissions are granted, check standard permissions & start service
+        else {
             checkPermissionsAndStartService()
         }
 
@@ -104,7 +114,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
         }
     }
 
-    // 👇 NEW FUNCTION: Checks if user granted Usage Access
+    // 👇 Helper: Checks if user granted Usage Access
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = appOps.checkOpNoThrow(

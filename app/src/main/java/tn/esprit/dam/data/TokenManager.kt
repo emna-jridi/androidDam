@@ -53,7 +53,7 @@ object TokenManager {
     private const val TAG = "TokenManager"
 
     // 👇 IMPORTANT: Ensure this matches your PC IP
-    private const val BASE_URL = "http://192.168.100.30:3000"
+    private const val BASE_URL = "http://172.20.10.3:3000"
 
     // Keys
     private val ACCESS_TOKEN = stringPreferencesKey("access_token")
