@@ -108,5 +108,6 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.2.2"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.cardview:cardview:1.0.0")
-
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }

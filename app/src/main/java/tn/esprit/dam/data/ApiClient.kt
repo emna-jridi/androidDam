@@ -512,7 +512,7 @@ class ApiClient private constructor(private val context: Context) {
         return try {
             // ⚠️ REPLACE WITH YOUR PC'S LOCAL IP (e.g., 192.168.1.5)
             // Do not use "localhost" because that refers to the phone itself!
-            val response: HttpResponse = client.get("http://192.168.100.30:3000/report/$packageName")
+            val response: HttpResponse = client.get("http://172.20.10.3:3000/report/$packageName")
 
             if (response.status == HttpStatusCode.OK) {
                 response.body()
