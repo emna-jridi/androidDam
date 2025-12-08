@@ -1,6 +1,6 @@
 package tn.esprit.dam.screens.AlertScreen
 
-
+import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,23 +8,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import tn.esprit.dam.data.model.Alert
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,39 +32,70 @@ fun AlertsScreen(
     val alerts by viewModel.alerts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Security Log") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.loadAlerts() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (alerts.isEmpty()) {
-                Text(
-                    text = "No threats detected yet.",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.Gray
+    // 🌑 Cyber-Security Gradient Background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0F172A), // Deep Navy
+                        Color(0xFF1E293B)  // Slate
+                    )
                 )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            // 🔝 Custom Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp, bottom = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Back Button
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                }
+
+                Text(
+                    text = "Security Logs",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Refresh Button
+                IconButton(
+                    onClick = { viewModel.loadAlerts() },
+                    modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF7C3AED))
+                }
+            }
+
+            // 📋 Content Area
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF7C3AED))
+                }
+            } else if (alerts.isEmpty()) {
+                EmptyState()
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(alerts) { alert ->
-                        AlertItemCard(alert)
+                        AlertCard(alert)
                     }
                 }
             }
@@ -76,19 +104,15 @@ fun AlertsScreen(
 }
 
 @Composable
-fun AlertItemCard(alert: Alert) {
-    // Color Logic based on Severity
-    val severityColor = when (alert.severity.lowercase()) {
-        "critical" -> Color(0xFFFF4444) // Red
-        "high" -> Color(0xFFFF8800)     // Orange
-        "medium" -> Color(0xFFFFBB33)   // Yellow
-        else -> Color(0xFF00C851)       // Green
-    }
+fun AlertCard(alert: Alert) {
+    val (icon, color) = getEventProperties(alert.event)
+    val severityColor = getSeverityColor(alert.severity)
 
     Card(
-        elevation = CardDefaults.cardElevation(4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        elevation = CardDefaults.cardElevation(8.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
@@ -96,45 +120,102 @@ fun AlertItemCard(alert: Alert) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon / Severity Dot
+            // 1. Icon Circle (Dynamic based on event)
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .background(severityColor, CircleShape)
-            )
+                    .size(48.dp)
+                    .background(color.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = color)
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // 2. Text Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = alert.packageName.substringAfterLast("."), // Clean up package name
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    text = cleanPackageName(alert.packageName),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
                 )
                 Text(
                     text = alert.event,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatTimestamp(alert.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = Color(0xFF94A3B8), // Slate-400
+                    fontSize = 14.sp
                 )
             }
 
-            // Icon
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                tint = Color.Gray
-            )
+            // 3. Severity & Time
+            Column(horizontalAlignment = Alignment.End) {
+                // Severity Badge
+                Surface(
+                    color = severityColor.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = alert.severity.uppercase(),
+                        color = severityColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Time Ago (e.g. "5 mins ago")
+                Text(
+                    text = DateUtils.getRelativeTimeSpanString(alert.timestamp).toString(),
+                    color = Color(0xFF64748B),
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }
 
-fun formatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, HH:mm:ss", Locale.getDefault())
-    return sdf.format(Date(timestamp))
+@Composable
+fun EmptyState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Shield,
+            contentDescription = null,
+            tint = Color(0xFF334155),
+            modifier = Modifier.size(80.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("No threats detected", color = Color.Gray, fontSize = 18.sp)
+    }
+}
+
+// --- 🛠️ Helper Functions ---
+
+fun cleanPackageName(packageName: String): String {
+    // Converts "com.instagram.android" -> "Instagram"
+    return packageName.substringAfterLast('.').replaceFirstChar { it.uppercase() }
+}
+
+fun getSeverityColor(severity: String): Color {
+    return when (severity.lowercase()) {
+        "critical" -> Color(0xFFEF4444) // Red
+        "high" -> Color(0xFFF97316)     // Orange
+        "medium" -> Color(0xFFF59E0B)   // Amber
+        else -> Color(0xFF10B981)       // Emerald
+    }
+}
+
+fun getEventProperties(event: String): Pair<ImageVector, Color> {
+    val evt = event.lowercase()
+    return when {
+        evt.contains("camera") -> Pair(Icons.Default.CameraAlt, Color(0xFFEF4444))
+        evt.contains("mic") -> Pair(Icons.Default.Mic, Color(0xFFF59E0B))
+        evt.contains("location") -> Pair(Icons.Default.LocationOn, Color(0xFF3B82F6))
+        else -> Pair(Icons.Default.Warning, Color(0xFF94A3B8))
+    }
 }
