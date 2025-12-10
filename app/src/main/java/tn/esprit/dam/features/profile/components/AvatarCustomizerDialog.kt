@@ -66,7 +66,7 @@ fun AvatarCustomizerDialog(
                 ) {
                     Icon(
                         Icons.Filled.Refresh,
-                        contentDescription = "AlÃ©atoire",
+                        contentDescription = "Aléatoire",
                         tint = Color(0xFF7C3AED)
                     )
                 }

@@ -85,8 +85,8 @@ fun LoginScreen(
             )
 
             Text(
-                text = "ProtÃ©gez votre vie privÃ©e",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Protégez votre vie privée",
+                style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFFB4B4C6)
             )
 
@@ -158,7 +158,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = uiState.password,
                         onValueChange = { viewModel.onPasswordChange(it) },
-                        placeholder = { Text("â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢", color = Color(0xFF6B7280)) },
+                        placeholder = { Text("●●●●●●●●", color = Color(0xFF6B7280)) },
                         trailingIcon = {
                             IconButton(
                                 onClick = { viewModel.togglePasswordVisibility() },
@@ -205,8 +205,8 @@ fun LoginScreen(
                         enabled = !uiState.isLoading
                     ) {
                         Text(
-                            "Mot de passe oubliÃ© ?",
-                            color = Color(0xFF7C3AED)
+                            "Mot de passe oublié ?",
+                            color = Color(0xFF7C3AED),
                         )
                     }
 
@@ -299,7 +299,7 @@ fun LoginScreen(
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        "CrÃ©er un compte",
+                        "Créer un compte",
                         color = Color(0xFF7C3AED),
                         fontWeight = FontWeight.SemiBold
                     )
@@ -321,7 +321,7 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Connexion sÃ©curisÃ©e et chiffrÃ©e",
+                    text = "Connexion sécurisée et chiffrée",
                     color = Color(0xFF6B7280),
                     style = MaterialTheme.typography.bodySmall
                 )

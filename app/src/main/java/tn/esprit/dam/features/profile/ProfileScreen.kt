@@ -155,7 +155,7 @@ private fun ErrorContent(
                                 containerColor = Color(0xFF7C3AED)
                             )
                         ) {
-                            Text("RÃ©essayer", color = Color.White)
+                            Text("Réessayer", color = Color.White)
                         }
                     }
                     if (isSessionExpired) {

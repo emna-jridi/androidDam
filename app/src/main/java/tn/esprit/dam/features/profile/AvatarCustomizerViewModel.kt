@@ -67,7 +67,7 @@ class AvatarCustomizerViewModel : ViewModel() {
                 onSuccess(response.avatar.fileName)
             } catch (e: Exception) {
                 _uiState.value = AvatarCustomizerUiState.Error(
-                    e.message ?: "Erreur de mise Ã  jour"
+                    e.message ?: "Erreur de mise à jour"
                 )
             }
         }

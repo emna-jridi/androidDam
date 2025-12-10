@@ -18,7 +18,7 @@ fun ProfileActionsSection(
         ActionCard(
             icon = Icons.Filled.Edit,
             title = "Modifier le profil",
-            description = "Mettre Ã  jour vos informations",
+            description = "Mettre à jour vos informations",
             onClick = onEditProfile,
             backgroundColor = Color(0xFF7C3AED)
         )
@@ -27,8 +27,8 @@ fun ProfileActionsSection(
 
         ActionCard(
             icon = Icons.Filled.ExitToApp,
-            title = "DÃ©connexion",
-            description = "Se dÃ©connecter de votre compte",
+            title = "Déconnexion",
+            description = "Se déconnecter de votre compte",
             onClick = onLogout,
             backgroundColor = Color(0xFFEF4444)
         )

@@ -18,9 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-/**
- * Ã‰cran 1 : Entrer l'email pour reset password
- */
+
 @Composable
 fun ForgotPasswordScreen(
     onNavigateToOTP: () -> Unit,
@@ -74,7 +72,7 @@ fun ForgotPasswordScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Mot de passe oubliÃ© ?",
+                text = "Mot de passe oublié ?",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp
@@ -85,7 +83,7 @@ fun ForgotPasswordScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Pas de souci, nous vous enverrons un code de rÃ©initialisation",
+                text = "Pas de souci, nous vous enverrons un code de réinitialisation",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB4B4C6),
                 textAlign = TextAlign.Center
@@ -106,7 +104,7 @@ fun ForgotPasswordScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "RÃ©initialisation",
+                        text = "Réinitialisation",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -229,7 +227,7 @@ fun ForgotPasswordScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "Retour Ã  la connexion",
+                        "Retour à la connexion",
                         color = Color(0xFF7C3AED),
                         fontWeight = FontWeight.SemiBold
                     )

@@ -93,8 +93,8 @@ fun RegisterScreen(
             )
 
             Text(
-                text = "CrÃ©ez votre compte sÃ©curisÃ©",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Créez votre compte sécurisé",
+                style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFFB4B4C6)
             )
 
@@ -213,7 +213,7 @@ fun RegisterScreen(
                     OutlinedTextField(
                         value = uiState.password,
                         onValueChange = { viewModel.onPasswordChange(it) },
-                        placeholder = { Text("â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢", color = Color(0xFF6B7280)) },
+                        placeholder = { Text("●●●●●●●●", color = Color(0xFF6B7280)) },
                         leadingIcon = {
                             Icon(
                                 Icons.Filled.Lock,
@@ -392,7 +392,7 @@ fun RegisterScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Vos donnÃ©es sont sÃ©curisÃ©es et chiffrÃ©es",
+                    text = "Vos données sont sécurisées et chiffrées",
                     color = Color(0xFF6B7280),
                     style = MaterialTheme.typography.bodySmall
                 )

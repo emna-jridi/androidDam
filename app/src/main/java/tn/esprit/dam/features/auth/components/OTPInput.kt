@@ -57,10 +57,10 @@ fun OTPInput(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Affichage visuel des 6 cases
+        // Affichage visuel des 6 cases - RESPONSIVE
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.95f) // Use percentage for better responsiveness
                 .clickable {
                     // Cliquer sur les cases pour ouvrir le clavier
                     focusRequester.requestFocus()
@@ -72,7 +72,8 @@ fun OTPInput(
                 OTPBox(
                     digit = otp.getOrNull(index)?.toString() ?: "",
                     isFocused = enabled && otp.length == index,
-                    enabled = enabled
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp) // Responsive
                 )
             }
         }
@@ -122,17 +123,18 @@ fun OTPInput(
 }
 
 /**
- * Une case pour un chiffre du OTP
+ * Une case pour un chiffre du OTP - RESPONSIVE
  */
 @Composable
 fun OTPBox(
     digit: String,
     isFocused: Boolean,
-    enabled: Boolean
+    enabled: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
-            .size(50.dp)
+        modifier = modifier
+            .aspectRatio(1f) // Maintain square shape responsively
             .background(
                 color = Color(0xFF2D3250),
                 shape = RoundedCornerShape(12.dp)
@@ -150,7 +152,7 @@ fun OTPBox(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = digit.ifEmpty { "â€¢" },
+            text = digit.ifEmpty { "●" },
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp

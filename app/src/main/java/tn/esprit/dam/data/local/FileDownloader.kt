@@ -77,7 +77,7 @@ object FileDownloader {
     }
 
     /**
-     * VÃ©rifier si un fichier existe dans le cache
+     * Vérifier si un fichier existe dans le cache
      */
     fun fileExists(context: Context, fileName: String): Boolean {
         val file = File(File(context.cacheDir, "avatars"), fileName)

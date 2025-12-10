@@ -20,9 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-/**
- * Ã‰cran 3 : Entrer nouveau mot de passe
- */
+
 @Composable
 fun NewPasswordScreen(
     onPasswordResetSuccess: () -> Unit,
@@ -87,7 +85,7 @@ fun NewPasswordScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Choisissez un mot de passe sÃ©curisÃ©",
+                text = "Choisissez un mot de passe sécurisé",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB4B4C6),
                 textAlign = TextAlign.Center
@@ -108,7 +106,7 @@ fun NewPasswordScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "CrÃ©er un nouveau mot de passe",
+                        text = "Créer un nouveau mot de passe",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -128,7 +126,7 @@ fun NewPasswordScreen(
                     OutlinedTextField(
                         value = uiState.newPassword,
                         onValueChange = { viewModel.onNewPasswordChange(it) },
-                        placeholder = { Text("â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢", color = Color(0xFF6B7280)) },
+                        placeholder = { Text("●●●●●●●●", color = Color(0xFF6B7280)) },
                         leadingIcon = {
                             Icon(
                                 Icons.Filled.Lock,
@@ -187,7 +185,7 @@ fun NewPasswordScreen(
                     OutlinedTextField(
                         value = uiState.confirmPassword,
                         onValueChange = { viewModel.onConfirmPasswordChange(it) },
-                        placeholder = { Text("â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢", color = Color(0xFF6B7280)) },
+                        placeholder = { Text("●●●●●●●●", color = Color(0xFF6B7280)) },
                         leadingIcon = {
                             Icon(
                                 Icons.Filled.Lock,
@@ -235,7 +233,7 @@ fun NewPasswordScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Conseils de sÃ©curitÃ©
+
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = Color(0xFF7C3AED).copy(alpha = 0.1f)
@@ -253,7 +251,7 @@ fun NewPasswordScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             PasswordRequirement(
-                                text = "Au moins 6 caractÃ¨res",
+                                text = "Au moins 6 caractéres",
                                 met = uiState.newPassword.length >= 6
                             )
                             PasswordRequirement(
@@ -289,7 +287,7 @@ fun NewPasswordScreen(
                             )
                         } else {
                             Text(
-                                "RÃ©initialiser le mot de passe",
+                                "Réinitialiser le mot de passe",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),
@@ -354,9 +352,7 @@ fun NewPasswordScreen(
     }
 }
 
-/**
- * Composant pour afficher un critÃ¨re de mot de passe
- */
+
 @Composable
 fun PasswordRequirement(text: String, met: Boolean) {
     Row(

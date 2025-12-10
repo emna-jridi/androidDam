@@ -73,7 +73,7 @@ fun ResetPasswordOTPScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Code de VÃ©rification",
+                text = "Code de Vérification",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp
@@ -84,7 +84,7 @@ fun ResetPasswordOTPScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Nous avons envoyÃ© un code Ã  6 chiffres Ã ",
+                text = "Nous avons envoyé un code à 6 chiffres ",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB4B4C6),
                 textAlign = TextAlign.Center
@@ -154,7 +154,7 @@ fun ResetPasswordOTPScreen(
                             )
                         } else {
                             Text(
-                                "VÃ©rifier le code",
+                                "Vérifier le code",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),

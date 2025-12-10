@@ -53,9 +53,9 @@ fun EmailVerificationScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.9f) // Responsive width instead of fixed padding
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 32.dp),
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Logo
@@ -77,7 +77,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "VÃ©rification Email",
+                text = "Vérification Email",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp
@@ -88,7 +88,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Nous avons envoyÃ© un code Ã  6 chiffres Ã ",
+                text = "Nous avons envoyé un code à 6 chiffres à",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB4B4C6),
                 textAlign = TextAlign.Center
@@ -158,7 +158,7 @@ fun EmailVerificationScreen(
                             )
                         } else {
                             Text(
-                                "VÃ©rifier",
+                                "Vérifier",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),

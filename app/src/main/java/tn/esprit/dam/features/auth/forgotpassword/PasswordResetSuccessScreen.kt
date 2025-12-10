@@ -18,9 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
-/**
- * Ã‰cran 4 : SuccÃ¨s de la rÃ©initialisation
- */
+
 @Composable
 fun PasswordResetSuccessScreen(
     onNavigateToLogin: () -> Unit
@@ -69,7 +67,7 @@ fun PasswordResetSuccessScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Mot de Passe RÃ©initialisÃ© ! âœ“",
+                text = "Mot de Passe Réinitialiser",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 28.sp
@@ -92,7 +90,7 @@ fun PasswordResetSuccessScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Votre mot de passe a Ã©tÃ© rÃ©initialisÃ© avec succÃ¨s !",
+                        text = "Votre mot de passe a été réinitialisé avec succès !",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White,
                         textAlign = TextAlign.Center
@@ -109,7 +107,6 @@ fun PasswordResetSuccessScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Conseils de sÃ©curitÃ©
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = Color(0xFF7C3AED).copy(alpha = 0.1f)
@@ -130,7 +127,7 @@ fun PasswordResetSuccessScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Conseils de sÃ©curitÃ©",
+                                    text = "Conseils de sécurité ",
                                     color = Color.White,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold
@@ -139,7 +136,7 @@ fun PasswordResetSuccessScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             SecurityTip(text = "Ne partagez jamais votre mot de passe")
                             SecurityTip(text = "Utilisez un mot de passe unique")
-                            SecurityTip(text = "Activez l'authentification Ã  deux facteurs")
+                            SecurityTip(text = "Activez l'authentification à deux facteurs")
                         }
                     }
                 }
@@ -199,9 +196,7 @@ fun PasswordResetSuccessScreen(
     }
 }
 
-/**
- * Composant pour afficher un conseil de sÃ©curitÃ©
- */
+
 @Composable
 fun SecurityTip(text: String) {
     Row(

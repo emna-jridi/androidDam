@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import tn.esprit.dam.data.repository.AuthRepository
 
 /**
- * Ã‰tat de l'UI pour l'Ã©cran de connexion
+ * État de l'UI pour l'écran de connexion
  */
 data class LoginUiState(
     // Champs de formulaire

@@ -40,7 +40,7 @@ class ProfileViewModel @Inject constructor(
 
                 val user = repository.getProfile()
 
-                // TÃ©lÃ©charger et mettre en cache l'avatar
+                // Télécharger et mettre en cache l'avatar
                 val localAvatarPath = if (user.avatarFileName != null) {
                     AvatarCache.cacheAvatar(
                         context = context,
@@ -58,8 +58,8 @@ class ProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 val errorMessage = e.message?.let {
                     when {
-                        it.contains("Session expired") -> "Votre session a expirÃ©. Veuillez vous reconnecter."
-                        it.contains("Unauthorized") -> "AccÃ¨s refusÃ©. Veuillez vous reconnecter."
+                        it.contains("Session expired") -> "Votre session a expiré. Veuillez vous reconnecter."
+                        it.contains("Unauthorized") -> "Accès refusé. Veuillez vous reconnecter."
                         else -> it
                     }
                 } ?: "Erreur de chargement du profil"
@@ -69,7 +69,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
-     * Mettre Ã  jour le nom de l'utilisateur
+     * Mettre à jour le nom de l'utilisateur
      */
     fun updateProfile(name: String?, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
@@ -92,14 +92,14 @@ class ProfileViewModel @Inject constructor(
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(
-                    e.message ?: "Erreur de mise Ã  jour"
+                    e.message ?: "Erreur de mise à jour"
                 )
             }
         }
     }
 
     /**
-     * Mettre Ã  jour l'avatar aprÃ¨s personnalisation
+     * Mettre à jour l'avatar après personnalisation
      * Cette fonction recharge simplement le profil pour obtenir le nouveau avatarFileName
      */
     fun updateAvatarAfterCustomization(onSuccess: () -> Unit = {}) {
@@ -108,7 +108,7 @@ class ProfileViewModel @Inject constructor(
                 // Recharger le profil pour obtenir le nouveau avatarFileName
                 val updatedUser = repository.getProfile()
 
-                // TÃ©lÃ©charger le nouvel avatar
+                // Télécharger le nouvel avatar
                 val localAvatarPath = if (updatedUser.avatarFileName != null) {
                     AvatarCache.cacheAvatar(
                         context = context,
@@ -127,14 +127,14 @@ class ProfileViewModel @Inject constructor(
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(
-                    e.message ?: "Erreur de mise Ã  jour de l'avatar"
+                    e.message ?: "Erreur de mise à jour de l'avatar"
                 )
             }
         }
     }
 
     /**
-     * DÃ©connexion
+     * Déconnexion
      */
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
