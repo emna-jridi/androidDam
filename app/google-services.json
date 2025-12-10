@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "119685647618",
+    "project_id": "shadowguard-ed5cd",
+    "storage_bucket": "shadowguard-ed5cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119685647618:android:226d4f3343efefc17f061b",
+        "android_client_info": {
+          "package_name": "tn.esprit.dam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoxC_e22a9tSbfMvnP1pexXULbkJOBlNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
