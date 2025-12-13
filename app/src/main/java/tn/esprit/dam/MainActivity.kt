@@ -1,7 +1,6 @@
 ﻿package tn.esprit.dam
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,11 +27,6 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
-
         setContent {
             ShadowGuardTheme {
                 Surface(
@@ -53,7 +47,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
 
     private fun getStartDestination(): String = runBlocking {
         if (TokenManager.getAccessToken(this@MainActivity) != null) {
-            Screens.Profile.route
+            Screens.Home.route
         } else {
             Screens.Login.route
         }

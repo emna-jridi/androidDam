@@ -1,3 +1,37 @@
-<resources>
-    <string name="app_name">dam</string>
+﻿<resources>
+    <string name="app_name">ShadowGuard</string>
+    <string name="shadowguard_title">ShadowGuard</string>
+    <string name="shadowguard_subtitle">Protection et confidentialité des données</string>
+    <string name="access_profile">Accéder au profil</string>
+    <string name="last_scan_label">Dernier scan : %1$s</string>
+    <string name="last_scan_unknown">Dernier scan : non disponible</string>
+    <string name="security_score_title">Score de sécurité global</string>
+    <string name="security_score_value">%1$d/100</string>
+    <string name="security_score_helper">Basé sur %1$d applications analysées</string>
+    <string name="level_critical">Critique</string>
+    <string name="level_high">Élevé</string>
+    <string name="level_medium">Modéré</string>
+    <string name="level_low">Faible</string>
+    <string name="action_new_scan">Nouveau scan</string>
+    <string name="action_history">Historique</string>
+    <string name="action_scan_apk">Scanner un APK</string>
+    <string name="action_search_app">Rechercher une application</string>
+    <string name="risky_apps_title">Applications à risque élevé</string>
+    <string name="score_value">%1$d/100</string>
+    <string name="no_risky_apps_title">Aucune application risquée détectée</string>
+    <string name="no_risky_apps_subtitle">Continuez à scanner pour surveiller votre sécurité</string>
+    <string name="error_label">Erreur</string>
+    <string name="apk_picker_success">APK sélectionné. Analyse à venir.</string>
+    <string name="history_title">Historique des scans</string>
+    <string name="history_message">L\'historique détaillé sera affiché ici.</string>
+    <string name="search_title">Recherche d\'applications</string>
+    <string name="search_message">La recherche d\'applications est en cours d\'implémentation.</string>
+    <string name="scan_results_title">Résultats du scan</string>
+    <string name="scan_apps_analyzed">%1$d applications analysées</string>
+    
+    <!-- Navigation Bar -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_scan">Analyse de sécurité</string>
+    <string name="nav_history">Historique</string>
+    <string name="nav_profile">Profil</string>
 </resources>

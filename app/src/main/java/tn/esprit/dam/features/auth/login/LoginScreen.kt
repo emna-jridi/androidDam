@@ -19,22 +19,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import tn.esprit.dam.features.auth.login.AuthEvent
+import tn.esprit.dam.features.auth.login.AuthViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.initialize(context)
     }
-    LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
-            onLoginSuccess()
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                AuthEvent.LoginSuccess -> onLoginSuccess()
+            }
         }
     }
 

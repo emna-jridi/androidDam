@@ -8,8 +8,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.repository.AuthRepository
@@ -36,10 +39,14 @@ data class LoginUiState(
 /**
  * âœ… VERSION SANS FACTORY - Utilise ViewModel au lieu de AndroidViewModel
  */
-class LoginViewModel : ViewModel() {
+sealed class AuthEvent {
+    object LoginSuccess : AuthEvent()
+}
+
+class AuthViewModel : ViewModel() {
 
     companion object {
-        private const val TAG = "LoginViewModel"
+        private const val TAG = "AuthViewModel"
     }
 
     // âœ… Repository sera initialisÃ© depuis le Composable
@@ -48,6 +55,9 @@ class LoginViewModel : ViewModel() {
     // Ã‰tat de l'UI exposÃ© aux Composables
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<AuthEvent>()
+    val events: SharedFlow<AuthEvent> = _events.asSharedFlow()
 
     /**
      * âœ… Initialiser le repository avec le context
@@ -167,6 +177,7 @@ class LoginViewModel : ViewModel() {
                         isSuccess = true,
                         errorMessage = null
                     )
+                    _events.emit(AuthEvent.LoginSuccess)
                 }.onFailure { error ->
                     Log.e(TAG, "âŒ Login failed: ${error.message}", error)
 

@@ -1,14 +1,29 @@
 ﻿package tn.esprit.dam.navigation
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import kotlinx.coroutines.runBlocking
+import tn.esprit.dam.R
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordScreen
 import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordViewModel
@@ -19,7 +34,13 @@ import tn.esprit.dam.features.auth.login.LoginScreen
 import tn.esprit.dam.features.auth.register.RegisterScreen
 import tn.esprit.dam.features.auth.verification.EmailVerificationScreen
 import tn.esprit.dam.features.auth.verification.VerificationSuccessScreen
+import tn.esprit.dam.features.components.AppBottomNavBar
+import tn.esprit.dam.features.components.AppTopBar
+import tn.esprit.dam.features.components.BottomNavItem
+import tn.esprit.dam.features.components.NavigationScreen
 import tn.esprit.dam.features.profile.ProfileScreen
+import tn.esprit.dam.features.scan.presentation.HomeScreen
+import tn.esprit.dam.features.scan.presentation.ScanScreen
 
 @Composable
 fun AppNavGraph(
@@ -28,124 +49,239 @@ fun AppNavGraph(
 ) {
     val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
     val context = LocalContext.current
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: ""
+    val isLoggedIn = currentRoute != Screens.Login.route && 
+                     currentRoute != Screens.Register.route && 
+                     !currentRoute.contains("email_verification") &&
+                     !currentRoute.contains("verification_success") &&
+                     !currentRoute.contains("forgot_password") &&
+                     !currentRoute.contains("reset_password_otp") &&
+                     !currentRoute.contains("new_password") &&
+                     !currentRoute.contains("password_reset_success")
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
+    // Get current screen for TopBar
+    val currentScreen = when {
+        currentRoute.contains(Screens.Home.route) -> NavigationScreen.Home
+        currentRoute.contains(Screens.Scan.route) -> NavigationScreen.Scan
+        currentRoute.contains(Screens.ScanHistory.route) -> NavigationScreen.History
+        currentRoute.contains(Screens.Profile.route) -> NavigationScreen.Profile
+        else -> NavigationScreen.Home
+    }
+
+    Scaffold(
+        topBar = {
+            if (isLoggedIn) {
+                AppTopBar(
+                    currentScreen = currentScreen,
+                    onBackClick = if (currentScreen != NavigationScreen.Home) {
+                        { navController.popBackStack() }
+                    } else null
+                )
+            }
+        },
+        bottomBar = {
+            if (isLoggedIn) {
+                AppBottomNavBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(Screens.Home.route) { saveState = true }
+                            restoreState = true
+                        }
+                    },
+                    isLoggedIn = isLoggedIn
+                )
+            }
+        }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.padding(padding)
+        ) {
+            composable(Screens.Login.route) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Screens.Home.route) {
+                            popUpTo(Screens.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = { navController.navigate(Screens.Register.route) },
+                    onNavigateToForgotPassword = { navController.navigate(Screens.ForgotPassword.route) }
+                )
+            }
+
+            composable(Screens.Register.route) {
+                RegisterScreen(
+                    onRegisterSuccess = { email ->
+                        navController.navigate(Screens.EmailVerification.createRoute(email)) {
+                            popUpTo(Screens.Register.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screens.EmailVerification.route,
+                arguments = listOf(navArgument("email") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+
+                EmailVerificationScreen(
+                    email = email,
+                    onVerificationSuccess = {
+                        navController.navigate(Screens.VerificationSuccess.route) {
+                            popUpTo(Screens.Register.route) { inclusive = true }
+                        }
+                    },
+                    onBackToLogin = {
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screens.VerificationSuccess.route) {
+                VerificationSuccessScreen(
+                    userName = "Utilisateur",
+                    onContinue = {
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screens.ForgotPassword.route) {
+                ForgotPasswordScreen(
+                    onNavigateToOTP = {
+                        val email = forgotPasswordViewModel.uiState.value.email
+                        navController.navigate(Screens.ResetPasswordOTP.createRoute(email))
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel = forgotPasswordViewModel
+                )
+            }
+
+            composable(
+                route = Screens.ResetPasswordOTP.route,
+                arguments = listOf(navArgument("email") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+
+                ResetPasswordOTPScreen(
+                    email = email,
+                    onOTPVerified = {
+                        navController.navigate(Screens.NewPassword.route)
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel = forgotPasswordViewModel
+                )
+            }
+
+            composable(Screens.NewPassword.route) {
+                NewPasswordScreen(
+                    onPasswordResetSuccess = {
+                        navController.navigate(Screens.PasswordResetSuccess.route) {
+                            popUpTo(Screens.ForgotPassword.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel = forgotPasswordViewModel
+                )
+            }
+
+            composable(Screens.PasswordResetSuccess.route) {
+                PasswordResetSuccessScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screens.Home.route) {
+                HomeScreen(
+                    onNavigateToScan = { navController.navigate(Screens.Scan.route) },
+                    onNavigateToHistory = { navController.navigate(Screens.ScanHistory.route) },
+                    onNavigateToAppSearch = { navController.navigate(Screens.AppSearch.route) },
+                    onNavigateToProfile = { navController.navigate(Screens.Profile.route) },
+                    onNavigateToAppDetails = { packageName ->
+                        navController.navigate(Screens.AppDetails.createRoute(packageName))
+                    }
+                )
+            }
+
+            composable(Screens.Scan.route) {
+                ScanScreen(
+                    userId = "user",
+                    deviceId = "device",
+                    onNavigateToHome = {
+                        navController.navigate(Screens.Home.route) {
+                            popUpTo(Screens.Home.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToAppDetails = { packageName ->
+                        navController.navigate(Screens.AppDetails.createRoute(packageName))
+                    }
+                )
+            }
+
+            composable(
+                route = Screens.AppDetails.route,
+                arguments = listOf(navArgument("packageName") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
+                tn.esprit.dam.features.scan.presentation.AppDetailScreen(
+                    packageName = packageName,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screens.ScanHistory.route) {
+                SimplePlaceholderScreen(
+                    title = stringResource(id = R.string.history_title),
+                    message = stringResource(id = R.string.history_message)
+                )
+            }
+
+            composable(Screens.AppSearch.route) {
+                tn.esprit.dam.features.scan.presentation.SearchAppScreen(
+                    onAppClick = { packageName ->
+                        navController.navigate(Screens.AppDetails.createRoute(packageName))
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screens.Profile.route) {
+                ProfileScreen(
+                    onLogout = {
+                        runBlocking { TokenManager.clearAll(context) }
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimplePlaceholderScreen(title: String, message: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.Start
     ) {
-        composable(Screens.Login.route) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(Screens.Profile.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                onNavigateToRegister = { navController.navigate(Screens.Register.route) },
-                onNavigateToForgotPassword = { navController.navigate(Screens.ForgotPassword.route) }
-            )
-        }
-
-        composable(Screens.Register.route) {
-            RegisterScreen(
-                onRegisterSuccess = { email ->
-                    navController.navigate(Screens.EmailVerification.createRoute(email)) {
-                        popUpTo(Screens.Register.route) { inclusive = true }
-                    }
-                },
-                onNavigateToLogin = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = Screens.EmailVerification.route,
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
-
-            EmailVerificationScreen(
-                email = email,
-                onVerificationSuccess = {
-                    navController.navigate(Screens.VerificationSuccess.route) {
-                        popUpTo(Screens.Register.route) { inclusive = true }
-                    }
-                },
-                onBackToLogin = {
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Screens.VerificationSuccess.route) {
-            VerificationSuccessScreen(
-                userName = "Utilisateur",
-                onContinue = {
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Screens.ForgotPassword.route) {
-            ForgotPasswordScreen(
-                onNavigateToOTP = {
-                    val email = forgotPasswordViewModel.uiState.value.email
-                    navController.navigate(Screens.ResetPasswordOTP.createRoute(email))
-                },
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = forgotPasswordViewModel
-            )
-        }
-
-        composable(
-            route = Screens.ResetPasswordOTP.route,
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
-
-            ResetPasswordOTPScreen(
-                email = email,
-                onOTPVerified = {
-                    navController.navigate(Screens.NewPassword.route)
-                },
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = forgotPasswordViewModel
-            )
-        }
-
-        composable(Screens.NewPassword.route) {
-            NewPasswordScreen(
-                onPasswordResetSuccess = {
-                    navController.navigate(Screens.PasswordResetSuccess.route) {
-                        popUpTo(Screens.ForgotPassword.route) { inclusive = true }
-                    }
-                },
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = forgotPasswordViewModel
-            )
-        }
-
-        composable(Screens.PasswordResetSuccess.route) {
-            PasswordResetSuccessScreen(
-                onNavigateToLogin = {
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Screens.Profile.route) {
-            ProfileScreen(
-                onLogout = {
-                    runBlocking { TokenManager.clearAll(context) }
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
+        Text(text = title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(text = message, style = MaterialTheme.typography.bodyMedium)
     }
 }

@@ -15,4 +15,11 @@ sealed class Screens(val route: String) {
   object NewPassword : Screens("new_password")
   object PasswordResetSuccess : Screens("password_reset_success")
   object Profile : Screens("profile")
+  object Home : Screens("home")
+  object Scan : Screens("scan")
+  object ScanHistory : Screens("scan_history")
+  object AppSearch : Screens("app_search")
+  object AppDetails : Screens("app_details/{packageName}") {
+    fun createRoute(packageName: String) = "app_details/$packageName"
+  }
 }
