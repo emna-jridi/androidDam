@@ -72,6 +72,10 @@ fun AppNavGraph(
 ) {
     val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
     val context = LocalContext.current
+
+    // Create singleton VaultRepository for all vault screens
+    val vaultClient = remember { KtorClient.getInstance(context, TokenManager) }
+    val vaultRepository = remember { VaultRepository(VaultApi(vaultClient)) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
     val isLoggedIn = currentRoute != Screens.Login.route &&
@@ -327,13 +331,12 @@ fun AppNavGraph(
                 )
             }
 
+
+
             // ShadowVault flow
             composable(Screens.Vault.route) {
-                val context = LocalContext.current
-                val client = remember { KtorClient.getInstance(context, TokenManager) }
-                val repository = remember { VaultRepository(VaultApi(client)) }
-                val vaultViewModel = remember { VaultViewModel(repository) }
-                val passwordViewModel = remember { PasswordViewModel(repository) }
+                val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
 
                 val uiState = vaultViewModel.uiState.collectAsState().value
                 val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -352,7 +355,7 @@ fun AppNavGraph(
                         PasswordListScreen(
                             passwordViewModel = passwordViewModel,
                             onPasswordClick = { /* TODO: navigate to details */ },
-                            onAddClick = { /* TODO: navigate to add */ },
+                            onAddClick = { navController.navigate(Screens.VaultAddPassword.route) },
                             onLockClick = {
                                 vaultViewModel.lockVault()
                                 navController.popBackStack()
@@ -372,12 +375,9 @@ fun AppNavGraph(
                 route = "${Screens.Vault.route}?intent={intent}",
                 arguments = listOf(navArgument("intent") { type = NavType.StringType; nullable = true })
             ) { backStackEntry ->
-                val context = LocalContext.current
                 val intent = backStackEntry.arguments?.getString("intent")
-                val client = remember { KtorClient.getInstance(context, TokenManager) }
-                val repository = remember { VaultRepository(VaultApi(client)) }
-                val vaultViewModel = remember { VaultViewModel(repository) }
-                val passwordViewModel = remember { PasswordViewModel(repository) }
+                val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
 
                 val uiState = vaultViewModel.uiState.collectAsState().value
                 val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -404,7 +404,7 @@ fun AppNavGraph(
                             PasswordListScreen(
                                 passwordViewModel = passwordViewModel,
                                 onPasswordClick = { /* TODO */ },
-                                onAddClick = { /* TODO */ },
+                                onAddClick = { navController.navigate(Screens.VaultAddPassword.route) },
                                 onLockClick = {
                                     vaultViewModel.lockVault()
                                     navController.popBackStack()
@@ -419,6 +419,39 @@ fun AppNavGraph(
                         }
                     }
                 }
+            }
+
+            // Add Password Screen
+            composable(Screens.VaultAddPassword.route) {
+                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
+
+                val saveState by passwordViewModel.saveState.collectAsState()
+                val isSaving by passwordViewModel.isPasswordSaving.collectAsState()
+
+                // Navigate back on successful save
+                LaunchedEffect(saveState) {
+                    if (saveState?.isSuccess == true) {
+                        passwordViewModel.clearSaveState()
+                        navController.popBackStack()
+                    }
+                }
+
+                com.shadowguard.dam.ui.vault.screens.AddPasswordScreen(
+                    onSave = { site, username, password, notes, url, category ->
+                        passwordViewModel.createPassword(
+                            site = site,
+                            username = username,
+                            password = password,
+                            notes = notes,
+                            url = url,
+                            category = category
+                        )
+                    },
+                    onBack = { navController.popBackStack() },
+                    saveState = saveState,
+                    onClearSaveState = { passwordViewModel.clearSaveState() },
+                    isSaving = isSaving
+                )
             }
         }
     }

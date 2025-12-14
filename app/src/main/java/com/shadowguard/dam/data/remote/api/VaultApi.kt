@@ -17,8 +17,8 @@ import io.ktor.http.*
 class VaultApi(private val client: HttpClient) {
     
     companion object {
-        // Align with shared Ktor client base URL
-        private val BASE_URL: String get() = Config.BASE_URL + "/api"
+        // Backend vault routes are at /vault, not /api/vault
+        private val BASE_URL: String get() = Config.BASE_URL
         private val VAULT_URL: String get() = "$BASE_URL/vault"
         private val PASSWORDS_URL: String get() = "$BASE_URL/vault/passwords"
     }

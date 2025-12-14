@@ -70,7 +70,8 @@ class VaultViewModel(private val repository: VaultRepository) : ViewModel() {
             repository.createVault(masterPassword)
                 .onSuccess { response ->
                     _createVaultState.value = Result.success(response.vaultId)
-                    checkVaultStatus() // Refresh state
+                    // Automatically unlock the vault after creation
+                    unlockVault(masterPassword)
                 }
                 .onFailure { error ->
                     _createVaultState.value = Result.failure(error)

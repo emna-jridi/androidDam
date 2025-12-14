@@ -42,6 +42,12 @@ class PasswordViewModel(private val repository: VaultRepository) : ViewModel() {
     private val _strengthAnalysis = MutableStateFlow<PasswordStrengthResponse?>(null)
     val strengthAnalysis: StateFlow<PasswordStrengthResponse?> = _strengthAnalysis.asStateFlow()
 
+    private val _saveState = MutableStateFlow<Result<Unit>?>(null)
+    val saveState: StateFlow<Result<Unit>?> = _saveState.asStateFlow()
+
+    private val _isPasswordSaving = MutableStateFlow(false)
+    val isPasswordSaving: StateFlow<Boolean> = _isPasswordSaving.asStateFlow()
+
     init {
         loadPasswords()
     }
@@ -108,6 +114,8 @@ class PasswordViewModel(private val repository: VaultRepository) : ViewModel() {
         tags: List<String> = emptyList()
     ) {
         viewModelScope.launch {
+            _isPasswordSaving.value = true
+            _saveState.value = null // Reset state
             repository.createPasswordEntry(
                 site = site,
                 username = username,
@@ -119,11 +127,20 @@ class PasswordViewModel(private val repository: VaultRepository) : ViewModel() {
             )
                 .onSuccess {
                     loadPasswords()
+                    _saveState.value = Result.success(Unit)
+                    _isPasswordSaving.value = false
                 }
                 .onFailure { error ->
                     _listState.value = PasswordListUiState.Error(error.message ?: "Failed to create password")
+                    _saveState.value = Result.failure(error)
+                    _isPasswordSaving.value = false
                 }
         }
+    }
+
+    fun clearSaveState() {
+        _saveState.value = null
+        _isPasswordSaving.value = false
     }
 
     fun updatePassword(
