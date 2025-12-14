@@ -36,7 +36,11 @@ data class CreatePasswordEntryRequest(
     val url: String? = null,
     val category: String = "other",
     val tags: List<String> = emptyList(),
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val strengthScore: Int? = null,
+    val strengthLevel: String? = null,
+    val estimatedCrackTime: String? = null,
+    val strengthIssues: List<String>? = null
 )
 
 @Serializable
@@ -54,7 +58,11 @@ data class UpdatePasswordEntryRequest(
     val url: String? = null,
     val category: String? = null,
     val tags: List<String>? = null,
-    val isFavorite: Boolean? = null
+    val isFavorite: Boolean? = null,
+    val strengthScore: Int? = null,
+    val strengthLevel: String? = null,
+    val estimatedCrackTime: String? = null,
+    val strengthIssues: List<String>? = null
 )
 
 @Serializable

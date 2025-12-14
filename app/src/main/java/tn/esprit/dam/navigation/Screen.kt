@@ -24,4 +24,5 @@ sealed class Screens(val route: String) {
   }
   object Vault : Screens("vault")
   object VaultAddPassword : Screens("vault_add_password")
+  object VaultDetail : Screens("vault_detail")
 }

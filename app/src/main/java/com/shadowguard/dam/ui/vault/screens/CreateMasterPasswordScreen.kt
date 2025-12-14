@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +30,7 @@ fun CreateMasterPasswordScreen(
     var showPassword by remember { mutableStateOf(false) }
     var showConfirm by remember { mutableStateOf(false) }
     
+    // Business logic preserved
     val passwordsMatch = masterPassword == confirmPassword && masterPassword.isNotBlank()
     val passwordLongEnough = masterPassword.length >= 8
 
@@ -40,28 +43,30 @@ fun CreateMasterPasswordScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Vault icon
+        // Professional Icon (Shield or Lock)
         Icon(
-            imageVector = Icons.Default.Shield,
+            imageVector = Icons.Default.Lock,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Create Master Password",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            text = "Secure Your Vault",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "This password encrypts all your data. Make it strong and memorable - you can't recover it if forgotten!",
+            text = "Set a master password to encrypt your personal data.\nThis password is the only key to your vault.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -83,11 +88,15 @@ fun CreateMasterPasswordScreen(
                     )
                 }
             },
+            isError = masterPassword.isNotBlank() && !passwordLongEnough,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
             supportingText = {
-                Text(
-                    text = if (passwordLongEnough) "✓ At least 8 characters" else "✗ Minimum 8 characters required",
-                    color = if (passwordLongEnough) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
+                if (masterPassword.isNotBlank() && !passwordLongEnough) {
+                    Text("Must be at least 8 characters", color = MaterialTheme.colorScheme.error)
+                }
             }
         )
         
@@ -110,12 +119,10 @@ fun CreateMasterPasswordScreen(
                     )
                 }
             },
+            isError = confirmPassword.isNotBlank() && !passwordsMatch,
             supportingText = {
-                if (confirmPassword.isNotBlank()) {
-                    Text(
-                        text = if (passwordsMatch) "✓ Passwords match" else "✗ Passwords do not match",
-                        color = if (passwordsMatch) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
+                if (confirmPassword.isNotBlank() && !passwordsMatch) {
+                    Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
                 }
             }
         )
@@ -128,77 +135,63 @@ fun CreateMasterPasswordScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            enabled = passwordsMatch && passwordLongEnough && !isLoading
+            enabled = passwordsMatch && passwordLongEnough && !isLoading,
+            shape = MaterialTheme.shapes.medium
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
                 )
             } else {
-                Text("Create Vault", style = MaterialTheme.typography.titleMedium)
+                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Encrypt & Create Vault", style = MaterialTheme.typography.titleMedium)
             }
         }
         
         // Error message
         if (error != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline ?: Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         
-        // Warning card
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
+        // Professional Warning (Minimalist)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "NO RECOVERY OPTION",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = "Important",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "• Your master password CANNOT be recovered\n• We cannot reset it for you\n• Store it in a safe place\n• Consider using a passphrase for better memorability",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "We do not store your master password.\nIf you lose it, your data cannot be recovered.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }

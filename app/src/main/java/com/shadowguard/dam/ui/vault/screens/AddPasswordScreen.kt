@@ -1,45 +1,98 @@
 package com.shadowguard.dam.ui.vault.screens
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.shadowguard.dam.data.model.PasswordCategory
+import com.shadowguard.dam.ui.vault.utils.*
+import com.shadowguard.dam.ui.vault.viewmodel.PasswordViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.collectLatest
+
+enum class InputMode { EXISTING, GENERATED, PASSPHRASE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPasswordScreen(
-    onSave: (String, String, String, String?, String, String) -> Unit,
-    onBack: () -> Unit,
-    saveState: Result<Unit>? = null,
-    onClearSaveState: () -> Unit = {},
-    isSaving: Boolean = false
+    viewModel: PasswordViewModel,
+    onBack: () -> Unit
 ) {
+    // ViewModel State
+    val isSaving by viewModel.isPasswordSaving.collectAsState()
+    val savedState by viewModel.saveState.collectAsState()
+    val metrics by viewModel.passwordMetrics.collectAsState()
+    val aiAdvice by viewModel.aiAdvice.collectAsState()
+    val generatedPassword by viewModel.generatedPassword.collectAsState()
+    
+    // UI State
+    var mode by remember { mutableStateOf(InputMode.EXISTING) }
+    
+    // Form Fields
     var site by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var finalPassword by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(PasswordCategory.OTHER) }
-    var showPassword by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) } // For Mode 1
+    
+    // Generator State
+    var genLength by remember { mutableStateOf(16f) }
+    var useUpper by remember { mutableStateOf(true) }
+    var useNums by remember { mutableStateOf(true) }
+    var useSymbols by remember { mutableStateOf(true) }
+    
+    // Passphrase State
+    var phraseWords by remember { mutableStateOf(4f) }
+    var phraseSep by remember { mutableStateOf("-") }
 
-    val saveError = saveState?.exceptionOrNull()?.message
+    val clipboardManager = LocalClipboardManager.current
+    
+    // Domain Suggestions
+    var domainExpanded by remember { mutableStateOf(false) }
+    val commonDomains = remember {
+        listOf("google.com", "facebook.com", "amazon.com", "netflix.com", "twitter.com", "linkedin.com", "github.com", "outlook.com")
+    }
+    val filteredDomains = remember(site) {
+        if (site.isBlank()) emptyList() 
+        else commonDomains.filter { it.contains(site, ignoreCase = true) }.take(3)
+    }
 
-    val strength = remember(password) { calculatePasswordStrength(password) }
-    // Allow FAIR passwords and above (block only WEAK passwords)
-    val isValid = site.isNotBlank() && username.isNotBlank() && password.isNotBlank() && strength != PasswordStrength.WEAK
+    // Effect: Sync generated password to finalPassword
+    LaunchedEffect(generatedPassword) {
+        if (generatedPassword.isNotEmpty()) {
+            finalPassword = generatedPassword
+            viewModel.analyzePassword(finalPassword) // Analyze generated too
+        }
+    }
+    
+    // Effect: Real-time analysis for manual input
+    LaunchedEffect(finalPassword) {
+        if (mode == InputMode.EXISTING) {
+            viewModel.analyzePassword(finalPassword)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -48,301 +101,297 @@ fun AddPasswordScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text(
-            text = "Add Password",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
+        // --- Header ---
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("New Secure Entry", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        }
+        
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Show error if save failed
-        if (saveError != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+        // --- Common Fields ---
+        // Site Name
+        ExposedDropdownMenuBox(
+            expanded = domainExpanded,
+            onExpandedChange = { domainExpanded = !domainExpanded }
+        ) {
+            OutlinedTextField(
+                value = site,
+                onValueChange = { site = it; domainExpanded = true },
+                label = { Text("Website / App") },
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Language, contentDescription = null) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            )
+            if (filteredDomains.isNotEmpty()) {
+                ExposedDropdownMenu(
+                    expanded = domainExpanded,
+                    onDismissRequest = { domainExpanded = false }
                 ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Save Failed",
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = saveError,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    IconButton(onClick = onClearSaveState) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Dismiss",
-                            tint = MaterialTheme.colorScheme.onErrorContainer
+                    filteredDomains.forEach { domain ->
+                        DropdownMenuItem(
+                            text = { Text(domain) },
+                            onClick = { site = domain; domainExpanded = false }
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        // Site field
-        OutlinedTextField(
-            value = site,
-            onValueChange = { site = it },
-            label = { Text("Site Name *") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Language, contentDescription = null) },
-            enabled = !isSaving
-        )
-
+        
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Username field
+        
+        // Username
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username / Email *") },
-            singleLine = true,
+            label = { Text("Username / Email") },
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-            enabled = !isSaving
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Password field
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password *") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-            trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(
-                        imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (showPassword) "Hide" else "Show"
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // --- Mode Selector ---
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            InputMode.values().forEachIndexed { index, inputMode ->
+                SegmentedButton(
+                    selected = mode == inputMode,
+                    onClick = { mode = inputMode },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = InputMode.values().size)
+                ) {
+                    Text(
+                        text = when(inputMode) {
+                            InputMode.EXISTING -> "Manual"
+                            InputMode.GENERATED -> "Generate"
+                            InputMode.PASSPHRASE -> "Passphrase"
+                        },
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
-            },
-            enabled = !isSaving
-        )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // --- Mode Specific UI ---
+        AnimatedContent(targetState = mode) { targetMode ->
+            Column {
+                when(targetMode) {
+                    InputMode.EXISTING -> {
+                        // Manual Password Input
+                        OutlinedTextField(
+                            value = finalPassword,
+                            onValueChange = { finalPassword = it },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showPassword = !showPassword }) {
+                                    Icon(if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff, "Toggle")
+                                }
+                            }
+                        )
+                    }
+                    InputMode.GENERATED -> {
+                        // Generator Controls
+                        Text("Length: ${genLength.toInt()}", style = MaterialTheme.typography.labelMedium)
+                        Slider(
+                            value = genLength,
+                            onValueChange = { genLength = it },
+                            valueRange = 8f..64f,
+                            steps = 56
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            FilterChip(
+                                selected = useUpper,
+                                onClick = { useUpper = !useUpper },
+                                label = { Text("A-Z") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                            FilterChip(
+                                selected = useNums,
+                                onClick = { useNums = !useNums },
+                                label = { Text("0-9") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                            FilterChip(
+                                selected = useSymbols,
+                                onClick = { useSymbols = !useSymbols },
+                                label = { Text("#$@") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.generateNewPassword(genLength.toInt(), useUpper, useNums, useSymbols) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Refresh, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Regenerate")
+                        }
+                    }
+                    InputMode.PASSPHRASE -> {
+                        // Passphrase Controls
+                        Text("Word Count: ${phraseWords.toInt()}", style = MaterialTheme.typography.labelMedium)
+                        Slider(
+                            value = phraseWords,
+                            onValueChange = { phraseWords = it },
+                            valueRange = 3f..8f,
+                            steps = 5
+                        )
+                         Button(
+                            onClick = { viewModel.generateNewPassphrase(phraseWords.toInt(), phraseSep) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Refresh, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Regenerate Passphrase")
+                        }
+                    }
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Password strength indicator
-        if (password.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            PasswordStrengthIndicator(strength)
+        // --- Generated Result Display (For Modes 2 & 3) ---
+        if (mode != InputMode.EXISTING && finalPassword.isNotEmpty()) {
+            OutlinedTextField(
+                value = finalPassword,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Result") },
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = { clipboardManager.setText(AnnotatedString(finalPassword)) }) {
+                        Icon(Icons.Default.ContentCopy, "Copy")
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // --- Security Insight Card (Common Analysis) ---
+        if (finalPassword.isNotEmpty()) {
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Security, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Security Analysis", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Local Metrics
+                    metrics?.let {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Score: ${it.score}/100", fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text("Crack Time: ~${it.estimatedCrackTime}")
+                        }
+                        LinearProgressIndicator(
+                            progress = { it.score / 100f },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            color = when(it.riskLevel) {
+                                PasswordRiskLevel.WEAK -> MaterialTheme.colorScheme.error
+                                PasswordRiskLevel.MEDIUM -> MaterialTheme.colorScheme.tertiary
+                                PasswordRiskLevel.STRONG -> MaterialTheme.colorScheme.primary
+                                PasswordRiskLevel.VERY_STRONG -> MaterialTheme.colorScheme.primary
+                            }
+                        )
+                    }
 
-        // URL field
-        OutlinedTextField(
-            value = url,
-            onValueChange = { url = it },
-            label = { Text("Website URL (optional)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
-            enabled = !isSaving
-        )
+                    // AI Advice (Ollama)
+                    aiAdvice?.let { advice ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.secondary)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("AI Insight", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(advice.summary, style = MaterialTheme.typography.bodySmall)
+                        if (advice.recommendations.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            advice.recommendations.forEach { 
+                                Text("• $it", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    } ?: run {
+                        if (metrics != null && finalPassword.length >= 4) {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp)) // Loading AI
+                        }
+                    }
+                }
+            }
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Category dropdown
-        var expanded by remember { mutableStateOf(false) }
+        // --- Category ---
+        var catExpanded by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { if (!isSaving) expanded = !expanded }
+            expanded = catExpanded,
+            onExpandedChange = { catExpanded = !catExpanded }
         ) {
             OutlinedTextField(
                 value = category.replaceFirstChar { it.uppercase() },
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Category") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-                enabled = !isSaving
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = catExpanded) }
             )
             ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
+                expanded = catExpanded,
+                onDismissRequest = { catExpanded = false }
             ) {
                 PasswordCategory.ALL.forEach { cat ->
-                    DropdownMenuItem(
-                        text = { Text(cat.replaceFirstChar { it.uppercase() }) },
-                        onClick = {
-                            category = cat
-                            expanded = false
-                        }
-                    )
+                    DropdownMenuItem(text = { Text(cat.replaceFirstChar { it.uppercase() }) }, onClick = { category = cat; catExpanded = false })
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Notes field
-        OutlinedTextField(
-            value = notes,
-            onValueChange = { notes = it },
-            label = { Text("Notes (optional)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            maxLines = 5,
-            leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
-            enabled = !isSaving
-        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Validation hints
-        if (!isValid && !isSaving) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "⚠ Please complete:",
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    if (site.isBlank()) {
-                        Text("• Site name is required", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    }
-                    if (username.isBlank()) {
-                        Text("• Username is required", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    }
-                    if (password.isBlank()) {
-                        Text("• Password is required", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    } else if (strength == PasswordStrength.WEAK) {
-                        Text("• Password is too weak (min 8 chars, mix letters/numbers)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // --- Save Button ---
+        Button(
+            onClick = { viewModel.createPassword(site, username, finalPassword, notes, null, category) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = finalPassword.isNotBlank() && site.isNotBlank() && username.isNotBlank() && !isSaving
         ) {
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.weight(1f),
-                enabled = !isSaving
-            ) {
-                Text("Cancel")
-            }
-
-            Button(
-                onClick = {
-                    onSave(
-                        site,
-                        username,
-                        password,
-                        notes.takeIf { it.isNotBlank() },
-                        url.takeIf { it.isNotBlank() } ?: "",
-                        category
-                    )
-                },
-                enabled = isValid && !isSaving,
-                modifier = Modifier.weight(1f)
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text(if (isSaving) "Saving..." else "Save Password")
+            if (isSaving) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Encrypting...")
+            } else {
+                Icon(Icons.Default.Save, null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save to Vault")
             }
         }
-    }
-}
-
-enum class PasswordStrength {
-    WEAK, FAIR, GOOD, STRONG
-}
-
-fun calculatePasswordStrength(password: String): PasswordStrength {
-    if (password.length < 8) return PasswordStrength.WEAK
-
-    var score = 0
-    if (password.length >= 12) score++
-    if (password.any { it.isUpperCase() }) score++
-    if (password.any { it.isLowerCase() }) score++
-    if (password.any { it.isDigit() }) score++
-    if (password.any { !it.isLetterOrDigit() }) score++
-
-    return when {
-        score < 3 -> PasswordStrength.WEAK
-        score == 3 -> PasswordStrength.FAIR
-        score == 4 -> PasswordStrength.GOOD
-        else -> PasswordStrength.STRONG
-    }
-}
-
-@Composable
-fun PasswordStrengthIndicator(strength: PasswordStrength) {
-    val (color, label) = when (strength) {
-        PasswordStrength.WEAK -> Color.Red to "Weak"
-        PasswordStrength.FAIR -> Color(0xFFFF9800) to "Fair"
-        PasswordStrength.GOOD -> Color(0xFF4CAF50) to "Good"
-        PasswordStrength.STRONG -> Color(0xFF2196F3) to "Strong"
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        LinearProgressIndicator(
-            progress = when (strength) {
-                PasswordStrength.WEAK -> 0.25f
-                PasswordStrength.FAIR -> 0.5f
-                PasswordStrength.GOOD -> 0.75f
-                PasswordStrength.STRONG -> 1f
-            },
-            color = color,
-            modifier = Modifier
-                .weight(1f)
-                .height(8.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = label,
-            color = color,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
     }
 }

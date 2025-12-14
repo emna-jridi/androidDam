@@ -4,6 +4,8 @@ import com.shadowguard.dam.data.model.*
 import com.shadowguard.dam.data.remote.api.VaultApi
 import com.shadowguard.dam.utils.VaultCrypto
 import javax.crypto.SecretKey
+import com.shadowguard.dam.data.remote.ai.OllamaAdvice
+import com.shadowguard.dam.ui.vault.utils.PasswordAnalysisMetrics
 
 /**
  * Repository for vault operations
@@ -77,7 +79,11 @@ class VaultRepository(private val api: VaultApi) {
         url: String? = null,
         category: String = PasswordCategory.OTHER,
         tags: List<String> = emptyList(),
-        isFavorite: Boolean = false
+        isFavorite: Boolean = false,
+        strengthScore: Int? = null,
+        strengthLevel: String? = null,
+        estimatedCrackTime: String? = null,
+        strengthIssues: List<String>? = null
     ): Result<PasswordEntry> {
         val key = encryptionKey ?: return Result.failure(Exception("Vault is locked"))
 
@@ -94,7 +100,11 @@ class VaultRepository(private val api: VaultApi) {
                 url = url,
                 category = category,
                 tags = tags,
-                isFavorite = isFavorite
+                isFavorite = isFavorite,
+                strengthScore = strengthScore,
+                strengthLevel = strengthLevel,
+                estimatedCrackTime = estimatedCrackTime,
+                strengthIssues = strengthIssues
             )
         ).map { it.entry }
     }
@@ -147,7 +157,11 @@ class VaultRepository(private val api: VaultApi) {
         url: String? = null,
         category: String? = null,
         tags: List<String>? = null,
-        isFavorite: Boolean? = null
+        isFavorite: Boolean? = null,
+        strengthScore: Int? = null,
+        strengthLevel: String? = null,
+        estimatedCrackTime: String? = null,
+        strengthIssues: List<String>? = null
     ): Result<PasswordEntry> {
         val key = encryptionKey ?: return Result.failure(Exception("Vault is locked"))
 
@@ -165,7 +179,11 @@ class VaultRepository(private val api: VaultApi) {
                 url = url,
                 category = category,
                 tags = tags,
-                isFavorite = isFavorite
+                isFavorite = isFavorite,
+                strengthScore = strengthScore,
+                strengthLevel = strengthLevel,
+                estimatedCrackTime = estimatedCrackTime,
+                strengthIssues = strengthIssues
             )
         ).map { it.entry }
     }
@@ -184,6 +202,10 @@ class VaultRepository(private val api: VaultApi) {
      */
     suspend fun analyzePassword(password: String): Result<PasswordStrengthResponse> {
         return api.analyzePassword(AnalyzePasswordRequest(password))
+    }
+
+    suspend fun analyzeWithAi(metrics: PasswordAnalysisMetrics): Result<OllamaAdvice> {
+        return api.analyzePasswordWithAi(metrics)
     }
 
     /**

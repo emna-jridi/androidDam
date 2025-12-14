@@ -7,6 +7,8 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import com.shadowguard.dam.data.remote.ai.OllamaAdvice
+import com.shadowguard.dam.ui.vault.utils.PasswordAnalysisMetrics
 
 /**
  * API service for vault operations
@@ -181,6 +183,18 @@ class VaultApi(private val client: HttpClient) {
             val response = client.post("$PASSWORDS_URL/analyze") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
+            }
+            Result.success(response.body())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun analyzePasswordWithAi(metrics: PasswordAnalysisMetrics): Result<OllamaAdvice> {
+        return try {
+            val response = client.post("$VAULT_URL/ai-analyze") {
+                contentType(ContentType.Application.Json)
+                setBody(metrics)
             }
             Result.success(response.body())
         } catch (e: Exception) {

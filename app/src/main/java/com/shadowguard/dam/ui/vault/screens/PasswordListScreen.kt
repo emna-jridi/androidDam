@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shadowguard.dam.data.model.PasswordCategory
 import com.shadowguard.dam.data.model.PasswordEntry
+import com.shadowguard.dam.ui.vault.components.VaultSecurityDashboard
 import com.shadowguard.dam.ui.vault.viewmodel.PasswordListUiState
 import com.shadowguard.dam.ui.vault.viewmodel.PasswordViewModel
 
@@ -170,6 +171,14 @@ fun PasswordListScreen(
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            // Security Dashboard
+                            item {
+                                VaultSecurityDashboard(
+                                    passwords = state.passwords,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+
                             items(state.passwords) { entry ->
                                 PasswordCard(
                                     entry = entry,

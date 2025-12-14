@@ -56,6 +56,7 @@ import tn.esprit.dam.features.profile.ProfileScreen
 import tn.esprit.dam.features.scan.presentation.HomeScreen
 import tn.esprit.dam.features.scan.presentation.ScanScreen
 import com.shadowguard.dam.data.remote.api.VaultApi
+import com.shadowguard.dam.data.remote.ai.OllamaPasswordAdvisor
 import com.shadowguard.dam.data.repository.VaultRepository
 import com.shadowguard.dam.ui.vault.viewmodel.VaultViewModel
 import com.shadowguard.dam.ui.vault.viewmodel.PasswordViewModel
@@ -76,6 +77,11 @@ fun AppNavGraph(
     // Create singleton VaultRepository for all vault screens
     val vaultClient = remember { KtorClient.getInstance(context, TokenManager) }
     val vaultRepository = remember { VaultRepository(VaultApi(vaultClient)) }
+    val ollamaAdvisor = remember { OllamaPasswordAdvisor(vaultRepository) }
+    
+    // Shared ViewModels
+    val passwordViewModel = remember { PasswordViewModel(vaultRepository, ollamaAdvisor) }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
     val isLoggedIn = currentRoute != Screens.Login.route &&
@@ -93,6 +99,8 @@ fun AppNavGraph(
         currentRoute.contains(Screens.Scan.route) -> NavigationScreen.Scan
         currentRoute.contains(Screens.ScanHistory.route) -> NavigationScreen.History
         currentRoute.contains(Screens.Profile.route) -> NavigationScreen.Profile
+        currentRoute.contains(Screens.Vault.route) -> NavigationScreen.Vault
+        currentRoute.contains(Screens.VaultAddPassword.route) -> NavigationScreen.Vault
         else -> NavigationScreen.Home
     }
 
@@ -336,7 +344,8 @@ fun AppNavGraph(
             // ShadowVault flow
             composable(Screens.Vault.route) {
                 val vaultViewModel = remember { VaultViewModel(vaultRepository) }
-                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
+                // Use shared passwordViewModel
+
 
                 val uiState = vaultViewModel.uiState.collectAsState().value
                 val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -354,7 +363,10 @@ fun AppNavGraph(
                     is VaultUiState.Unlocked -> {
                         PasswordListScreen(
                             passwordViewModel = passwordViewModel,
-                            onPasswordClick = { /* TODO: navigate to details */ },
+                            onPasswordClick = { entry ->
+                                passwordViewModel.selectPassword(entry)
+                                navController.navigate(Screens.VaultDetail.route)
+                            },
                             onAddClick = { navController.navigate(Screens.VaultAddPassword.route) },
                             onLockClick = {
                                 vaultViewModel.lockVault()
@@ -377,7 +389,10 @@ fun AppNavGraph(
             ) { backStackEntry ->
                 val intent = backStackEntry.arguments?.getString("intent")
                 val vaultViewModel = remember { VaultViewModel(vaultRepository) }
-                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
+                // Used shared passwordViewModel
+                
+                // Clear selection when entering list if needed, or keep state
+                // LaunchedEffect(Unit) { passwordViewModel.clearSelection() } 
 
                 val uiState = vaultViewModel.uiState.collectAsState().value
                 val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -403,7 +418,10 @@ fun AppNavGraph(
                         is VaultUiState.Unlocked -> {
                             PasswordListScreen(
                                 passwordViewModel = passwordViewModel,
-                                onPasswordClick = { /* TODO */ },
+                                onPasswordClick = { entry ->
+                                    passwordViewModel.selectPassword(entry)
+                                    navController.navigate(Screens.VaultDetail.route)
+                                },
                                 onAddClick = { navController.navigate(Screens.VaultAddPassword.route) },
                                 onLockClick = {
                                     vaultViewModel.lockVault()
@@ -423,10 +441,8 @@ fun AppNavGraph(
 
             // Add Password Screen
             composable(Screens.VaultAddPassword.route) {
-                val passwordViewModel = remember { PasswordViewModel(vaultRepository) }
-
+                // Use shared passwordViewModel
                 val saveState by passwordViewModel.saveState.collectAsState()
-                val isSaving by passwordViewModel.isPasswordSaving.collectAsState()
 
                 // Navigate back on successful save
                 LaunchedEffect(saveState) {
@@ -437,21 +453,32 @@ fun AppNavGraph(
                 }
 
                 com.shadowguard.dam.ui.vault.screens.AddPasswordScreen(
-                    onSave = { site, username, password, notes, url, category ->
-                        passwordViewModel.createPassword(
-                            site = site,
-                            username = username,
-                            password = password,
-                            notes = notes,
-                            url = url,
-                            category = category
-                        )
-                    },
-                    onBack = { navController.popBackStack() },
-                    saveState = saveState,
-                    onClearSaveState = { passwordViewModel.clearSaveState() },
-                    isSaving = isSaving
+                    viewModel = passwordViewModel,
+                    onBack = { navController.popBackStack() }
                 )
+            }
+            
+            // Password Detail Screen
+            composable(Screens.VaultDetail.route) {
+                val selectedPassword by passwordViewModel.selectedPassword.collectAsState()
+                val passwordState = selectedPassword
+                
+                if (passwordState != null) {
+                    com.shadowguard.dam.ui.vault.screens.PasswordDetailScreen(
+                        data = passwordState,
+                        onBack = { navController.popBackStack() },
+                        onDelete = {
+                            passwordViewModel.deletePassword(passwordState.entry.id)
+                            navController.popBackStack()
+                        }
+                    )
+                } else {
+                    // Fallback if state lost (shouldn't happen with shared VM unless process death)
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                         CircularProgressIndicator()
+                    }
+                }
             }
         }
     }
