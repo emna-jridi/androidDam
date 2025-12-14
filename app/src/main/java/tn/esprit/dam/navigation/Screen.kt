@@ -22,4 +22,5 @@ sealed class Screens(val route: String) {
   object AppDetails : Screens("app_details/{packageName}") {
     fun createRoute(packageName: String) = "app_details/$packageName"
   }
+  object Vault : Screens("vault")
 }

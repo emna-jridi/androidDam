@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Assemble Android after VaultApi patch",
+			"type": "shell",
+			"command": "./gradlew",
+			"args": [
+				":app:assembleDebug"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			]
+		}
+	]
+}

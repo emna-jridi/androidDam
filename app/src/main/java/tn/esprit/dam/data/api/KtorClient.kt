@@ -97,11 +97,15 @@ object KtorClient {
                 level = LogLevel.ALL // Log everything including headers and body
             }
 
-            // Retry policy with status code check
+            // Retry policy: only retry on server errors (5xx) or network exceptions
             install(HttpRequestRetry) {
                 maxRetries = 2
-                retryIf { request, response ->
-                    !response.status.isSuccess() && response.status.value != 401
+                retryIf { _, response ->
+                    response.status.value >= 500
+                }
+                retryOnExceptionIf { _, cause ->
+                    // Retry on IO/network issues; avoid retrying client errors like 404
+                    true
                 }
                 exponentialDelay()
             }

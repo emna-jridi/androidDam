@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.util.Base64
+import androidx.compose.runtime.collectAsState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -54,6 +55,15 @@ import tn.esprit.dam.features.components.NavigationScreen
 import tn.esprit.dam.features.profile.ProfileScreen
 import tn.esprit.dam.features.scan.presentation.HomeScreen
 import tn.esprit.dam.features.scan.presentation.ScanScreen
+import com.shadowguard.dam.data.remote.api.VaultApi
+import com.shadowguard.dam.data.repository.VaultRepository
+import com.shadowguard.dam.ui.vault.viewmodel.VaultViewModel
+import com.shadowguard.dam.ui.vault.viewmodel.PasswordViewModel
+import com.shadowguard.dam.ui.vault.viewmodel.VaultUiState
+import com.shadowguard.dam.ui.vault.screens.CreateMasterPasswordScreen
+import com.shadowguard.dam.ui.vault.screens.VaultUnlockScreen
+import com.shadowguard.dam.ui.vault.screens.PasswordListScreen
+import tn.esprit.dam.data.api.KtorClient
 
 @Composable
 fun AppNavGraph(
@@ -64,8 +74,8 @@ fun AppNavGraph(
     val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
-    val isLoggedIn = currentRoute != Screens.Login.route && 
-                     currentRoute != Screens.Register.route && 
+    val isLoggedIn = currentRoute != Screens.Login.route &&
+                     currentRoute != Screens.Register.route &&
                      !currentRoute.contains("email_verification") &&
                      !currentRoute.contains("verification_success") &&
                      !currentRoute.contains("forgot_password") &&
@@ -226,6 +236,7 @@ fun AppNavGraph(
                     onNavigateToAppDetails = { packageName ->
                         navController.navigate(Screens.AppDetails.createRoute(packageName))
                     },
+                    onNavigateToVault = { navController.navigate(Screens.Vault.route) },
                     onLogout = {
                         runBlocking { TokenManager.clearAll(context) }
                         navController.navigate(Screens.Login.route) {
@@ -245,7 +256,7 @@ fun AppNavGraph(
                     val token = TokenManager.getAccessToken(context)
                     val decodedId = token?.let { decodeUserIdFromToken(it) }
                     userId = user?.id ?: decodedId ?: "unknown"
-                    
+
                     deviceId = android.provider.Settings.Secure.getString(
                         context.contentResolver,
                         android.provider.Settings.Secure.ANDROID_ID
@@ -310,8 +321,104 @@ fun AppNavGraph(
                         navController.navigate(Screens.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    onOpenVault = { navController.navigate(Screens.Vault.route) },
+                    onCreateVault = { navController.navigate("${Screens.Vault.route}?intent=create") }
                 )
+            }
+
+            // ShadowVault flow
+            composable(Screens.Vault.route) {
+                val context = LocalContext.current
+                val client = remember { KtorClient.getInstance(context, TokenManager) }
+                val repository = remember { VaultRepository(VaultApi(client)) }
+                val vaultViewModel = remember { VaultViewModel(repository) }
+                val passwordViewModel = remember { PasswordViewModel(repository) }
+
+                val uiState = vaultViewModel.uiState.collectAsState().value
+                val createResult = vaultViewModel.createVaultState.collectAsState().value
+                val createError = createResult?.exceptionOrNull()?.message
+                val isLoading = uiState is VaultUiState.Loading
+
+                when (uiState) {
+                    is VaultUiState.NoVault -> {
+                        CreateMasterPasswordScreen(
+                            onCreateVault = { master, confirm -> vaultViewModel.createVault(master, confirm) },
+                            isLoading = isLoading,
+                            error = createError
+                        )
+                    }
+                    is VaultUiState.Unlocked -> {
+                        PasswordListScreen(
+                            passwordViewModel = passwordViewModel,
+                            onPasswordClick = { /* TODO: navigate to details */ },
+                            onAddClick = { /* TODO: navigate to add */ },
+                            onLockClick = {
+                                vaultViewModel.lockVault()
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                    else -> {
+                        VaultUnlockScreen(
+                            vaultViewModel = vaultViewModel,
+                            onUnlocked = { /* no-op: UI will switch to list */ }
+                        )
+                    }
+                }
+            }
+            // Optional intent query: vault?intent={intent}
+            composable(
+                route = "${Screens.Vault.route}?intent={intent}",
+                arguments = listOf(navArgument("intent") { type = NavType.StringType; nullable = true })
+            ) { backStackEntry ->
+                val context = LocalContext.current
+                val intent = backStackEntry.arguments?.getString("intent")
+                val client = remember { KtorClient.getInstance(context, TokenManager) }
+                val repository = remember { VaultRepository(VaultApi(client)) }
+                val vaultViewModel = remember { VaultViewModel(repository) }
+                val passwordViewModel = remember { PasswordViewModel(repository) }
+
+                val uiState = vaultViewModel.uiState.collectAsState().value
+                val createResult = vaultViewModel.createVaultState.collectAsState().value
+                val createError = createResult?.exceptionOrNull()?.message
+                val isLoading = uiState is VaultUiState.Loading
+
+                // If intent=create and vault exists locked, still show unlock; if no vault, show create
+                if (intent == "create" && uiState !is VaultUiState.Unlocked) {
+                    CreateMasterPasswordScreen(
+                        onCreateVault = { master, confirm -> vaultViewModel.createVault(master, confirm) },
+                        isLoading = isLoading,
+                        error = createError
+                    )
+                } else {
+                    when (uiState) {
+                        is VaultUiState.NoVault -> {
+                            CreateMasterPasswordScreen(
+                                onCreateVault = { master, confirm -> vaultViewModel.createVault(master, confirm) },
+                                isLoading = isLoading,
+                                error = createError
+                            )
+                        }
+                        is VaultUiState.Unlocked -> {
+                            PasswordListScreen(
+                                passwordViewModel = passwordViewModel,
+                                onPasswordClick = { /* TODO */ },
+                                onAddClick = { /* TODO */ },
+                                onLockClick = {
+                                    vaultViewModel.lockVault()
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        else -> {
+                            VaultUnlockScreen(
+                                vaultViewModel = vaultViewModel,
+                                onUnlocked = { /* no-op */ }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

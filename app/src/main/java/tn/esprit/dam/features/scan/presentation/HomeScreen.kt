@@ -92,6 +92,7 @@ fun HomeScreen(
     onNavigateToAppSearch: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToAppDetails: (String) -> Unit,
+    onNavigateToVault: () -> Unit,
     onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -173,7 +174,7 @@ fun HomeScreen(
                         onSearch = onNavigateToAppSearch,
                         onHistory = onNavigateToHistory,
                         onScanApk = pickApk,
-                        onShadowGuard = { }
+                        onShadowGuard = onNavigateToVault
                     )
                 }
             }
@@ -460,7 +461,8 @@ private fun FeatureGrid(
         FeatureItem("Nouveau scan", Icons.Default.Security, "Analyser maintenant", onScan, listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))),
         FeatureItem("Historique", Icons.Default.History, "Derniers résultats", onHistory, listOf(Color(0xFF0EA5E9), Color(0xFF2563EB))),
         FeatureItem("Scanner un APK", Icons.Default.Android, "Fichier externe", onScanApk, listOf(Color(0xFF10B981), Color(0xFF059669))),
-        FeatureItem("Rechercher une application", Icons.Default.Search, "Vérifier un app", onSearch, listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9)))
+        FeatureItem("Rechercher une application", Icons.Default.Search, "Vérifier un app", onSearch, listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9))),
+        FeatureItem("ShadowVault", Icons.Default.Lock, "Gestion des mots de passe", onShadowGuard, listOf(Color(0xFF7C3AED), Color(0xFF4F46E5)))
     )
 
     LazyVerticalGrid(
@@ -469,7 +471,7 @@ private fun FeatureGrid(
         verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing16),
         modifier = Modifier
             .fillMaxWidth()
-            .height((140.dp * 2) + ScanTheme.Spacing16)
+            .height((140.dp * 3) + (ScanTheme.Spacing16 * 2))
     ) {
         items(items) { item ->
             FeatureCard(item)
