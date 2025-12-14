@@ -1,5 +1,6 @@
 package tn.esprit.dam.features.scan.presentation
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,31 +54,52 @@ class ScanViewModel @Inject constructor(
             
             // Load locally installed apps from device
             val localApps = appScanner.getInstalledApps()
-            val userApps = localApps.filter { !isSystemApp(it.packageName) }
-            _availableApps.value = userApps
+            
+            // Filter system apps based on toggle state
+            val filteredApps = if (_scanState.value.showSystemApps) {
+                localApps
+            } else {
+                localApps.filter { app ->
+                    !app.isSystemApp && !isSystemPackage(app.packageName)
+                }
+            }
+            
+            _availableApps.value = filteredApps
             _scanState.value = _scanState.value.copy(
                 status = "IDLE",
-                totalApps = userApps.size
+                totalApps = filteredApps.size
             )
         }
     }
 
-    // System apps to filter out
-    private fun isSystemApp(packageName: String): Boolean {
-        val systemPackages = setOf(
+    /**
+     * Check if package is a system app by package name prefix
+     * Filters out Google, Android, MIUI, Samsung, and other OEM system apps
+     */
+    private fun isSystemPackage(packageName: String): Boolean {
+        val systemPrefixes = listOf(
             "android",
-            "com.android",
-            "com.google.android",
-            "com.sec.android",
-            "com.samsung.android",
-            "com.huawei",
-            "com.miui",
-            "com.oneplus",
-            "com.oppo",
-            "com.vivo",
-            "com.xiaomi"
+            "com.android.",
+            "com.google.android.",
+            "com.samsung.android.",
+            "com.sec.android.",
+            "com.huawei.",
+            "com.miui.",
+            "com.xiaomi.",
+            "com.oneplus.",
+            "com.oppo.",
+            "com.vivo.",
+            "com.coloros.",
+            "com.bbk.",
+            "com.qualcomm.",
+            "com.mediatek."
         )
-        return systemPackages.any { packageName.startsWith(it) }
+        return systemPrefixes.any { packageName.startsWith(it) }
+    }
+
+    // DEPRECATED: Keeping for backward compatibility, use isSystemPackage instead
+    private fun isSystemApp(packageName: String): Boolean {
+        return isSystemPackage(packageName)
     }
 
     fun toggleAppSelection(packageName: String) {
@@ -107,6 +129,13 @@ class ScanViewModel @Inject constructor(
         )
     }
 
+    fun toggleSystemApps() {
+        _scanState.value = _scanState.value.copy(
+            showSystemApps = !_scanState.value.showSystemApps
+        )
+        loadAvailableApps()
+    }
+
     fun startScan() {
         if (_scanState.value.selectedApps.isEmpty()) {
             _scanState.value = _scanState.value.copy(
@@ -124,12 +153,21 @@ class ScanViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                val currentSelectedApps = _scanState.value.selectedApps  // ✅ PRESERVE selectedApps
+                
+                Log.d(TAG, "🚀 startScan called with ${currentSelectedApps.size} apps")
+                Log.d(TAG, "   userId: $userId")
+                Log.d(TAG, "   deviceId: $deviceId")
+                
                 _scanState.value = _scanState.value.copy(
                     status = "ANALYZING",
-                    error = null
+                    error = null,
+                    analysisNote = null,
+                    selectedApps = currentSelectedApps  // ✅ KEEP selectedApps in state
                 )
 
-                val selectedPackages = _scanState.value.selectedApps.map { it.packageName }
+                val selectedPackages = currentSelectedApps.map { it.packageName }
+                Log.d(TAG, "📦 Selected packages: ${selectedPackages.take(3).joinToString()}") 
 
                 // Start scan on server
                 when (val result = repository.startScan(selectedPackages, userId!!, deviceId!!, false)) {
@@ -140,39 +178,125 @@ class ScanViewModel @Inject constructor(
                         _scanState.value = _scanState.value.copy(
                             status = "ANALYZING",
                             scanId = scanId,
+                            selectedApps = currentSelectedApps,  // ✅ PRESERVE
                             scannedApps = 0,
                             highRiskCount = 0,
                             mediumRiskCount = 0,
                             lowRiskCount = 0,
-                            averageScore = 0f
+                            averageScore = 0f,
+                            analysisNote = null
                         )
                         
                         // Start polling for scan status
                         startPolling(scanId)
                     }
                     is ApiResult.ApiError -> {
+                        Log.e(TAG, "❌ API Error: ${result.message} (code: ${result.code})")
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = result.message
+                            error = result.message,
+                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                        )
+                    }
+                    is ApiResult.NetworkError -> {
+                        Log.e(TAG, "❌ Network Error: ${result.exception.message}", result.exception)
+                        _scanState.value = _scanState.value.copy(
+                            status = "FAILED",
+                            error = "Erreur réseau: ${result.exception.message ?: "vérifiez votre connexion"}",
+                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                        )
+                    }
+                    is ApiResult.SerializationError -> {
+                        Log.e(TAG, "❌ Serialization Error: ${result.exception.message}", result.exception)
+                        Log.e(TAG, "   Raw response: ${result.rawResponse?.take(500)}")
+                        _scanState.value = _scanState.value.copy(
+                            status = "FAILED",
+                            error = "Erreur de données: ${result.exception.message}",
+                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Unexpected error in startScan: ${e.message}", e)
+                val currentSelectedApps = _scanState.value.selectedApps
+                val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Erreur inconnue"}"
+                _scanState.value = _scanState.value.copy(
+                    status = "FAILED",
+                    error = errorMsg,
+                    selectedApps = currentSelectedApps  // ✅ PRESERVE
+                )
+            }
+        }
+    }
+
+    fun scanApk(uri: Uri) {
+        if (userId == null) {
+            _scanState.value = _scanState.value.copy(error = "Utilisateur non connecté")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _scanState.value = _scanState.value.copy(
+                    status = "ANALYZING",
+                    error = null,
+                    analysisNote = "Téléversement et analyse APK en cours...",
+                    selectedApps = emptyList(),
+                    totalApps = 1,
+                    scannedApps = 0
+                )
+
+                when (val result = repository.scanApk(uri, userId!!, deviceId)) {
+                    is ApiResult.Success -> {
+                        val app = result.data.app
+                        val localApp = app.toUiModel(isSelected = false)
+                        val score = app.finalScore ?: app.scanResults?.aiRiskScore?.toFloat() ?: 0f
+                        val level = app.scanResults?.aiRiskLevel ?: "low"
+                        val note = if (app.scanResults?.aiStatus == "ok") {
+                            "Analyse basée sur MobSF + IA"
+                        } else {
+                            "Analyse basée sur MobSF (IA indisponible)"
+                        }
+
+                        _scanState.value = _scanState.value.copy(
+                            status = "COMPLETED",
+                            selectedApps = listOf(localApp),
+                            totalApps = 1,
+                            scannedApps = 1,
+                            highRiskCount = if (level == "high") 1 else 0,
+                            mediumRiskCount = if (level == "medium") 1 else 0,
+                            lowRiskCount = if (level == "low") 1 else 0,
+                            averageScore = score,
+                            analysisNote = note
+                        )
+                    }
+                    is ApiResult.ApiError -> {
+                        _scanState.value = _scanState.value.copy(
+                            status = "FAILED",
+                            error = result.message,
+                            analysisNote = null
                         )
                     }
                     is ApiResult.NetworkError -> {
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur réseau: vérifiez votre connexion"
+                            error = "Erreur réseau: ${result.exception.message}",
+                            analysisNote = null
                         )
                     }
                     is ApiResult.SerializationError -> {
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur de données"
+                            error = "Erreur de données: ${result.exception.message}",
+                            analysisNote = null
                         )
                     }
                 }
             } catch (e: Exception) {
                 _scanState.value = _scanState.value.copy(
                     status = "FAILED",
-                    error = e.message ?: "Erreur inconnue"
+                    error = e.message ?: "Erreur inconnue",
+                    analysisNote = null
                 )
             }
         }
@@ -198,11 +322,13 @@ class ScanViewModel @Inject constructor(
                 when (val result = repository.getScanStatus(scanId)) {
                     is ApiResult.Success -> {
                         val status = result.data
+                        val currentSelectedApps = _scanState.value.selectedApps  // ✅ PRESERVE
                         Log.d(TAG, "📊 Status: ${status.status}, Progress: ${status.progress}%, Scanned: ${status.scannedApps}/${status.totalApps}")
                         
                         _scanState.value = _scanState.value.copy(
                             scannedApps = status.scannedApps ?: 0,
                             totalApps = status.totalApps ?: _scanState.value.totalApps,
+                            selectedApps = currentSelectedApps,  // ✅ PRESERVE
                             highRiskCount = status.results?.highRiskApps ?: 0,
                             mediumRiskCount = status.results?.mediumRiskApps ?: 0,
                             lowRiskCount = status.results?.lowRiskApps ?: 0,
@@ -212,13 +338,44 @@ class ScanViewModel @Inject constructor(
                         when (status.status) {
                             "completed" -> {
                                 Log.d(TAG, "✅ Scan completed!")
-                                _scanState.value = _scanState.value.copy(
-                                    status = "COMPLETED",
-                                    averageScore = status.results?.averageScore ?: 0f,
-                                    highRiskCount = status.results?.highRiskApps ?: 0,
-                                    mediumRiskCount = status.results?.mediumRiskApps ?: 0,
-                                    lowRiskCount = status.results?.lowRiskApps ?: 0
-                                )
+                                val latestResult = repository.getLatestScan(userId!!)
+
+                                if (latestResult is ApiResult.Success) {
+                                    val apps = latestResult.data.apps
+                                    val riskScores = apps.map { it.finalScore }
+                                    val avgScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else status.results?.averageScore ?: 0f
+                                    val high = apps.count { it.finalScore >= 85 }
+                                    val med = apps.count { it.finalScore in 70.0..84.99 }
+                                    val low = apps.size - high - med
+
+                                    _scanState.value = _scanState.value.copy(
+                                        status = "COMPLETED",
+                                        selectedApps = apps.map {
+                                            LocalAppInfo(
+                                                packageName = it.packageName,
+                                                displayName = it.appName,
+                                                permissions = emptyList(),
+                                                trackers = emptyList(),
+                                                isSelected = false
+                                            )
+                                        },
+                                        totalApps = apps.size,
+                                        scannedApps = apps.size,
+                                        averageScore = avgScore,
+                                        highRiskCount = high,
+                                        mediumRiskCount = med,
+                                        lowRiskCount = low
+                                    )
+                                } else {
+                                    _scanState.value = _scanState.value.copy(
+                                        status = "COMPLETED",
+                                        selectedApps = currentSelectedApps,  // ✅ PRESERVE
+                                        averageScore = status.results?.averageScore ?: 0f,
+                                        highRiskCount = status.results?.highRiskApps ?: 0,
+                                        mediumRiskCount = status.results?.mediumRiskApps ?: 0,
+                                        lowRiskCount = status.results?.lowRiskApps ?: 0
+                                    )
+                                }
                                 return@launch // Stop polling
                             }
                             "failed" -> {

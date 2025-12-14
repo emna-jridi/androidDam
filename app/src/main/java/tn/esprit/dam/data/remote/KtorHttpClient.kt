@@ -28,8 +28,8 @@ class KtorHttpClient @Inject constructor(
 
     private val httpClient = HttpClient(Android) {
         engine {
-            connectTimeout = 60_000
-            socketTimeout = 60_000
+            connectTimeout = 120_000  // 2 minutes
+            socketTimeout = 300_000   // 5 minutes
         }
 
         install(ContentNegotiation) {
@@ -51,9 +51,9 @@ class KtorHttpClient @Inject constructor(
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 60_000
-            connectTimeoutMillis = 30_000
-            socketTimeoutMillis = 60_000
+            requestTimeoutMillis = 300_000  // 5 minutes for long scans
+            connectTimeoutMillis = 120_000  // 2 minutes to establish connection
+            socketTimeoutMillis = 300_000   // 5 minutes for data transfer
         }
 
         defaultRequest {

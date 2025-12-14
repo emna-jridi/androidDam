@@ -1,6 +1,7 @@
 package tn.esprit.dam.data.api
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -9,7 +10,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.forms.formData
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import tn.esprit.dam.data.api.models.ApiResponse
@@ -25,6 +30,7 @@ import tn.esprit.dam.data.api.models.SearchAppResponse
 import tn.esprit.dam.data.api.models.ScanHistoryResponse
 import tn.esprit.dam.data.TokenManager
 import java.io.IOException
+import java.io.InputStream
 
 class ScanApiService(
     private val context: Context,
@@ -49,9 +55,18 @@ class ScanApiService(
             if (!response.status.isSuccess()) {
                 // Non-2xx status - read raw response
                 val rawBody = response.bodyAsText()
-                Log.e(TAG, "[$endpoint] Error response: $rawBody")
+                Log.e(TAG, "[$endpoint] HTTP $statusCode - Error response: $rawBody")
+                
+                // Try to parse error message from response
+                val errorMessage = try {
+                    val errorResponse = response.body<ApiResponse<T>>()
+                    errorResponse.error ?: errorResponse.message ?: rawBody
+                } catch (e: Exception) {
+                    rawBody.take(200)  // Show first 200 chars of raw response
+                }
+                
                 return ApiResult.ApiError(
-                    message = "Erreur serveur (HTTP $statusCode)",
+                    message = "Erreur serveur (HTTP $statusCode): $errorMessage",
                     code = statusCode
                 )
             }
@@ -62,8 +77,11 @@ class ScanApiService(
             if (apiResponse.success && apiResponse.data != null) {
                 ApiResult.Success(apiResponse.data!!)
             } else {
+                // ✅ Backend uses 'error' field for error messages
+                val errorMsg = apiResponse.error ?: apiResponse.message ?: "Erreur inconnue"
+                Log.e(TAG, "[$endpoint] API error: $errorMsg")
                 ApiResult.ApiError(
-                    message = apiResponse.message ?: "Erreur inconnue",
+                    message = errorMsg,
                     code = statusCode
                 )
             }
@@ -107,14 +125,21 @@ class ScanApiService(
             timestamp = timestamp
         )
 
-        // Log request body before sending
-        Log.d(TAG, "[/api/scan/start] Request body:")
+        // ✅ DETAILED LOGGING: Log full request payload
+        Log.d(TAG, "[/api/scan/start] === SCAN REQUEST ===")
+        Log.d(TAG, "  userId: $userId")
         Log.d(TAG, "  deviceId: $deviceId")
         Log.d(TAG, "  platform: android")
         Log.d(TAG, "  includeSystemApps: false")
-        Log.d(TAG, "  userId: $userId")
         Log.d(TAG, "  timestamp: $timestamp")
         Log.d(TAG, "  apps count: ${appDtos.size}")
+        appDtos.take(3).forEachIndexed { index, app ->
+            Log.d(TAG, "  app[$index]: ${app.packageName}")
+        }
+        if (appDtos.size > 3) {
+            Log.d(TAG, "  ... and ${appDtos.size - 3} more apps")
+        }
+        Log.d(TAG, "===============================")
 
         return safeApiCall("/api/scan/start") {
             client.post("/api/scan/start") {
@@ -189,6 +214,51 @@ class ScanApiService(
     suspend fun getFullAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
         return safeApiCall("/api/apps/$packageName") {
             client.get("/api/apps/$packageName")
+        }
+    }
+
+    /**
+     * Upload and analyze an APK (MobSF-backed)
+     */
+    suspend fun scanApk(uri: Uri, userId: String, deviceId: String?): ApiResult<AppDetailsResponse> {
+        val contentResolver = context.contentResolver
+        val fileName = queryFileName(uri) ?: "apk-${System.currentTimeMillis()}.apk"
+
+        Log.d(TAG, "[scanApk] Preparing upload: $fileName")
+
+        val inputStream: InputStream = contentResolver.openInputStream(uri)
+            ?: return ApiResult.ApiError("Impossible de lire le fichier APK", -1)
+
+        val bytes = inputStream.use { it.readBytes() }
+        Log.d(TAG, "[scanApk] Read ${bytes.size} bytes from APK")
+
+        return safeApiCall("/api/scan/apk") {
+            client.submitFormWithBinaryData(
+                url = "/api/scan/apk",
+                formData = formData {
+                    // Add userId and deviceId as text fields
+                    append("userId", userId)
+                    deviceId?.let { append("deviceId", it) }
+                    
+                    // Add file as binary part with proper headers
+                    append(
+                        key = "file",
+                        value = bytes,
+                        headers = Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        }
+                    )
+                }
+            )
+        }
+    }
+
+    private fun queryFileName(uri: Uri): String? {
+        val cursor = context.contentResolver.query(uri, null, null, null, null) ?: return null
+        return cursor.use {
+            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0 && it.moveToFirst()) it.getString(nameIndex) else null
         }
     }
 }

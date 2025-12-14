@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import coil.ImageLoader
@@ -15,10 +17,8 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.runBlocking
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.navigation.AppNavGraph
-import tn.esprit.dam.navigation.Screens
 import tn.esprit.dam.ui.theme.ShadowGuardTheme
 
 @AndroidEntryPoint
@@ -34,22 +34,16 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val startDestination = getStartDestination()
+                    val isLoggedIn by TokenManager.isLoggedInFlow(this).collectAsState(initial = false)
 
+                    // Use AppNavGraph which includes Login screen
+                    // startDestination is determined by isLoggedIn state in AppNavGraph
                     AppNavGraph(
                         navController = navController,
-                        startDestination = startDestination
+                        startDestination = if (isLoggedIn) "home" else "login"
                     )
                 }
             }
-        }
-    }
-
-    private fun getStartDestination(): String = runBlocking {
-        if (TokenManager.getAccessToken(this@MainActivity) != null) {
-            Screens.Home.route
-        } else {
-            Screens.Login.route
         }
     }
 

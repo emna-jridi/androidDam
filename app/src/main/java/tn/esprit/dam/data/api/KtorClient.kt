@@ -36,9 +36,9 @@ object KtorClient {
         return HttpClient(Android) {
             // Request timeout configuration
             install(HttpTimeout) {
-                requestTimeoutMillis = 60000
-                connectTimeoutMillis = 30000
-                socketTimeoutMillis = 30000
+                requestTimeoutMillis = 300_000  // 5 minutes for long scans
+                connectTimeoutMillis = 120_000  // 2 minutes to establish connection
+                socketTimeoutMillis = 300_000   // 5 minutes for data transfer
             }
 
             // JSON serialization with kotlinx

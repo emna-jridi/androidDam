@@ -1,6 +1,8 @@
 package tn.esprit.dam.features.scan.presentation
 
 import android.content.Context
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +27,8 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     private val _homeState = MutableStateFlow(HomeState())
     val homeState: StateFlow<HomeState> = _homeState.asStateFlow()
+    
+    private val TAG = "HomeViewModel"
 
     fun loadDashboard() {
         viewModelScope.launch {
@@ -44,16 +48,37 @@ class HomeViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Use getLatestScan - the ONLY endpoint for Home screen
+                val historyResult = repository.getScanHistory(userId, limit = 1, offset = 0)
+
+                val hasHistory = historyResult is ApiResult.Success && historyResult.data.scans.isNotEmpty()
+                val lastHistoryDate = if (hasHistory) historyResult.data.scans.first().createdAt else null
+
+                // If no history, hide score card
+                if (!hasHistory) {
+                    _homeState.value = _homeState.value.copy(
+                        lastScanDate = null,
+                        overallScore = 0f,
+                        highRiskCount = 0,
+                        mediumRiskCount = 0,
+                        lowRiskCount = 0,
+                        riskyApps = emptyList(),
+                        recentScans = emptyList(),
+                        loading = false,
+                        error = null,
+                        totalApps = 0
+                    )
+                    return@launch
+                }
+
+                // Latest scan details for score + risk breakdown
                 when (val result = repository.getLatestScan(userId)) {
                     is ApiResult.Success -> {
                         val response = result.data
                         val apps = response.apps
-                        
-                        // If apps is empty, this is NOT an error - it's first-time user state
+
                         if (apps.isEmpty()) {
                             _homeState.value = _homeState.value.copy(
-                                lastScanDate = null,
+                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.createdAt),
                                 overallScore = 0f,
                                 highRiskCount = 0,
                                 mediumRiskCount = 0,
@@ -65,15 +90,16 @@ class HomeViewModel @Inject constructor(
                                 totalApps = 0
                             )
                         } else {
-                            val averageScore = apps.map { it.finalScore }.average().toFloat()
+                            val riskScores = apps.map { it.finalScore }
+                            val averageScore = riskScores.average().toFloat()
                             val sortedByRisk = apps.sortedBy { it.finalScore }
-                            val highRiskCount = apps.count { it.finalScore < 40f }
-                            val mediumRiskCount = apps.count { it.finalScore in 40f..69f }
-                            val lowRiskCount = apps.count { it.finalScore >= 70f }
+                            val highRiskCount = apps.count { it.finalScore >= 85 }
+                            val mediumRiskCount = apps.count { it.finalScore in 70.0..84.99 }
+                            val lowRiskCount = apps.size - highRiskCount - mediumRiskCount
 
                             _homeState.value = _homeState.value.copy(
-                                lastScanDate = formatTimestamp(response.createdAt),
-                                overallScore = response.globalScore.toFloat(),
+                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.createdAt),
+                                overallScore = averageScore,
                                 highRiskCount = highRiskCount,
                                 mediumRiskCount = mediumRiskCount,
                                 lowRiskCount = lowRiskCount,
@@ -123,6 +149,62 @@ class HomeViewModel @Inject constructor(
 
     fun clearError() {
         _homeState.value = _homeState.value.copy(error = null)
+    }
+
+    fun scanApk(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                _homeState.value = _homeState.value.copy(loading = true, error = null)
+
+                val user = TokenManager.getUser(context)
+                val userId = user?.id
+
+                if (userId == null) {
+                    _homeState.value = _homeState.value.copy(
+                        loading = false,
+                        error = "Utilisateur non connecté"
+                    )
+                    return@launch
+                }
+
+                Log.d(TAG, "Starting APK scan for user: $userId")
+
+                when (val result = repository.scanApk(uri, userId, null)) {
+                    is ApiResult.Success -> {
+                        Log.d(TAG, "APK scan successful")
+                        // Reload dashboard to show new results
+                        loadDashboard()
+                    }
+                    is ApiResult.ApiError -> {
+                        Log.e(TAG, "APK scan API error: ${result.message}")
+                        _homeState.value = _homeState.value.copy(
+                            loading = false,
+                            error = "Erreur: ${result.message}"
+                        )
+                    }
+                    is ApiResult.NetworkError -> {
+                        Log.e(TAG, "APK scan network error", result.exception)
+                        _homeState.value = _homeState.value.copy(
+                            loading = false,
+                            error = "Erreur réseau: ${result.exception.message}"
+                        )
+                    }
+                    is ApiResult.SerializationError -> {
+                        Log.e(TAG, "APK scan serialization error", result.exception)
+                        _homeState.value = _homeState.value.copy(
+                            loading = false,
+                            error = "Erreur de données: ${result.exception.message}"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "APK scan unexpected error", e)
+                _homeState.value = _homeState.value.copy(
+                    loading = false,
+                    error = e.message ?: "Erreur lors de l'analyse APK"
+                )
+            }
+        }
     }
 
     @Suppress("NewApi")

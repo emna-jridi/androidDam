@@ -116,10 +116,24 @@ data class AnalysisResultDto(
   val aiSummary: String,
   @SerializedName("aiRecommendations")
   val aiRecommendations: List<String>,
+  @SerializedName("permissions")
+  val permissions: List<PermissionInfo> = emptyList(),
+  @SerializedName("trackers")
+  val trackers: List<TrackerInfo> = emptyList(),
   @SerializedName("permissionsScore")
   val permissionsScore: Float? = null,
   @SerializedName("trackersScore")
   val trackersScore: Float? = null
+)
+
+data class PermissionInfo(
+  @SerializedName("name")
+  val name: String
+)
+
+data class TrackerInfo(
+  @SerializedName("name")
+  val name: String
 )
 
 // Status check response

@@ -75,4 +75,15 @@ class ScanRepository @Inject constructor(
     suspend fun getFullAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
         return apiService.getFullAppDetails(packageName)
     }
+
+    /**
+     * Upload and analyze an APK using MobSF backend
+     */
+    suspend fun scanApk(
+        uri: android.net.Uri,
+        userId: String,
+        deviceId: String?
+    ): ApiResult<AppDetailsResponse> {
+        return apiService.scanApk(uri, userId, deviceId)
+    }
 }

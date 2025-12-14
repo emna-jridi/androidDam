@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import tn.esprit.dam.data.api.models.AppInfoDto
+import tn.esprit.dam.data.api.models.AppScanHistoryDto
 import tn.esprit.dam.data.api.models.StoreDataDto
 import tn.esprit.dam.data.api.models.AnalysisResultDto
+import tn.esprit.dam.utils.SecurityScoring
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun AppDetailScreen(
@@ -50,6 +54,7 @@ fun AppDetailScreen(
         uiState.app != null -> {
             AppDetailContent(
                 app = uiState.app!!,
+                history = uiState.history,
                 onBackClick = onBackClick
             )
         }
@@ -111,17 +116,43 @@ private fun ErrorScreen(
 @Composable
 private fun AppDetailContent(
     app: AppInfoDto,
+    history: List<AppScanHistoryDto>,
     onBackClick: () -> Unit
 ) {
+    val riskLevel = app.scanResults?.aiRiskLevel ?: "low"
+    val smoothedScore = SecurityScoring.computeUserFriendlyScore(
+        rawScore = app.scanResults?.aiRiskScore ?: app.finalScore,
+        riskLevel = riskLevel
+    )
+    val lastScanDate = app.lastScanned ?: history.firstOrNull()?.scanDate
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
+        item {
+            DetailHeader(onBackClick = onBackClick)
+        }
+
         // App Header
         item {
-            AppHeaderCard(app = app)
+            AppHeaderCard(
+                app = app,
+                riskLevel = riskLevel,
+                lastScanDate = lastScanDate,
+                historyCount = history.size
+            )
+        }
+
+        if (smoothedScore > 0) {
+            item {
+                ScoreBreakdownCard(
+                    finalScore = smoothedScore,
+                    riskLevel = riskLevel
+                )
+            }
         }
 
         // Store Data
@@ -131,24 +162,23 @@ private fun AppDetailContent(
             }
         }
 
-        // Final Score Breakdown
-        if (app.finalScore > 0) {
+        // AI Analysis Results with status badge
+        if (app.scanResults != null) {
             item {
-                ScoreBreakdownCard(
-                    finalScore = app.finalScore.toInt(),
-                    riskLevel = app.scanResults?.aiRiskLevel ?: "low"
+                AIAnalysisCard(
+                    scanResults = app.scanResults!!,
+                    aiStatus = app.scanResults!!.aiStatus ?: "fallback"
                 )
             }
         }
 
-        // AI Analysis Results
-        if (app.scanResults != null) {
+        if (history.isNotEmpty()) {
             item {
-                AIAnalysisCard(scanResults = app.scanResults!!)
+                AppHistorySection(history)
             }
         }
 
-        // Permissions
+        // Permissions (only if non-empty)
         if (app.permissions.isNotEmpty()) {
             item {
                 SectionTitle(title = "Permissions détectées (${app.permissions.size})")
@@ -168,7 +198,7 @@ private fun AppDetailContent(
             }
         }
 
-        // Trackers
+        // Trackers (only if non-empty)
         if (app.trackers.isNotEmpty()) {
             item {
                 SectionTitle(title = "Trackers identifiés (${app.trackers.size})")
@@ -181,7 +211,122 @@ private fun AppDetailContent(
 }
 
 @Composable
-private fun AppHeaderCard(app: AppInfoDto) {
+private fun DetailHeader(onBackClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconButton(onClick = onBackClick) {
+            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Retour")
+        }
+        Text(
+            text = "Détails de l'application",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun AppHistorySection(history: List<AppScanHistoryDto>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Historique des scans (${history.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        history.forEach { entry ->
+            HistoryEntryCard(entry)
+        }
+    }
+}
+
+@Composable
+private fun HistoryEntryCard(entry: AppScanHistoryDto) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = formatHistoryDate(entry.scanDate),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Score: ${entry.score.toInt()}/100",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+
+            RiskLevelBadge(riskLevel = entry.riskLevel)
+        }
+    }
+}
+
+@Composable
+private fun RiskLevelBadge(riskLevel: String) {
+    val color = riskColor(riskLevel)
+    Surface(
+        color = color.copy(alpha = 0.2f),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = riskLevel.uppercase(),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+private fun formatHistoryDate(dateString: String): String {
+    return runCatching {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        val date = inputFormat.parse(dateString)
+        val output = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.FRENCH)
+        date?.let { output.format(it) } ?: dateString
+    }.getOrElse { dateString }
+}
+
+private fun riskColor(riskLevel: String): Color {
+    return when (riskLevel.lowercase()) {
+        "low" -> Color(0xFF4CAF50)
+        "medium" -> Color(0xFFFF9800)
+        "high" -> Color(0xFFF44336)
+        "critical" -> Color(0xFF9C27B0)
+        else -> Color(0xFF6366F1)
+    }
+}
+
+@Composable
+private fun AppHeaderCard(
+    app: AppInfoDto,
+    riskLevel: String,
+    lastScanDate: String?,
+    historyCount: Int
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,10 +343,12 @@ private fun AppHeaderCard(app: AppInfoDto) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            RiskLevelBadge(riskLevel = riskLevel)
+
             // App Icon
             AsyncImage(
                 model = app.storeData?.icon ?: "",
-                contentDescription = app.displayName,
+                contentDescription = app.displayName ?: app.packageName,
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(16.dp))
@@ -211,7 +358,7 @@ private fun AppHeaderCard(app: AppInfoDto) {
 
             // App Name
             Text(
-                text = app.displayName,
+                text = app.displayName ?: app.packageName,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -233,6 +380,25 @@ private fun AppHeaderCard(app: AppInfoDto) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                lastScanDate?.let { date ->
+                    Text(
+                        text = "Dernier scan: ${formatHistoryDate(date)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+
+                Text(
+                    text = "Analyses: $historyCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }
@@ -319,13 +485,7 @@ private fun ScoreBreakdownCard(
     finalScore: Int,
     riskLevel: String
 ) {
-    val scoreColor = when (riskLevel.lowercase()) {
-        "low" -> Color(0xFF4CAF50)
-        "medium" -> Color(0xFFFF9800)
-        "high" -> Color(0xFFF44336)
-        "critical" -> Color(0xFF9C27B0)
-        else -> MaterialTheme.colorScheme.primary
-    }
+    val scoreColor = riskColor(riskLevel)
 
     Card(
         modifier = Modifier
@@ -404,7 +564,10 @@ private fun ScoreBreakdownCard(
 }
 
 @Composable
-private fun AIAnalysisCard(scanResults: AnalysisResultDto) {
+private fun AIAnalysisCard(
+    scanResults: AnalysisResultDto,
+    aiStatus: String = "fallback"
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -422,7 +585,8 @@ private fun AIAnalysisCard(scanResults: AnalysisResultDto) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
@@ -433,8 +597,28 @@ private fun AIAnalysisCard(scanResults: AnalysisResultDto) {
                     text = "Analyse de Sécurité",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.weight(1f)
                 )
+                // AI Status Badge
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = if (aiStatus == "ok")
+                        Color(0xFF4CAF50).copy(alpha = 0.2f)
+                    else
+                        Color(0xFFFF9800).copy(alpha = 0.2f)
+                ) {
+                    Text(
+                        text = if (aiStatus == "ok") "IA" else "Heur.",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (aiStatus == "ok")
+                            Color(0xFF4CAF50)
+                        else
+                            Color(0xFFFF9800),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
             // Summary

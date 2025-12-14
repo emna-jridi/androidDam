@@ -1,20 +1,33 @@
 ﻿package tn.esprit.dam.navigation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.util.Base64
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.decodeFromString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -212,14 +225,38 @@ fun AppNavGraph(
                     onNavigateToProfile = { navController.navigate(Screens.Profile.route) },
                     onNavigateToAppDetails = { packageName ->
                         navController.navigate(Screens.AppDetails.createRoute(packageName))
+                    },
+                    onLogout = {
+                        runBlocking { TokenManager.clearAll(context) }
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }
 
             composable(Screens.Scan.route) {
-                ScanScreen(
-                    userId = "user",
-                    deviceId = "device",
+                val context = LocalContext.current
+                    var userId by remember { mutableStateOf<String?>(null) }
+                    var deviceId by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(Unit) {
+                    val user = TokenManager.getUser(context)
+                    val token = TokenManager.getAccessToken(context)
+                    val decodedId = token?.let { decodeUserIdFromToken(it) }
+                    userId = user?.id ?: decodedId ?: "unknown"
+                    
+                    deviceId = android.provider.Settings.Secure.getString(
+                        context.contentResolver,
+                        android.provider.Settings.Secure.ANDROID_ID
+                    ) ?: "unknown"
+                }
+
+                    // Only render ScanScreen when userId is loaded
+                    if (userId != null && deviceId != null) {
+                        ScanScreen(
+                            userId = userId!!,
+                            deviceId = deviceId!!,
                     onNavigateToHome = {
                         navController.navigate(Screens.Home.route) {
                             popUpTo(Screens.Home.route) { inclusive = true }
@@ -229,6 +266,15 @@ fun AppNavGraph(
                         navController.navigate(Screens.AppDetails.createRoute(packageName))
                     }
                 )
+                } else {
+                    // Loading state while fetching userId
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
 
             composable(
@@ -243,9 +289,8 @@ fun AppNavGraph(
             }
 
             composable(Screens.ScanHistory.route) {
-                SimplePlaceholderScreen(
-                    title = stringResource(id = R.string.history_title),
-                    message = stringResource(id = R.string.history_message)
+                tn.esprit.dam.features.scan.presentation.ScanHistoryScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
@@ -270,6 +315,18 @@ fun AppNavGraph(
             }
         }
     }
+}
+
+private fun decodeUserIdFromToken(token: String): String? {
+    val parts = token.split(".")
+    if (parts.size < 2) return null
+    return runCatching {
+        val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING))
+        val json = Json { ignoreUnknownKeys = true }
+        val element = json.decodeFromString<JsonElement>(payload)
+        val node = element.jsonObject
+        node["sub"]?.jsonPrimitive?.contentOrNull
+    }.getOrNull()
 }
 
 @Composable

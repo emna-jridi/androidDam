@@ -18,6 +18,15 @@ object Spacing {
     val massive: Dp = 64.dp
 }
 
+// Convenience top-level spacing aliases per spec
+val spacing_4 = 4.dp
+val spacing_8 = 8.dp
+val spacing_12 = 12.dp
+val spacing_16 = 16.dp
+val spacing_20 = 20.dp
+val spacing_24 = 24.dp
+val spacing_32 = 32.dp
+
 // ============================================
 // COMPONENT SIZES
 // ============================================
@@ -51,6 +60,11 @@ object BorderRadius {
     val massive: Dp = 32.dp
     val round: Dp = 999.dp  // Fully rounded
 }
+
+// Convenience top-level corner radius aliases per spec
+val cornerSmall = 8.dp
+val cornerMedium = 12.dp
+val cornerLarge = 16.dp
 
 // ============================================
 // BORDER WIDTH

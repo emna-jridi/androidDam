@@ -20,6 +20,8 @@ data class ApiResponse<T>(
     val data: T? = null,
     @SerialName("message")
     val message: String? = null,
+    @SerialName("error")
+    val error: String? = null,  // ✅ Backend uses 'error' field for errors
     @SerialName("timestamp")
     val timestamp: String? = null
 )
@@ -136,7 +138,7 @@ data class AppInfoDto(
     @SerialName("packageName")
     val packageName: String,
     @SerialName("displayName")
-    val displayName: String,
+    val displayName: String? = null,
     @SerialName("category")
     val category: String? = null,
     @SerialName("permissions")
@@ -190,7 +192,9 @@ data class AnalysisResultDto(
     @SerialName("permissionsScore")
     val permissionsScore: Float? = null,
     @SerialName("trackersScore")
-    val trackersScore: Float? = null
+    val trackersScore: Float? = null,
+    @SerialName("aiStatus")
+    val aiStatus: String? = "fallback"
 )
 
 // ============= App Details =============

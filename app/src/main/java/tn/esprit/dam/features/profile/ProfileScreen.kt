@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tn.esprit.dam.data.model.User
 import tn.esprit.dam.features.profile.components.*
+import tn.esprit.dam.ui.theme.*
 
 @Composable
 fun ProfileScreen(
@@ -37,14 +38,7 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0A0E27),
-                        Color(0xFF1A1F3A)
-                    )
-                )
-            )
+            .background(Surface)
     ) {
         when (val state = uiState) {
             is ProfileUiState.Loading -> {
@@ -52,7 +46,7 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF7C3AED))
+                    CircularProgressIndicator(color = Primary)
                 }
             }
 
@@ -120,7 +114,7 @@ private fun ErrorContent(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1E2139)
+                containerColor = SurfaceVariant
             )
         ) {
             Column(
@@ -130,7 +124,7 @@ private fun ErrorContent(
                 Icon(
                     Icons.Filled.Warning,
                     contentDescription = null,
-                    tint = if (isSessionExpired) Color(0xFFEF4444) else Color(0xFFF59E0B),
+                    tint = if (isSessionExpired) DangerRed else WarningOrange,
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -152,7 +146,7 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF7C3AED)
+                                containerColor = Primary
                             )
                         ) {
                             Text("Réessayer", color = Color.White)
@@ -165,7 +159,7 @@ private fun ErrorContent(
                                 .fillMaxWidth()
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEF4444)
+                                containerColor = DangerRed
                             )
                         ) {
                             Text("Se reconnecter", color = Color.White)
@@ -177,7 +171,7 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEF4444)
+                                containerColor = DangerRed
                             )
                         ) {
                             Text("Quitter", color = Color.White)

@@ -34,7 +34,7 @@ fun ApiLocalAppInfo.toUiModel(isSelected: Boolean = false): LocalAppInfo {
 fun AppInfoDto.toUiModel(isSelected: Boolean = false): LocalAppInfo {
     return LocalAppInfo(
         packageName = this.packageName,
-        displayName = this.displayName,
+        displayName = this.displayName ?: this.packageName,
         category = this.category,
         isSystemApp = false,
         permissions = this.permissions,
@@ -56,5 +56,7 @@ data class ScanState(
     val mediumRiskCount: Int = 0,
     val lowRiskCount: Int = 0,
     val averageScore: Float = 0f,
-    val error: String? = null
+    val error: String? = null,
+    val showSystemApps: Boolean = false,
+    val analysisNote: String? = null
 )

@@ -1,9 +1,18 @@
 package tn.esprit.dam.features.scan.presentation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +25,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,37 +35,54 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
 import tn.esprit.dam.R
-import tn.esprit.dam.data.api.models.AppInfoDto
 import tn.esprit.dam.data.api.models.AppResult
 
 @Composable
@@ -63,110 +92,498 @@ fun HomeScreen(
     onNavigateToAppSearch: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToAppDetails: (String) -> Unit,
+    onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.homeState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
-    val apkPickSuccessMessage = stringResource(id = R.string.apk_picker_success)
-    val apkPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
+    val context = LocalContext.current
+    
+    val apkPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
             uri?.let {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = apkPickSuccessMessage
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
+                } catch (_: SecurityException) {
+                    // Permission is best-effort; continue with transient grant
                 }
+                viewModel.scanApk(it)
             }
         }
     )
+    
+    val pickApk: () -> Unit = {
+        apkPicker.launch(
+            arrayOf(
+                "application/vnd.android.package-archive",
+                "application/octet-stream"
+            )
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
     }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF0B1024), Color(0xFF141A36))
-                    )
+    // Scaffold removed - AppNavGraph already provides topBar and bottomBar
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScanTheme.DarkBg)
+            .padding(horizontal = ScanTheme.Spacing20, vertical = ScanTheme.Spacing20),
+        verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing20)
+    ) {
+            item {
+                if (homeState.loading) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                    }
+                } else if (homeState.hasScan) {
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(350)) + slideInVertically(initialOffsetY = { 24 })
+                    ) {
+                        ScoreSection(
+                            score = homeState.overallScore.toInt(),
+                            onImproveClick = onNavigateToScan
+                        )
+                    }
+                }
+            }
+
+            item {
+                Text(
+                    text = "Actions rapides",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ScanTheme.TextPrimary,
+                    fontWeight = FontWeight.Bold
                 )
-                .padding(padding)
-        ) {
-            if (homeState.loading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF7C3AED))
-                }
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    HomeHeader(
-                        lastScanText = homeState.lastScanDate
-                            ?: stringResource(id = R.string.last_scan_unknown),
-                        onProfileClick = onNavigateToProfile
-                    )
-                }
-
-                // Only show score card, charts, and risk lists if there's a scan
-                if (homeState.hasScan) {
-                    item {
-                        SecurityScoreCard(
-                            score = homeState.overallScore,
-                            totalApps = homeState.totalApps
-                        )
-                    }
-                }
-
-                item {
-                    ActionGrid(
+            item {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(350)) + slideInVertically(initialOffsetY = { 32 })
+                ) {
+                    FeatureGrid(
                         onScan = onNavigateToScan,
+                        onSearch = onNavigateToAppSearch,
                         onHistory = onNavigateToHistory,
-                        onPickApk = { apkPickerLauncher.launch("application/vnd.android.package-archive") },
-                        onSearch = onNavigateToAppSearch
+                        onScanApk = pickApk,
+                        onShadowGuard = { }
                     )
                 }
+            }
 
-                // Only show risky apps if there's a scan
-                if (homeState.hasScan) {
-                    item {
-                        RiskyAppsSection(
-                            apps = homeState.riskyApps.take(3),
-                            onNavigateToAppDetails = onNavigateToAppDetails,
-                            title = stringResource(id = R.string.risky_apps_title)
+            if (homeState.hasScan) {
+                item {
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(350)) + slideInVertically(initialOffsetY = { 24 })
+                    ) {
+                        RecentActivitySection(
+                            riskyApps = homeState.riskyApps,
+                            onNavigateToAppDetails = onNavigateToAppDetails
                         )
-                    }
-                }
-
-                // Show error if exists
-                if (!homeState.loading && homeState.error != null) {
-                    item {
-                        ErrorState(error = homeState.error!!, onRetry = { viewModel.loadDashboard() })
                     }
                 }
             }
 
-            homeState.error?.let { errorMessage ->
-                LaunchedEffect(errorMessage) {
-                    snackbarHostState.showSnackbar(errorMessage)
+            if (!homeState.hasScan && !homeState.loading) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+                        shape = RoundedCornerShape(ScanTheme.CornerLarge),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(ScanTheme.Spacing16),
+                            verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)
+                        ) {
+                            Text(
+                                text = "Aucun scan effectué",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ScanTheme.TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Lancez votre premier scan pour sécuriser vos applications.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ScanTheme.TextSecondary
+                            )
+                            TextButton(onClick = onNavigateToScan) {
+                                Text("Commencer un scan", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+}
+@Composable
+private fun TopBar(
+    onMenu: () -> Unit,
+    onProfile: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScanTheme.Spacing20, vertical = ScanTheme.Spacing16),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4)) {
+            Text(
+                text = "ShadowGuard",
+                style = MaterialTheme.typography.headlineMedium,
+                color = ScanTheme.TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Protection et confidentialité",
+                style = MaterialTheme.typography.bodySmall,
+                color = ScanTheme.TextSecondary
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+            IconButton(
+                onClick = onProfile,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
+                    .background(ScanTheme.Surface)
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = ScanTheme.TextPrimary)
+            }
+            IconButton(
+                onClick = onMenu,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
+                    .background(ScanTheme.Surface)
+            ) {
+                Icon(Icons.Default.MoreVert, contentDescription = null, tint = ScanTheme.TextPrimary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomNav(
+    onHome: () -> Unit,
+    onScan: () -> Unit,
+    onHistory: () -> Unit,
+    onProfile: () -> Unit
+) {
+    NavigationBar(
+        containerColor = ScanTheme.CardBg,
+        tonalElevation = 8.dp,
+        contentColor = ScanTheme.TextPrimary
+    ) {
+        NavigationBarItem(
+            selected = true,
+            onClick = onHome,
+            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            label = { Text("Accueil") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF6366F1),
+                selectedTextColor = ScanTheme.TextPrimary,
+                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+            )
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onScan,
+            icon = { Icon(Icons.Default.Security, contentDescription = null) },
+            label = { Text("Sécurité") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF6366F1),
+                selectedTextColor = ScanTheme.TextPrimary,
+                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+            )
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onHistory,
+            icon = { Icon(Icons.Default.History, contentDescription = null) },
+            label = { Text("Historique") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF6366F1),
+                selectedTextColor = ScanTheme.TextPrimary,
+                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+            )
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onProfile,
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            label = { Text("Profil") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF6366F1),
+                selectedTextColor = ScanTheme.TextPrimary,
+                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+            )
+        )
+    }
+}
+
+@Composable
+private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
+    val clampedScore = score.coerceIn(0, 100)
+    val animatedScore by animateFloatAsState(
+        targetValue = clampedScore.toFloat(),
+        animationSpec = tween(durationMillis = 1400),
+        label = "scoreValue"
+    )
+    val progress by animateFloatAsState(
+        targetValue = clampedScore / 100f,
+        animationSpec = tween(durationMillis = 1400),
+        label = "scoreProgress"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(ScanTheme.CornerXLarge),
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(ScanTheme.Spacing24),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing32)
+        ) {
+            Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFF6366F1).copy(alpha = 0.3f), Color.Transparent)
+                            ),
+                            shape = CircleShape
+                        )
+                )
+                CircularProgressIndicator(
+                    progress = progress,
+                    strokeWidth = 10.dp,
+                    color = Color(0xFF6366F1),
+                    trackColor = ScanTheme.SurfaceVariant,
+                    modifier = Modifier.size(120.dp)
+                )
+                Text(
+                    text = animatedScore.toInt().toString(),
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold, fontSize = 42.sp),
+                    color = ScanTheme.TextPrimary
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)
+            ) {
+                Text(
+                    text = "Score de sécurité",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ScanTheme.TextSecondary,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = when (clampedScore) {
+                        0 -> "Aucun scan effectué"
+                        in 1..30 -> "⚠️ Score faible – recommandations disponibles"
+                        in 31..70 -> "🟠 Score moyen"
+                        else -> "🟢 Très bon score"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ScanTheme.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = when (clampedScore) {
+                        0 -> "Aucun scan effectué"
+                        in 1..30 -> "Plusieurs risques importants"
+                        in 31..70 -> "Quelques risques à surveiller"
+                        else -> "Appareil globalement sécurisé"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ScanTheme.TextSecondary
+                )
+                if (clampedScore > 0) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)) {
+                        ScoreTag("Permissions", Color(0xFFEF4444).copy(alpha = 0.18f), Color(0xFFEF4444))
+                        ScoreTag("Trackers", Color(0xFFFB923C).copy(alpha = 0.18f), Color(0xFFFB923C))
+                    }
+                }
+                Text(
+                    text = "Le score est basé sur les permissions sensibles et les trackers détectés",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ScanTheme.TextSecondary
+                )
+                TextButton(onClick = onImproveClick) {
+                    Text("Voir comment améliorer", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
                 }
             }
         }
     }
 }
+
+@Composable
+private fun ScoreTag(text: String, bgColor: Color, textColor: Color) {
+    Box(
+        modifier = Modifier
+            .background(bgColor, RoundedCornerShape(ScanTheme.CornerSmall))
+            .padding(horizontal = ScanTheme.Spacing8, vertical = ScanTheme.Spacing4)
+    ) {
+        Text(text = text, color = textColor, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FeatureGrid(
+    onScan: () -> Unit,
+    onSearch: () -> Unit,
+    onHistory: () -> Unit,
+    onScanApk: () -> Unit,
+    onShadowGuard: () -> Unit
+) {
+    val items = listOf(
+        FeatureItem("Nouveau scan", Icons.Default.Security, "Analyser maintenant", onScan, listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))),
+        FeatureItem("Historique", Icons.Default.History, "Derniers résultats", onHistory, listOf(Color(0xFF0EA5E9), Color(0xFF2563EB))),
+        FeatureItem("Scanner un APK", Icons.Default.Android, "Fichier externe", onScanApk, listOf(Color(0xFF10B981), Color(0xFF059669))),
+        FeatureItem("Rechercher une application", Icons.Default.Search, "Vérifier un app", onSearch, listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9)))
+    )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing16),
+        verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing16),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height((140.dp * 2) + ScanTheme.Spacing16)
+    ) {
+        items(items) { item ->
+            FeatureCard(item)
+        }
+    }
+}
+
+private data class FeatureItem(
+    val title: String,
+    val icon: ImageVector,
+    val description: String,
+    val onClick: () -> Unit,
+    val gradient: List<Color>
+)
+
+@Composable
+private fun FeatureCard(item: FeatureItem) {
+    var pressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = tween(durationMillis = 180),
+        label = "featurePress"
+    )
+
+    Card(
+        modifier = Modifier
+            .size(width = 160.dp, height = 140.dp)
+            .scale(scale)
+            .clip(RoundedCornerShape(ScanTheme.CornerLarge))
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        pressed = true
+                        val success = try { tryAwaitRelease(); true } catch (e: Exception) { false }
+                        pressed = false
+                        if (success) item.onClick()
+                    }
+                )
+            },
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.SurfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ScanTheme.Border.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(ScanTheme.Spacing12),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(brush = Brush.linearGradient(item.gradient), shape = RoundedCornerShape(ScanTheme.CornerMedium)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(item.icon, contentDescription = item.title, tint = Color.White, modifier = Modifier.size(28.dp))
+            }
+            Spacer(modifier = Modifier.height(ScanTheme.Spacing8))
+            Text(item.title, style = MaterialTheme.typography.labelLarge, color = ScanTheme.TextPrimary, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(item.description, style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun RecentActivitySection(
+    riskyApps: List<AppResult>,
+    onNavigateToAppDetails: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+        Text(
+            text = "Activité récente",
+            style = MaterialTheme.typography.titleMedium,
+            color = ScanTheme.TextPrimary,
+            fontWeight = FontWeight.Bold
+        )
+
+        if (riskyApps.isEmpty()) {
+            Text(
+                text = "Aucune analyse récente",
+                style = MaterialTheme.typography.bodySmall,
+                color = ScanTheme.TextSecondary
+            )
+        } else {
+            riskyApps.take(3).forEach { app ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+                    shape = RoundedCornerShape(ScanTheme.CornerLarge),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToAppDetails(app.packageName) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(ScanTheme.Spacing16),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4), modifier = Modifier.weight(1f)) {
+                            Text(app.appName, style = MaterialTheme.typography.bodyMedium, color = ScanTheme.TextPrimary)
+                            Text("Score ${app.finalScore.toInt()}/100", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
+                            RiskBadge(score = app.finalScore)
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = ScanTheme.TextSecondary)
+                    }
+                }
+            }
+        }
+    }
+
+}
+
 
 @Composable
 private fun HomeHeader(
@@ -230,7 +647,7 @@ private fun SecurityScoreCard(score: Float, totalApps: Int) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E233A)),
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.SurfaceVariant),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(
@@ -587,7 +1004,7 @@ data class HomeState(
     val error: String? = null
 ) {
     val hasScan: Boolean
-        get() = riskyApps.isNotEmpty()
+        get() = totalApps > 0
 }
 
 data class RecentScan(
