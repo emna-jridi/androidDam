@@ -65,6 +65,7 @@ import com.shadowguard.dam.ui.vault.screens.CreateMasterPasswordScreen
 import com.shadowguard.dam.ui.vault.screens.VaultUnlockScreen
 import com.shadowguard.dam.ui.vault.screens.PasswordListScreen
 import tn.esprit.dam.data.api.KtorClient
+import tn.esprit.dam.screens.AlertScreen.AlertsScreen
 
 @Composable
 fun AppNavGraph(
@@ -75,10 +76,10 @@ fun AppNavGraph(
     val context = LocalContext.current
 
     // Create singleton VaultRepository for all vault screens
-    val vaultClient = remember { KtorClient.getInstance(context, TokenManager) }
+    val vaultClient = remember { tn.esprit.dam.data.remote.KtorHttpClient(context) }
     val vaultRepository = remember { VaultRepository(VaultApi(vaultClient)) }
     val ollamaAdvisor = remember { OllamaPasswordAdvisor(vaultRepository) }
-    
+
     // Shared ViewModels
     val passwordViewModel = remember { PasswordViewModel(vaultRepository, ollamaAdvisor) }
 
@@ -248,6 +249,9 @@ fun AppNavGraph(
                     onNavigateToAppDetails = { packageName ->
                         navController.navigate(Screens.AppDetails.createRoute(packageName))
                     },
+                    onNavigateToAlerts = {
+                        navController.navigate(Screens.AlertsHistory.route)
+                    },
                     onNavigateToVault = { navController.navigate(Screens.Vault.route) },
                     onLogout = {
                         runBlocking { TokenManager.clearAll(context) }
@@ -257,7 +261,9 @@ fun AppNavGraph(
                     }
                 )
             }
-
+            composable(Screens.AlertsHistory.route) {
+                AlertsScreen(navController = navController)
+            }
             composable(Screens.Scan.route) {
                 val context = LocalContext.current
                     var userId by remember { mutableStateOf<String?>(null) }
@@ -335,7 +341,8 @@ fun AppNavGraph(
                         }
                     },
                     onOpenVault = { navController.navigate(Screens.Vault.route) },
-                    onCreateVault = { navController.navigate("${Screens.Vault.route}?intent=create") }
+                    onCreateVault = { navController.navigate("${Screens.Vault.route}?intent=create") },
+                    onOpenDarkWeb = { navController.navigate(Screens.DarkWebMonitoring.route) }
                 )
             }
 
@@ -390,9 +397,9 @@ fun AppNavGraph(
                 val intent = backStackEntry.arguments?.getString("intent")
                 val vaultViewModel = remember { VaultViewModel(vaultRepository) }
                 // Used shared passwordViewModel
-                
+
                 // Clear selection when entering list if needed, or keep state
-                // LaunchedEffect(Unit) { passwordViewModel.clearSelection() } 
+                // LaunchedEffect(Unit) { passwordViewModel.clearSelection() }
 
                 val uiState = vaultViewModel.uiState.collectAsState().value
                 val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -457,12 +464,12 @@ fun AppNavGraph(
                     onBack = { navController.popBackStack() }
                 )
             }
-            
+
             // Password Detail Screen
             composable(Screens.VaultDetail.route) {
                 val selectedPassword by passwordViewModel.selectedPassword.collectAsState()
                 val passwordState = selectedPassword
-                
+
                 if (passwordState != null) {
                     com.shadowguard.dam.ui.vault.screens.PasswordDetailScreen(
                         data = passwordState,
@@ -479,6 +486,23 @@ fun AppNavGraph(
                          CircularProgressIndicator()
                     }
                 }
+            }
+            // Dark Web Monitoring
+            composable(Screens.DarkWebMonitoring.route) {
+                com.shadowguard.dam.ui.darkweb.screens.DarkWebMonitoringScreen(
+                    navController = navController
+                )
+            }
+
+            composable(
+                route = Screens.BreachDetail.route,
+                arguments = listOf(navArgument("breachId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val breachId = backStackEntry.arguments?.getString("breachId") ?: ""
+                com.shadowguard.dam.ui.darkweb.screens.BreachDetailScreen(
+                    navController = navController,
+                    breachId = breachId
+                )
             }
         }
     }

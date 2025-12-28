@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import tn.esprit.dam.features.scan.presentation.ScanTheme
 
 @Composable
 fun ActionCard(
@@ -28,21 +29,21 @@ fun ActionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(ScanTheme.CornerLarge),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E2139)
+            containerColor = ScanTheme.CardBg
         )
     ) {
         Row(
             modifier = Modifier
-                .padding(20.dp)
+                .padding(ScanTheme.Spacing20)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
                     .background(backgroundColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -54,7 +55,7 @@ fun ActionCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -62,20 +63,20 @@ fun ActionCard(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = Color.White
+                    color = ScanTheme.TextPrimary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(ScanTheme.Spacing4))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFB4B4C6)
+                    color = ScanTheme.TextSecondary
                 )
             }
 
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF6B7280),
+                tint = ScanTheme.TextSecondary,
                 modifier = Modifier.size(24.dp)
             )
         }

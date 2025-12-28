@@ -19,6 +19,7 @@ import tn.esprit.dam.data.repository.ScanRepository
 import tn.esprit.dam.features.scan.data.LocalAppInfo
 import tn.esprit.dam.features.scan.data.ScanState
 import tn.esprit.dam.features.scan.data.toUiModel
+import tn.esprit.dam.features.scan.domain.RiskLevel
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
@@ -153,7 +154,7 @@ class ScanViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val currentSelectedApps = _scanState.value.selectedApps  // ✅ PRESERVE selectedApps
+                val currentSelectedApps = _scanState.value.selectedApps
                 
                 Log.d(TAG, "🚀 startScan called with ${currentSelectedApps.size} apps")
                 Log.d(TAG, "   userId: $userId")
@@ -163,7 +164,7 @@ class ScanViewModel @Inject constructor(
                     status = "ANALYZING",
                     error = null,
                     analysisNote = null,
-                    selectedApps = currentSelectedApps  // ✅ KEEP selectedApps in state
+                    selectedApps = currentSelectedApps
                 )
 
                 val selectedPackages = currentSelectedApps.map { it.packageName }
@@ -178,7 +179,7 @@ class ScanViewModel @Inject constructor(
                         _scanState.value = _scanState.value.copy(
                             status = "ANALYZING",
                             scanId = scanId,
-                            selectedApps = currentSelectedApps,  // ✅ PRESERVE
+                            selectedApps = currentSelectedApps,
                             scannedApps = 0,
                             highRiskCount = 0,
                             mediumRiskCount = 0,
@@ -195,7 +196,7 @@ class ScanViewModel @Inject constructor(
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
                             error = result.message,
-                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                            selectedApps = currentSelectedApps
                         )
                     }
                     is ApiResult.NetworkError -> {
@@ -203,7 +204,7 @@ class ScanViewModel @Inject constructor(
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
                             error = "Erreur réseau: ${result.exception.message ?: "vérifiez votre connexion"}",
-                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                            selectedApps = currentSelectedApps
                         )
                     }
                     is ApiResult.SerializationError -> {
@@ -212,7 +213,7 @@ class ScanViewModel @Inject constructor(
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
                             error = "Erreur de données: ${result.exception.message}",
-                            selectedApps = currentSelectedApps  // ✅ PRESERVE
+                            selectedApps = currentSelectedApps
                         )
                     }
                 }
@@ -223,7 +224,7 @@ class ScanViewModel @Inject constructor(
                 _scanState.value = _scanState.value.copy(
                     status = "FAILED",
                     error = errorMsg,
-                    selectedApps = currentSelectedApps  // ✅ PRESERVE
+                    selectedApps = currentSelectedApps
                 )
             }
         }
@@ -250,12 +251,15 @@ class ScanViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val app = result.data.app
                         val localApp = app.toUiModel(isSelected = false)
-                        val score = app.finalScore ?: app.scanResults?.aiRiskScore?.toFloat() ?: 0f
-                        val level = app.scanResults?.aiRiskLevel ?: "low"
+                        // Use calculated risk result
+                        val riskResult = localApp.riskResult
+                        val score = riskResult?.score?.toFloat() ?: 0f
+                        val level = riskResult?.riskLevel ?: RiskLevel.LOW
+                        
                         val note = if (app.scanResults?.aiStatus == "ok") {
-                            "Analyse basée sur MobSF + IA"
+                            "Analyse basée sur MobSF + IA + Heuristiques locales"
                         } else {
-                            "Analyse basée sur MobSF (IA indisponible)"
+                            "Analyse basée sur MobSF + Heuristiques locales"
                         }
 
                         _scanState.value = _scanState.value.copy(
@@ -263,9 +267,9 @@ class ScanViewModel @Inject constructor(
                             selectedApps = listOf(localApp),
                             totalApps = 1,
                             scannedApps = 1,
-                            highRiskCount = if (level == "high") 1 else 0,
-                            mediumRiskCount = if (level == "medium") 1 else 0,
-                            lowRiskCount = if (level == "low") 1 else 0,
+                            highRiskCount = if (level == RiskLevel.HIGH || level == RiskLevel.CRITICAL) 1 else 0,
+                            mediumRiskCount = if (level == RiskLevel.MEDIUM) 1 else 0,
+                            lowRiskCount = if (level == RiskLevel.LOW || level == RiskLevel.SAFE) 1 else 0,
                             averageScore = score,
                             analysisNote = note
                         )
@@ -322,86 +326,108 @@ class ScanViewModel @Inject constructor(
                 when (val result = repository.getScanStatus(scanId)) {
                     is ApiResult.Success -> {
                         val status = result.data
-                        val currentSelectedApps = _scanState.value.selectedApps  // ✅ PRESERVE
-                        Log.d(TAG, "📊 Status: ${status.status}, Progress: ${status.progress}%, Scanned: ${status.scannedApps}/${status.totalApps}")
+                        val currentSelectedApps = _scanState.value.selectedApps
                         
-                        _scanState.value = _scanState.value.copy(
-                            scannedApps = status.scannedApps ?: 0,
-                            totalApps = status.totalApps ?: _scanState.value.totalApps,
-                            selectedApps = currentSelectedApps,  // ✅ PRESERVE
-                            highRiskCount = status.results?.highRiskApps ?: 0,
-                            mediumRiskCount = status.results?.mediumRiskApps ?: 0,
-                            lowRiskCount = status.results?.lowRiskApps ?: 0,
-                            averageScore = status.results?.averageScore ?: 0f
-                        )
-                        
-                        when (status.status) {
-                            "completed" -> {
-                                Log.d(TAG, "✅ Scan completed!")
-                                val latestResult = repository.getLatestScan(userId!!)
+                        // Update progress
+                        if (status.status != "completed" && status.status != "failed") {
+                             _scanState.value = _scanState.value.copy(
+                                scannedApps = status.scannedApps ?: 0,
+                                totalApps = status.totalApps ?: _scanState.value.totalApps,
+                                selectedApps = currentSelectedApps,
+                                highRiskCount = status.results?.highRiskApps ?: 0,
+                                mediumRiskCount = status.results?.mediumRiskApps ?: 0,
+                                lowRiskCount = status.results?.lowRiskApps ?: 0,
+                                averageScore = status.results?.averageScore ?: 0f
+                            )
+                        } else if (status.status == "completed") {
+                            // Completed!
+                            val latestResult = repository.getLatestScan(userId!!)
 
-                                if (latestResult is ApiResult.Success) {
-                                    val apps = latestResult.data.apps
-                                    val riskScores = apps.map { it.finalScore }
-                                    val avgScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else status.results?.averageScore ?: 0f
-                                    val high = apps.count { it.finalScore >= 85 }
-                                    val med = apps.count { it.finalScore in 70.0..84.99 }
-                                    val low = apps.size - high - med
-
-                                    _scanState.value = _scanState.value.copy(
-                                        status = "COMPLETED",
-                                        selectedApps = apps.map {
-                                            LocalAppInfo(
-                                                packageName = it.packageName,
-                                                displayName = it.appName,
-                                                permissions = emptyList(),
-                                                trackers = emptyList(),
-                                                isSelected = false
-                                            )
-                                        },
-                                        totalApps = apps.size,
-                                        scannedApps = apps.size,
-                                        averageScore = avgScore,
-                                        highRiskCount = high,
-                                        mediumRiskCount = med,
-                                        lowRiskCount = low
+                            if (latestResult is ApiResult.Success) {
+                                val apps = latestResult.data.results?.apps ?: latestResult.data.apps
+                                
+                                // Create UI models with risk mapping
+                                val uiApps = apps.mapNotNull { appResult ->
+                                    // Handle missing package name (skip if null)
+                                    val pkgName = appResult.packageName ?: return@mapNotNull null
+                                    
+                                    // Determine score (prefer AI score, fallback to finalScore)
+                                    val scoreFloat = appResult.aiRiskScore ?: appResult.finalScore ?: 0f
+                                    val score = scoreFloat.toInt()
+                                    
+                                    // Determine risk level (prefer AI level, fallback to calculated)
+                                    val riskStr = appResult.aiRiskLevel ?: appResult.riskLevel
+                                    val level = when (riskStr?.lowercase()) {
+                                        "low", "safe" -> RiskLevel.LOW
+                                        "medium" -> RiskLevel.MEDIUM
+                                        "high" -> RiskLevel.HIGH
+                                        "critical" -> RiskLevel.CRITICAL
+                                        else -> if (score >= 85) RiskLevel.LOW
+                                            else if (score >= 70) RiskLevel.MEDIUM
+                                            else if (score >= 40) RiskLevel.HIGH
+                                            else RiskLevel.CRITICAL
+                                    }
+                                        
+                                    val risk = tn.esprit.dam.features.scan.domain.ScanRiskResult(
+                                        score = score,
+                                        riskLevel = level,
+                                        permissionScore = 100,
+                                        trackerScore = 100,
+                                        codeScore = 100,
+                                        criticalIssues = emptyList(),
+                                        warnings = emptyList(),
+                                        confidence = tn.esprit.dam.features.scan.domain.ConfidenceLevel.LOW
                                     )
-                                } else {
-                                    _scanState.value = _scanState.value.copy(
-                                        status = "COMPLETED",
-                                        selectedApps = currentSelectedApps,  // ✅ PRESERVE
-                                        averageScore = status.results?.averageScore ?: 0f,
-                                        highRiskCount = status.results?.highRiskApps ?: 0,
-                                        mediumRiskCount = status.results?.mediumRiskApps ?: 0,
-                                        lowRiskCount = status.results?.lowRiskApps ?: 0
+                                    
+                                    LocalAppInfo(
+                                        packageName = pkgName,
+                                        displayName = appResult.appName ?: pkgName,
+                                        category = null,
+                                        isSystemApp = false,
+                                        permissions = emptyList(),
+                                        trackers = emptyList(),
+                                        isSelected = false,
+                                        riskResult = risk
                                     )
                                 }
-                                return@launch // Stop polling
-                            }
-                            "failed" -> {
-                                Log.e(TAG, "❌ Scan failed!")
+                                
+                                val riskScores = uiApps.mapNotNull { it.riskResult?.score }
+                                val avgScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else 0f
+                                
+                                val high = uiApps.count { 
+                                    it.riskResult?.riskLevel == RiskLevel.HIGH || it.riskResult?.riskLevel == RiskLevel.CRITICAL 
+                                }
+                                val med = uiApps.count { it.riskResult?.riskLevel == RiskLevel.MEDIUM }
+                                val low = uiApps.size - high - med
+
                                 _scanState.value = _scanState.value.copy(
-                                    status = "FAILED",
-                                    error = "L'analyse a échoué"
+                                    status = "COMPLETED",
+                                    selectedApps = uiApps,
+                                    totalApps = uiApps.size,
+                                    scannedApps = uiApps.size,
+                                    averageScore = avgScore,
+                                    highRiskCount = high,
+                                    mediumRiskCount = med,
+                                    lowRiskCount = low
                                 )
-                                return@launch // Stop polling
                             }
-                            else -> {
-                                // Still analyzing - continue polling
-                            }
+                            return@launch
+                        } else if (status.status == "failed") {
+                            _scanState.value = _scanState.value.copy(
+                                status = "FAILED",
+                                error = "L'analyse a échoué sur le serveur"
+                            )
+                            return@launch
                         }
                     }
                     is ApiResult.ApiError -> {
                         Log.e(TAG, "❌ Polling error: ${result.message}")
-                        // Continue polling despite error
                     }
                     is ApiResult.NetworkError -> {
                         Log.e(TAG, "❌ Network error during polling")
-                        // Continue polling despite error
                     }
                     is ApiResult.SerializationError -> {
                         Log.e(TAG, "❌ Serialization error during polling")
-                        // Continue polling despite error
                     }
                 }
             }

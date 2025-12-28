@@ -94,11 +94,13 @@ fun HomeScreen(
     onNavigateToAppDetails: (String) -> Unit,
     onNavigateToVault: () -> Unit,
     onLogout: () -> Unit = {},
+    onNavigateToAlerts: () -> Unit,
+
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.homeState.collectAsState()
     val context = LocalContext.current
-    
+
     val apkPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
@@ -115,7 +117,7 @@ fun HomeScreen(
             }
         }
     )
-    
+
     val pickApk: () -> Unit = {
         apkPicker.launch(
             arrayOf(
@@ -170,12 +172,13 @@ fun HomeScreen(
                     enter = fadeIn(animationSpec = tween(350)) + slideInVertically(initialOffsetY = { 32 })
                 ) {
                     FeatureGrid(
-                        onScan = onNavigateToScan,
-                        onSearch = onNavigateToAppSearch,
-                        onHistory = onNavigateToHistory,
-                        onScanApk = pickApk,
-                        onShadowGuard = onNavigateToVault
-                    )
+                    onScan = onNavigateToScan,
+                    onSearch = onNavigateToAppSearch,
+                    onHistory = onNavigateToHistory,
+                    onScanApk = pickApk,
+                    onShadowGuard = onNavigateToVault,
+                    onAlerts = onNavigateToAlerts
+                )
                 }
             }
 
@@ -455,13 +458,15 @@ private fun FeatureGrid(
     onSearch: () -> Unit,
     onHistory: () -> Unit,
     onScanApk: () -> Unit,
-    onShadowGuard: () -> Unit
+    onShadowGuard: () -> Unit,
+    onAlerts: () -> Unit
 ) {
     val items = listOf(
         FeatureItem("Nouveau scan", Icons.Default.Security, "Analyser maintenant", onScan, listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))),
         FeatureItem("Historique", Icons.Default.History, "Derniers résultats", onHistory, listOf(Color(0xFF0EA5E9), Color(0xFF2563EB))),
         FeatureItem("Scanner un APK", Icons.Default.Android, "Fichier externe", onScanApk, listOf(Color(0xFF10B981), Color(0xFF059669))),
         FeatureItem("Rechercher une application", Icons.Default.Search, "Vérifier un app", onSearch, listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9))),
+        FeatureItem("Alertes de sécurité", Icons.Default.Error, "Journaux d'accès", onAlerts, listOf(Color(0xFFEF4444), Color(0xFFF97316))),
         FeatureItem("ShadowVault", Icons.Default.Lock, "Gestion des mots de passe", onShadowGuard, listOf(Color(0xFF7C3AED), Color(0xFF4F46E5)))
     )
 
@@ -558,12 +563,17 @@ private fun RecentActivitySection(
             )
         } else {
             riskyApps.take(3).forEach { app ->
+                val score = app.aiRiskScore ?: app.finalScore ?: 0f
+                val name = app.appName ?: app.packageName ?: "App"
+                
                 Card(
                     colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
                     shape = RoundedCornerShape(ScanTheme.CornerLarge),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onNavigateToAppDetails(app.packageName) }
+                        .clickable { 
+                            app.packageName?.let { onNavigateToAppDetails(it) }
+                        }
                 ) {
                     Row(
                         modifier = Modifier
@@ -573,9 +583,9 @@ private fun RecentActivitySection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4), modifier = Modifier.weight(1f)) {
-                            Text(app.appName, style = MaterialTheme.typography.bodyMedium, color = ScanTheme.TextPrimary)
-                            Text("Score ${app.finalScore.toInt()}/100", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
-                            RiskBadge(score = app.finalScore)
+                            Text(name, style = MaterialTheme.typography.bodyMedium, color = ScanTheme.TextPrimary)
+                            Text("Score ${score.toInt()}/100", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
+                            RiskBadge(score = score)
                         }
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = ScanTheme.TextSecondary)
                     }
@@ -821,14 +831,23 @@ private fun RiskyAppsSection(
         )
 
         apps.forEach { app ->
-            RiskyAppCard(app = app, onClick = { onNavigateToAppDetails(app.packageName) })
+            // Fix: Handle nullable packageName
+            app.packageName?.let { pkg ->
+                RiskyAppCard(app = app, onClick = { onNavigateToAppDetails(pkg) })
+            }
         }
     }
 }
 
 @Composable
 private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
-    val scoreColor = riskColorForScore(app.finalScore)
+    // Fix: Handle nullable fields with defaults
+    val score = app.aiRiskScore ?: app.finalScore ?: 0f
+    val appName = app.appName ?: app.packageName ?: "Unknown App"
+    val pkgName = app.packageName ?: ""
+    
+    val scoreColor = riskColorForScore(score)
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -845,7 +864,7 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = app.appName,
+                    text = appName,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
@@ -853,7 +872,7 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = app.packageName,
+                    text = pkgName,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 1,
@@ -861,12 +880,12 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
-                RiskBadge(score = app.finalScore)
+                RiskBadge(score = score)
             }
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = stringResource(id = R.string.score_value, app.finalScore.toInt()),
+                    text = stringResource(id = R.string.score_value, score.toInt()),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = scoreColor

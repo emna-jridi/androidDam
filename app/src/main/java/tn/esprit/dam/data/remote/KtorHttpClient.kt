@@ -71,7 +71,7 @@ class KtorHttpClient @Inject constructor(
         Log.d("KtorClient", "GET: ")
         val token = TokenManager.getAccessToken(context)
         val response = httpClient.get(url) {
-            if (token != null) header("Authorization", "Bearer ")
+            if (token != null) header("Authorization", "Bearer $token")
         }
         response.body()
     }
@@ -114,7 +114,7 @@ class KtorHttpClient @Inject constructor(
         Log.d("KtorClient", "DELETE: ")
         val token = TokenManager.getAccessToken(context)
         val response = httpClient.delete(url) {
-            if (token != null) header("Authorization", "Bearer ")
+            if (token != null) header("Authorization", "Bearer $token")
         }
         response.body()
     }

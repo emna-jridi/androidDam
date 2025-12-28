@@ -98,6 +98,8 @@ dependencies {
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.biometric:biometric:1.1.0")
+    implementation("com.google.firebase:firebase-messaging:23.4.0")
+    implementation("androidx.cardview:cardview:1.0.0")
     
     // Lifecycle ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")

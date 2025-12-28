@@ -39,23 +39,42 @@ data class ScanAppsResponse(
 @Serializable
 data class AppResult(
     @SerialName("packageName")
-    val packageName: String,
+    val packageName: String? = null,
     @SerialName("appName")
-    val appName: String,
+    val appName: String? = null,
     @SerialName("finalScore")
-    val finalScore: Float,
+    val finalScore: Float? = null,
+    @SerialName("aiRiskScore")
+    val aiRiskScore: Float? = null, // Backend uses this sometimes
+    @SerialName("riskLevel")
+    val riskLevel: String? = null,
+    @SerialName("aiRiskLevel")
+    val aiRiskLevel: String? = null,
     @SerialName("lastScanned")
     val lastScanned: String? = null
 )
 
 @Serializable
 data class LatestScanResponse(
+    @SerialName("results")
+    val results: LatestScanResultsDto? = null,
+    @SerialName("createdAt")
+    val createdAt: String? = null,
+    // Keep backward compatibility if backend sends flat list sometimes
+    @SerialName("apps")
+    val apps: List<AppResult> = emptyList(), 
+    @SerialName("globalScore")
+    val globalScore: Int = 0
+)
+
+@Serializable
+data class LatestScanResultsDto(
     @SerialName("apps")
     val apps: List<AppResult> = emptyList(),
     @SerialName("globalScore")
     val globalScore: Int = 0,
-    @SerialName("createdAt")
-    val createdAt: String
+    @SerialName("maxRiskLevel")
+    val maxRiskLevel: String? = null
 )
 
 // ============= Scan Request/Response =============

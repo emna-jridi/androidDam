@@ -499,4 +499,71 @@ class ApiClient private constructor(private val context: Context) {
     suspend fun getCurrentUser(): User? {
         return TokenManager.getUser(context)
     }
+
+    suspend fun getAlertHistory(): List<tn.esprit.dam.data.model.Alert> {
+        return try {
+            val token = TokenManager.getAccessToken(context) ?: return emptyList()
+
+            Log.d(TAG, "📤 GET /alerts (Token: ${token.take(10)}...)")
+
+            val response: HttpResponse = client.get("/alerts") {
+                bearerAuth(token)
+            }
+
+            if (response.status == HttpStatusCode.OK) {
+                val alerts = response.body<List<tn.esprit.dam.data.model.Alert>>()
+                Log.d(TAG, "✅ Loaded ${alerts.size} alerts")
+                alerts
+            } else {
+                Log.e(TAG, "❌ Failed to load alerts: ${response.status}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading alerts", e)
+            emptyList()
+        }
+    }
+    suspend fun getAppSafetyReport(packageName: String): tn.esprit.dam.data.model.AppSafetyReport? {
+        return try {
+            // ⚠️ REPLACE WITH YOUR PC'S LOCAL IP (e.g., 192.168.1.5)
+            // Do not use "localhost" because that refers to the phone itself!
+            val response: HttpResponse = client.get("http://172.20.10.3:3000/report/$packageName")
+
+            if (response.status == HttpStatusCode.OK) {
+                response.body()
+            } else {
+                Log.e(TAG, "❌ Server error: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Network error fetching report", e)
+            null
+        }
+    }
+    suspend fun sendAlertEvent(packageName: String, event: String, details: Map<String, String>) {
+        try {
+            val token = TokenManager.getAccessToken(context) ?: return
+            Log.d(TAG, "📤 POST /alerts/event")
+
+            val alertDto = tn.esprit.dam.data.model.AlertEventDto(
+                packageName = packageName,
+                event = event,
+                timestamp = System.currentTimeMillis(),
+                details = details
+            )
+
+            val response = client.post("/alerts/event") {
+                bearerAuth(token)
+                setBody(alertDto)
+            }
+
+            if (response.status == HttpStatusCode.Created) {
+                Log.d(TAG, "✅ Alert event sent successfully")
+            } else {
+                Log.e(TAG, "❌ Failed to send alert event: ${response.status}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error sending alert event", e)
+        }
+    }
 }

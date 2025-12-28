@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 sealed class PasswordListUiState {
     object Loading : PasswordListUiState()
     data class Success(val passwords: List<PasswordEntry>) : PasswordListUiState()
@@ -25,7 +26,10 @@ data class PasswordDetailData(
     val decryptedNotes: String?
 )
 
-class PasswordViewModel(
+
+
+@HiltViewModel
+class PasswordViewModel @Inject constructor(
     private val repository: VaultRepository,
     private val advisor: OllamaPasswordAdvisor
 ) : ViewModel() {
@@ -38,7 +42,7 @@ class PasswordViewModel(
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory.asStateFlow()
-    
+
     private val _selectedPassword = MutableStateFlow<PasswordDetailData?>(null)
     val selectedPassword: StateFlow<PasswordDetailData?> = _selectedPassword.asStateFlow()
 
@@ -47,35 +51,35 @@ class PasswordViewModel(
 
     private val _isPasswordSaving = MutableStateFlow(false)
     val isPasswordSaving: StateFlow<Boolean> = _isPasswordSaving.asStateFlow()
-    
+
     // AI & Analysis States
     private val _passwordMetrics = MutableStateFlow<PasswordAnalysisMetrics?>(null)
     val passwordMetrics = _passwordMetrics.asStateFlow()
-    
+
     private val _aiAdvice = MutableStateFlow<OllamaAdvice?>(null)
     val aiAdvice = _aiAdvice.asStateFlow()
-    
+
     private val _generatedPassword = MutableStateFlow("")
     val generatedPassword = _generatedPassword.asStateFlow()
 
     init {
         loadPasswords()
     }
-    
+
     fun generateNewPassword(length: Int, useUpper: Boolean, useNums: Boolean, useSymbols: Boolean) {
         _generatedPassword.value = PasswordGenerator.generatePassword(length, useUpper, useNums, useSymbols)
     }
-    
+
     fun generateNewPassphrase(wordCount: Int, separator: String) {
         _generatedPassword.value = PasswordGenerator.generatePassphrase(wordCount, separator)
     }
-    
+
     fun analyzePassword(password: String) {
         viewModelScope.launch {
             // 1. Local Deterministic Analysis (Instant)
             val metrics = PasswordStrengthCalculator.analyze(password)
             _passwordMetrics.value = metrics
-            
+
             // 2. AI Analysis (Async, Privacy Safe)
             // Only call AI if password is significant
             if (password.length >= 4) {
@@ -91,7 +95,7 @@ class PasswordViewModel(
             }
         }
     }
-    
+
     fun clearAnalysis() {
         _passwordMetrics.value = null
         _aiAdvice.value = null
@@ -101,16 +105,16 @@ class PasswordViewModel(
     fun loadPasswords() {
         viewModelScope.launch {
             _listState.value = PasswordListUiState.Loading
-            
+
             val category = _selectedCategory.value
             val query = _searchQuery.value
-            
+
             val result = when {
                 query.isNotBlank() -> repository.searchPasswordEntries(query)
                 category != null -> repository.getPasswordEntries(category)
                 else -> repository.getPasswordEntries()
             }
-            
+
             result
                 .onSuccess { passwords ->
                     _listState.value = PasswordListUiState.Success(passwords)
@@ -135,7 +139,7 @@ class PasswordViewModel(
         viewModelScope.launch {
             val passwordResult = repository.decryptPassword(entry)
             val notesResult = repository.decryptNotes(entry)
-            
+
             if (passwordResult.isSuccess) {
                 _selectedPassword.value = PasswordDetailData(
                     entry = entry,
@@ -162,10 +166,10 @@ class PasswordViewModel(
         viewModelScope.launch {
             _isPasswordSaving.value = true
             _saveState.value = null
-            
+
             // Get current metrics if available
             val metrics = _passwordMetrics.value
-            
+
             repository.createPasswordEntry(
                 site = site,
                 username = username,
@@ -196,16 +200,16 @@ class PasswordViewModel(
         _saveState.value = null
         _isPasswordSaving.value = false
     }
-    
+
     // Existing helper methods preserved
     fun updatePassword(entry: PasswordEntry) { /* ... stub if needed or preserved ... */ }
-    fun deletePassword(id: String) { 
+    fun deletePassword(id: String) {
         viewModelScope.launch {
              repository.deletePasswordEntry(id)
              loadPasswords()
         }
     }
-    fun toggleFavorite(id: String) { 
+    fun toggleFavorite(id: String) {
         viewModelScope.launch {
              repository.toggleFavorite(id)
              loadPasswords()

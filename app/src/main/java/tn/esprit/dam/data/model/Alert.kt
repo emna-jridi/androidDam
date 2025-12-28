@@ -11,6 +11,6 @@ data class Alert(
     val packageName: String,
     val event: String,     // e.g., "Camera Accessed"
     val severity: String,  // "critical", "high", "info"
-    val timestamp: Long,
+    val timestamp: String,
     val notified: Boolean
 )

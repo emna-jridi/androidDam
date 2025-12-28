@@ -1,6 +1,7 @@
 ﻿package tn.esprit.dam.features.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -27,12 +29,12 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onOpenVault: () -> Unit,
     onCreateVault: () -> Unit,
+    onOpenDarkWeb: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
-    val showAvatarCustomizer by viewModel.showAvatarCustomizer.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -41,7 +43,7 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Surface)
+            .background(ScanTheme.DarkBg)
     ) {
         when (val state = uiState) {
             is ProfileUiState.Loading -> {
@@ -65,12 +67,11 @@ fun ProfileScreen(
             is ProfileUiState.Success -> {
                     ProfileContent(
                     user = state.user,
-                    localAvatarPath = state.localAvatarPath,
                     onEditProfile = { viewModel.showEditDialog() },
-                    onEditAvatar = { viewModel.showAvatarCustomizer() },
                     onLogout = { viewModel.logout(onLogout) },
                     onOpenVault = onOpenVault,
-                    onCreateVault = onCreateVault
+                    onCreateVault = onCreateVault,
+                    onOpenDarkWeb = onOpenDarkWeb
                 )
             }
         }
@@ -83,20 +84,6 @@ fun ProfileScreen(
             onDismiss = { viewModel.hideEditDialog() },
             onSave = { newName ->
                 viewModel.updateProfile(newName)
-            }
-        )
-    }
-
-    // Dialog personnalisation avatar
-    if (showAvatarCustomizer && uiState is ProfileUiState.Success) {
-        val user = (uiState as ProfileUiState.Success).user
-
-        AvatarCustomizerDialog(
-            userHash = user.userHash ?: user.id ?: "default",
-            onDismiss = { viewModel.hideAvatarCustomizer() },
-            onSaveSuccess = {
-                // ✅ Recharger le profil après la sauvegarde
-                viewModel.updateAvatarAfterCustomization()
             }
         )
     }
@@ -117,9 +104,9 @@ private fun ErrorContent(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(ScanTheme.CornerLarge),
             colors = CardDefaults.cardColors(
-                containerColor = SurfaceVariant
+                containerColor = ScanTheme.CardBg
             )
         ) {
             Column(
@@ -129,13 +116,13 @@ private fun ErrorContent(
                 Icon(
                     Icons.Filled.Warning,
                     contentDescription = null,
-                    tint = if (isSessionExpired) DangerRed else WarningOrange,
+                    tint = if (isSessionExpired) Color(0xFFEF4444) else Color(0xFFFB923C),
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     message,
-                    color = Color.White,
+                    color = ScanTheme.TextPrimary,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -151,7 +138,7 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Primary
+                                containerColor = Color(0xFF6366F1)
                             )
                         ) {
                             Text("Réessayer", color = Color.White)
@@ -164,7 +151,7 @@ private fun ErrorContent(
                                 .fillMaxWidth()
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = DangerRed
+                                containerColor = Color(0xFFEF4444)
                             )
                         ) {
                             Text("Se reconnecter", color = Color.White)
@@ -176,7 +163,7 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = DangerRed
+                                containerColor = Color(0xFFEF4444)
                             )
                         ) {
                             Text("Quitter", color = Color.White)
@@ -192,44 +179,69 @@ private fun ErrorContent(
 @Composable
 private fun ProfileContent(
     user: User,
-    localAvatarPath: String?, // âœ… ParamÃ¨tre requis
     onEditProfile: () -> Unit,
-    onEditAvatar: () -> Unit,
     onLogout: () -> Unit,
     onOpenVault: () -> Unit,
-    onCreateVault: () -> Unit
+    onCreateVault: () -> Unit,
+    onOpenDarkWeb: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(top = ScanTheme.Spacing20)
     ) {
         ProfileHeader(
-            user = user,
-            localAvatarPath = localAvatarPath, // âœ… Passer au header
-            onEditAvatar = onEditAvatar
+            user = user
         )
 
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Actions",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
+        Column(modifier = Modifier.padding(ScanTheme.Spacing24)) {
+            // Profile Actions
             ProfileActionsSection(
                 onEditProfile = onEditProfile,
                 onLogout = onLogout
             )
+
+            Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
 
             // Password Vault section
             VaultStatusSection(
                 onOpenVault = onOpenVault,
                 onCreateVault = onCreateVault
             )
+
+            // Dark Web Monitoring Section
+            Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+                shape = RoundedCornerShape(ScanTheme.CornerLarge),
+                modifier = Modifier.fillMaxWidth().clickable { onOpenDarkWeb() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(ScanTheme.Spacing16),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Security,
+                        contentDescription = "Dark Web",
+                        tint = Color(0xFF6366F1)
+                    )
+                    Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
+                    Column {
+                        Text(
+                            text = "Dark Web Monitoring",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ScanTheme.TextPrimary
+                        )
+                        Text(
+                            text = "Check for data breaches",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ScanTheme.TextSecondary
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -253,47 +265,116 @@ private fun VaultStatusSection(
         is VaultStatusUiState.Error -> android.util.Log.e("VaultStatusUI", (status as VaultStatusUiState.Error).message)
     }
 
+    Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+
     Card(
-        colors = CardDefaults.cardColors(containerColor = SurfaceVariant),
-        shape = RoundedCornerShape(tn.esprit.dam.features.scan.presentation.ScanTheme.CornerLarge),
+        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+        shape = RoundedCornerShape(ScanTheme.CornerLarge),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Password Vault",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            val statusText = when (status) {
-                is VaultStatusUiState.Loading -> "Checking status..."
-                is VaultStatusUiState.NoVault -> "Vault not configured"
-                is VaultStatusUiState.VaultExists -> "Vault configured"
-                is VaultStatusUiState.Error -> (status as VaultStatusUiState.Error).message
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(ScanTheme.Spacing20),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
+                    .background(Color(0xFF7C3AED)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
-            Text(statusText, color = Color.White.copy(alpha = 0.8f))
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                when (status) {
-                    is VaultStatusUiState.NoVault -> {
-                        Button(onClick = onCreateVault) {
-                            Text("Create Master Password")
-                        }
-                    }
-                    is VaultStatusUiState.VaultExists -> {
-                        Button(onClick = onOpenVault) {
-                            Text("Open Vault")
-                        }
-                    }
-                    is VaultStatusUiState.Error -> {
-                        OutlinedButton(onClick = { viewModel.checkStatus() }) {
-                            Text("Retry")
-                        }
-                    }
-                    else -> {
-                        CircularProgressIndicator()
-                    }
+
+            Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
+
+            // Content
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Password Vault",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = ScanTheme.TextPrimary
+                )
+                Spacer(modifier = Modifier.height(ScanTheme.Spacing4))
+                val statusText = when (status) {
+                    is VaultStatusUiState.Loading -> "Checking status..."
+                    is VaultStatusUiState.NoVault -> "Vault not configured"
+                    is VaultStatusUiState.VaultExists -> "Vault configured"
+                    is VaultStatusUiState.Error -> (status as VaultStatusUiState.Error).message
+                }
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ScanTheme.TextSecondary
+                )
+            }
+        }
+
+        // Button at bottom
+        when (status) {
+            is VaultStatusUiState.NoVault -> {
+                Button(
+                    onClick = onCreateVault,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ScanTheme.Spacing20)
+                        .padding(bottom = ScanTheme.Spacing20),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7C3AED)
+                    ),
+                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                ) {
+                    Text("Create Master Password")
+                }
+            }
+            is VaultStatusUiState.VaultExists -> {
+                Button(
+                    onClick = onOpenVault,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ScanTheme.Spacing20)
+                        .padding(bottom = ScanTheme.Spacing20),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7C3AED)
+                    ),
+                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                ) {
+                    Text("Open Vault")
+                }
+            }
+            is VaultStatusUiState.Error -> {
+                OutlinedButton(
+                    onClick = { viewModel.checkStatus() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ScanTheme.Spacing20)
+                        .padding(bottom = ScanTheme.Spacing20),
+                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                ) {
+                    Text("Retry")
+                }
+            }
+            is VaultStatusUiState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(ScanTheme.Spacing20),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF7C3AED),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

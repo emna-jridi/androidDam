@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import tn.esprit.dam.features.scan.presentation.ScanTheme
 
 @Composable
 fun ProfileActionsSection(
@@ -20,10 +21,10 @@ fun ProfileActionsSection(
             title = "Modifier le profil",
             description = "Mettre à jour vos informations",
             onClick = onEditProfile,
-            backgroundColor = Color(0xFF7C3AED)
+            backgroundColor = Color(0xFF6366F1)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(ScanTheme.Spacing12))
 
         ActionCard(
             icon = Icons.Filled.ExitToApp,

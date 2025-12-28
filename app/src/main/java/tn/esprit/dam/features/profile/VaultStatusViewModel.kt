@@ -24,7 +24,7 @@ class VaultStatusViewModel(private val context: Context) : ViewModel() {
     private val _status = MutableStateFlow<VaultStatusUiState>(VaultStatusUiState.Loading)
     val status: StateFlow<VaultStatusUiState> = _status
 
-    private val client by lazy { KtorClient.getInstance(context, TokenManager) }
+    private val client by lazy { tn.esprit.dam.data.remote.KtorHttpClient(context) }
     private val api by lazy { VaultApi(client) }
 
     fun checkStatus() {

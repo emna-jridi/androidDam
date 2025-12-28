@@ -58,20 +58,20 @@ object TokenManager {
             if (refreshToken != null) {
                 Log.d(TAG, "[SAVE] REFRESH_TOKEN length=${refreshToken.length}")
             }
-            
+
             context.dataStore.edit { prefs ->
                 Log.d(TAG, "[SAVE] Writing ACCESS_TOKEN to DataStore...")
                 prefs[ACCESS_TOKEN] = accessToken
-                
+
                 if (refreshToken != null) {
                     Log.d(TAG, "[SAVE] Writing REFRESH_TOKEN to DataStore...")
                     prefs[REFRESH_TOKEN] = refreshToken
                 }
-                
+
                 Log.d(TAG, "[SAVE] Setting IS_LOGGED_IN to true...")
                 prefs[IS_LOGGED_IN] = true
             }
-            
+
             Log.d(TAG, "[OK] ✓ Tokens saved successfully - verify in next retrieval")
         } catch (e: Exception) {
             Log.e(TAG, "[ERROR] Failed to save tokens: ${e.message}", e)
@@ -86,7 +86,7 @@ object TokenManager {
         return try {
             Log.d(TAG, "[RETRIEVE] Getting ACCESS_TOKEN from DataStore...")
             val token = context.dataStore.data.map { it[ACCESS_TOKEN] }.first()
-            
+
             if (token != null) {
                 Log.d(TAG, "[OK] ACCESS_TOKEN retrieved successfully - length=${token.length}, prefix=${token.take(30)}")
                 token
@@ -105,7 +105,7 @@ object TokenManager {
         return try {
             Log.d(TAG, "[RETRIEVE] Getting REFRESH_TOKEN from DataStore...")
             val token = context.dataStore.data.map { it[REFRESH_TOKEN] }.first()
-            
+
             if (token != null) {
                 Log.d(TAG, "[OK] REFRESH_TOKEN retrieved successfully - length=${token.length}")
                 token
@@ -165,5 +165,29 @@ object TokenManager {
     suspend fun getUserHash(context: Context): String? {
         return getUser(context)?.userHash
     }
+
+    // ============================================================
+    // FCM & ALERTS (Backend Communication)
+    // ============================================================
+
+    // ============================================================
+    // FCM & ALERTS (Backend Communication)
+    // ============================================================
+
+    suspend fun getCurrentFcmToken(): String? {
+        return try {
+            suspendCoroutine { cont ->
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) cont.resume(task.result)
+                    else cont.resume(null)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ getCurrentFcmToken failed", e)
+            null
+        }
+    }
+
+    // Methods moved to ApiClient
 
 }

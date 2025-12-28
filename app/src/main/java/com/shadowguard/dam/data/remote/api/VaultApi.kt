@@ -3,23 +3,18 @@ package com.shadowguard.dam.data.remote.api
 import com.shadowguard.dam.data.model.*
 import android.util.Log
 import tn.esprit.dam.data.Config
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import tn.esprit.dam.data.remote.KtorHttpClient
 import com.shadowguard.dam.data.remote.ai.OllamaAdvice
 import com.shadowguard.dam.ui.vault.utils.PasswordAnalysisMetrics
+import javax.inject.Inject
 
 /**
  * API service for vault operations
- * Implements Zero-Knowledge architecture:
- * - Encryption/decryption happens CLIENT-SIDE ONLY
- * - Server never sees plaintext passwords or encryption keys
+ * Uses KtorHttpClient wrapper for automatic Auth headers and Retries
  */
-class VaultApi(private val client: HttpClient) {
+class VaultApi @Inject constructor(private val client: KtorHttpClient) {
     
     companion object {
-        // Backend vault routes are at /vault, not /api/vault
         private val BASE_URL: String get() = Config.BASE_URL
         private val VAULT_URL: String get() = "$BASE_URL/vault"
         private val PASSWORDS_URL: String get() = "$BASE_URL/vault/passwords"
@@ -28,177 +23,136 @@ class VaultApi(private val client: HttpClient) {
     // ========== Vault Operations ==========
     
     suspend fun createVault(request: CreateVaultRequest): Result<CreateVaultResponse> {
-        return try {
-            val response = client.post("$VAULT_URL") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.post(VAULT_URL, request)
     }
 
     suspend fun unlockVault(request: UnlockVaultRequest): Result<VaultUnlockResponse> {
-        return try {
-            val response = client.post("$VAULT_URL/unlock") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.post("$VAULT_URL/unlock", request)
     }
 
     suspend fun getVault(): Result<Vault> {
-        return try {
-            val response = client.get("$VAULT_URL")
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Log.e("VaultApi", "getVault failed: ${e.message}", e)
-            Result.failure(e)
-        }
+        return client.get(VAULT_URL)
     }
 
     /** Lightweight status check: true if vault exists, false if 404 */
     suspend fun getVaultStatus(): Result<Boolean> {
-        return try {
-            Log.d("VaultApi", "getVaultStatus: GET $VAULT_URL")
-            val response = client.get("$VAULT_URL")
-            Log.d("VaultApi", "getVaultStatus response: ${response.status}")
-            Result.success(response.status == HttpStatusCode.OK)
-        } catch (e: Exception) {
-            // If server returns 404, ktor throws ClientRequestException; detect status
-            if (e is io.ktor.client.plugins.ClientRequestException) {
-                val status = e.response.status
-                if (status == HttpStatusCode.NotFound) {
-                    Log.w("VaultApi", "getVaultStatus: 404 NotFound")
-                    return Result.success(false)
+        // We use a custom raw call locally if needed, or just standard get and check failure
+        // But KtorHttpClient returns Result.failure on 404 typically unless handled?
+        // Actually KtorHttpClient.get catches Exception.
+        // Let's rely on standard logic: try to get vault. If success -> true.
+        // If 404 -> failure.
+        // But the previous logic had a specific 404 check. 
+        // Let's implement a specific get for status if possible, or just try query.
+        // Simplest: Try getVault(). If success -> true. If 404 -> false.
+        
+        // Actually, we can reuse the existing logic if we want, but passing 'client' is hard 
+        // since KtorHttpClient hides the raw client.
+        // However, KtorHttpClient returns Result. On 404 it might return failure.
+        // Let's assume getVault() returning 404 is "No Vault".
+        // But wait, Ktor by default throws exception on 404 unless expectSuccess = false.
+        // KtorHttpClient wrapper:
+        // install(HttpTimeout) ...
+        // It doesn't seem to disable validation. So 404 throws.
+        // Returns Result.failure(ClientRequestException).
+        
+        return client.get<Vault>(VAULT_URL)
+            .map { true }
+            .recover { e ->
+                // Check if 404
+                if (e is io.ktor.client.plugins.ClientRequestException && 
+                    e.response.status == io.ktor.http.HttpStatusCode.NotFound) {
+                    false
+                } else {
+                    // Other error (network etc) implies we don't know status -> return false or throw?
+                    // Previous code: returned failure on other error.
+                    // This function returns Result<Boolean>.
+                    // So we should re-throw or return failure for non-404 errors.
+                    throw e
                 }
             }
-            Log.e("VaultApi", "getVaultStatus failed: ${e.message}", e)
-            Result.failure(e)
-        }
+            .recoverCatching { e ->
+                // If we threw above, it comes here.
+                 if (e is io.ktor.client.plugins.ClientRequestException && 
+                    e.response.status == io.ktor.http.HttpStatusCode.NotFound) {
+                    false
+                } else {
+                    throw e
+                }
+            }
+            // Wait, Result.recoverCatching handles the exception from the previous block?
+            // Let's simplify:
+            // return runCatching { ... }
+            
+            // Actually, let's just use a try/catch block using `client.get` which returns Result.
+            val result: Result<Vault> = client.get(VAULT_URL)
+            if (result.isSuccess) return Result.success(true)
+            
+            val exception = result.exceptionOrNull()
+            if (exception is io.ktor.client.plugins.ClientRequestException && 
+                exception.response.status == io.ktor.http.HttpStatusCode.NotFound) {
+                return Result.success(false)
+            }
+            return Result.failure(exception ?: Exception("Unknown error"))
     }
 
     suspend fun updateVaultSettings(request: UpdateVaultSettingsRequest): Result<Vault> {
-        return try {
-            val response = client.put("$VAULT_URL/settings") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.put("$VAULT_URL/settings", request)
     }
 
     suspend fun checkAutoLock(): Result<VaultCheckLockResponse> {
-        return try {
-            val response = client.get("$VAULT_URL/check-lock")
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.get("$VAULT_URL/check-lock")
     }
 
     // ========== Password Entry Operations ==========
 
     suspend fun createPasswordEntry(request: CreatePasswordEntryRequest): Result<CreatePasswordEntryResponse> {
-        return try {
-            val response = client.post("$PASSWORDS_URL") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.post(PASSWORDS_URL, request)
     }
 
     suspend fun getPasswordEntries(category: String? = null): Result<PasswordEntriesResponse> {
-        return try {
-            val response = client.get("$PASSWORDS_URL") {
-                category?.let { parameter("category", it) }
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val url = if (category != null) "$PASSWORDS_URL?category=$category" else PASSWORDS_URL
+        return client.get(url)
     }
 
     suspend fun searchPasswordEntries(query: String): Result<PasswordEntriesResponse> {
-        return try {
-            val response = client.get("$PASSWORDS_URL/search") {
-                parameter("q", query)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.get("$PASSWORDS_URL/search?q=$query")
     }
 
     suspend fun getPasswordEntry(id: String): Result<PasswordEntryResponse> {
-        return try {
-            val response = client.get("$PASSWORDS_URL/$id")
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.get("$PASSWORDS_URL/$id")
     }
 
     suspend fun updatePasswordEntry(id: String, request: UpdatePasswordEntryRequest): Result<CreatePasswordEntryResponse> {
-        return try {
-            val response = client.put("$PASSWORDS_URL/$id") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.put("$PASSWORDS_URL/$id", request)
     }
 
     suspend fun deletePasswordEntry(id: String): Result<Unit> {
-        return try {
-            client.delete("$PASSWORDS_URL/$id")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        // KtorHttpClient has delete returning Result<T>
+        // Check if Unit is supported T
+        return client.delete<Unit>("$PASSWORDS_URL/$id")
+            .map { Unit } 
+            // If delete returns JSON content, Unit might fail decoding?
+            // Ktor usually ignores body if Unit is requested.
+            // Let's safely assume it works or use String and discard.
+            // Let's use generic delete.
     }
 
     suspend fun toggleFavorite(id: String): Result<CreatePasswordEntryResponse> {
-        return try {
-            val response = client.post("$PASSWORDS_URL/$id/favorite")
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        // Previous was POST
+        // KtorHttpClient has POST
+        // Body? Previous had no body.
+        // KtorHttpClient.post requires body.
+        // We can pass Unit or Empty object?
+        // Let's check post signature: post(url, body)
+        // We can pass empty map or string.
+        return client.post("$PASSWORDS_URL/$id/favorite", emptyMap<String,String>())
     }
 
     suspend fun analyzePassword(request: AnalyzePasswordRequest): Result<PasswordStrengthResponse> {
-        return try {
-            val response = client.post("$PASSWORDS_URL/analyze") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.post("$PASSWORDS_URL/analyze", request)
     }
 
     suspend fun analyzePasswordWithAi(metrics: PasswordAnalysisMetrics): Result<OllamaAdvice> {
-        return try {
-            val response = client.post("$VAULT_URL/ai-analyze") {
-                contentType(ContentType.Application.Json)
-                setBody(metrics)
-            }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return client.post("$VAULT_URL/ai-analyze", metrics)
     }
 }

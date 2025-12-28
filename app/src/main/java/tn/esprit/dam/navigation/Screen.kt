@@ -19,10 +19,16 @@ sealed class Screens(val route: String) {
   object Scan : Screens("scan")
   object ScanHistory : Screens("scan_history")
   object AppSearch : Screens("app_search")
-  object AppDetails : Screens("app_details/{packageName}") {
+    object AlertsHistory : Screens("alerts_history")
+
+    object AppDetails : Screens("app_details/{packageName}") {
     fun createRoute(packageName: String) = "app_details/$packageName"
   }
   object Vault : Screens("vault")
   object VaultAddPassword : Screens("vault_add_password")
   object VaultDetail : Screens("vault_detail")
+  object DarkWebMonitoring : Screens("dark_web_monitoring")
+  object BreachDetail : Screens("breach_detail/{breachId}") {
+      fun createRoute(breachId: String) = "breach_detail/$breachId"
+  }
 }

@@ -1,19 +1,21 @@
 ﻿package tn.esprit.dam.alert
-/*
+
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
+import android.content.IntentFilter
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.media.AudioRecordingConfiguration
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
@@ -22,14 +24,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import tn.esprit.dam.R
 import tn.esprit.dam.data.TokenManager
+import tn.esprit.dam.report.SecurityBubbleService // Import the Bubble Service
+import java.util.concurrent.ConcurrentHashMap
 
 class PrivacyMonitorService : Service() {
-
-    companion object {
-        private const val TAG = "PrivacyMonitor"
-        private const val CHANNEL_ID = "shadow_guard_monitor"
-        private const val NOTIFICATION_ID = 1001
-    }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -38,173 +36,144 @@ class PrivacyMonitorService : Service() {
     private lateinit var audioManager: AudioManager
     private lateinit var usageStatsManager: UsageStatsManager
 
+    // Cooldown Tracker
+    private val lastAlertTime = ConcurrentHashMap<String, Long>()
+    private val COOLDOWN_MS = 10000L
+
+    // 👇 NEW: Dynamic Receiver for App Installs
+    private val appInstallReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == Intent.ACTION_PACKAGE_ADDED) {
+                Log.d("PrivacyMonitor", "📦 NEW APP DETECTED via Dynamic Receiver!")
+
+                if (!Settings.canDrawOverlays(context)) {
+                    Log.w("PrivacyMonitor", "❌ Overlay permission missing.")
+                    return
+                }
+
+                val packageName = intent.data?.schemeSpecificPart ?: return
+                Log.d("PrivacyMonitor", "🔍 Analyzing: $packageName")
+
+                val bubbleIntent = Intent(context, SecurityBubbleService::class.java).apply {
+                    putExtra("PACKAGE_NAME", packageName)
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(bubbleIntent)
+                } else {
+                    context.startService(bubbleIntent)
+                }
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "Service onCreate() called")
-
-        // OK IMPORTANT: Démarrer en foreground AVANT toute autre opération
         startForegroundService()
-
         initializeManagers()
         startMonitoring()
+        registerInstallReceiver() // 👈 Trigger registration
+    }
+
+    private fun registerInstallReceiver() {
+        try {
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_PACKAGE_ADDED)
+                addDataScheme("package") // Crucial: Listen for package:// events
+            }
+            registerReceiver(appInstallReceiver, filter)
+            Log.d("PrivacyMonitor", "✅ App Install Listener Registered")
+        } catch (e: Exception) {
+            Log.e("PrivacyMonitor", "❌ Failed to register Install Receiver", e)
+        }
     }
 
     private fun initializeManagers() {
-        try {
-            cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            Log.d(TAG, "Managers initialized successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing managers", e)
-        }
+        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
     }
 
     private fun startForegroundService() {
-        try {
-            createNotificationChannel()
-            val notification = createNotification()
-
-            // OK Utiliser FOREGROUND_SERVICE_TYPE_SPECIAL_USE pour Android 14+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                )
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
-
-            Log.d(TAG, "Foreground service started successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting foreground service", e)
-        }
-    }
-
-    private fun createNotificationChannel() {
+        val channelId = "shadow_guard_monitor"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Surveillance de la Vie Privée",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Monitore l'utilisation de la caméra et du microphone"
-                setShowBadge(false)
-            }
-
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager?.createNotificationChannel(channel)
-            Log.d(TAG, "Notification channel created")
+            val channel = NotificationChannel(channelId, "Privacy Monitor", NotificationManager.IMPORTANCE_LOW)
+            getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
         }
-    }
 
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("ShadowGuard Actif")
-            .setContentText("Surveillance caméra & micro en cours...")
+        val notification: Notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("ShadowGuard Active")
+            .setContentText("Monitoring Camera, Mic & New Installs...")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+
+        startForeground(1, notification)
     }
 
     private fun startMonitoring() {
-        Log.d(TAG, "[START] Starting Hardware Monitoring...")
+        Log.d("PrivacyMonitor", "🚀 Starting Hardware Monitoring...")
 
-        try {
-            // 1. Monitor Camera Availability
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                cameraManager.registerAvailabilityCallback(object : CameraManager.AvailabilityCallback() {
-                    override fun onCameraUnavailable(cameraId: String) {
-                        super.onCameraUnavailable(cameraId)
-                        Log.w(TAG, "[CAMERA] Camera $cameraId is IN USE!")
-                        identifyAndSendAlert("Camera Accessed")
-                    }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cameraManager.registerAvailabilityCallback(object : CameraManager.AvailabilityCallback() {
+                override fun onCameraUnavailable(cameraId: String) {
+                    super.onCameraUnavailable(cameraId)
+                    identifyAndSendAlert("Camera Accessed")
+                }
+            }, null)
+        }
 
-                    override fun onCameraAvailable(cameraId: String) {
-                        super.onCameraAvailable(cameraId)
-                        Log.d(TAG, "[CAMERA] Camera $cameraId is now available")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            audioManager.registerAudioRecordingCallback(object : AudioManager.AudioRecordingCallback() {
+                override fun onRecordingConfigChanged(configs: List<AudioRecordingConfiguration>?) {
+                    super.onRecordingConfigChanged(configs)
+                    if (!configs.isNullOrEmpty()) {
+                        identifyAndSendAlert("Microphone Accessed")
                     }
-                }, null)
-                Log.d(TAG, "Camera monitoring registered")
-            }
-
-            // 2. Monitor Microphone Recording
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                audioManager.registerAudioRecordingCallback(object : AudioManager.AudioRecordingCallback() {
-                    override fun onRecordingConfigChanged(configs: List<AudioRecordingConfiguration>?) {
-                        super.onRecordingConfigChanged(configs)
-                        if (!configs.isNullOrEmpty()) {
-                            Log.w(TAG, "[MIC] Microphone is IN USE!")
-                            identifyAndSendAlert("Microphone Accessed")
-                        }
-                    }
-                }, null)
-                Log.d(TAG, "Microphone monitoring registered")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting up monitoring", e)
+                }
+            }, null)
         }
     }
 
     private fun identifyAndSendAlert(eventType: String) {
         serviceScope.launch {
+            val packageName = getForegroundApp()
+            if (packageName == this@PrivacyMonitorService.packageName || packageName == "Unknown") return@launch
+
+            val currentTime = System.currentTimeMillis()
+            val lastTime = lastAlertTime[packageName] ?: 0L
+
+            if (currentTime - lastTime < COOLDOWN_MS) return@launch
+
+            lastAlertTime[packageName] = currentTime
+            val appName = getAppNameFromPackage(packageName)
+            Log.d("PrivacyMonitor", "⚠️ CULPRIT FOUND: $appName ($packageName)")
+
             try {
-                // Find the foreground app
-                val packageName = getForegroundApp()
-
-                // Ignore if it's our own app
-                if (packageName == this@PrivacyMonitorService.packageName) {
-                    Log.d(TAG, "Ignoring self-triggered event")
-                    return@launch
-                }
-
-                val appName = getAppNameFromPackage(packageName)
-                Log.d(TAG, "[ALERT] CULPRIT FOUND: $appName ($packageName)")
-
-                val details = mapOf(
-                    "app_name" to appName,
-                    "detection_method" to "HardwareCallback",
-                    "timestamp" to System.currentTimeMillis().toString()
-                )
-
-                // Send alert to backend
-                TokenManager.sendAlertEvent(
-                    context = this@PrivacyMonitorService,
+                tn.esprit.dam.data.ApiClient.getInstance(this@PrivacyMonitorService).sendAlertEvent(
                     packageName = packageName,
                     event = eventType,
-                    details = details
+                    details = mapOf("app_name" to appName, "detection_method" to "HardwareCallback")
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Error sending alert", e)
+                Log.e("PrivacyMonitor", "❌ Failed to send alert", e)
             }
         }
     }
 
-    // Helper to find which app is currently on screen
     private fun getForegroundApp(): String {
-        return try {
-            val endTime = System.currentTimeMillis()
-            val startTime = endTime - 10000 // Look back 10 seconds
-
-            val events = usageStatsManager.queryEvents(startTime, endTime)
-            val event = UsageEvents.Event()
-
-            var lastPackage = "Unknown"
-
-            while (events.hasNextEvent()) {
-                events.getNextEvent(event)
-                if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                    lastPackage = event.packageName
-                }
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - 10000
+        val events = usageStatsManager.queryEvents(startTime, endTime)
+        val event = UsageEvents.Event()
+        var lastPackage = "Unknown"
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                lastPackage = event.packageName
             }
-            lastPackage
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting foreground app", e)
-            "Unknown"
         }
+        return lastPackage
     }
 
     private fun getAppNameFromPackage(packageName: String): String {
@@ -217,16 +186,15 @@ class PrivacyMonitorService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "Service onStartCommand() called")
-        return START_STICKY
+    override fun onDestroy() {
+        super.onDestroy()
+        // ✅ Unregister to avoid memory leaks
+        try {
+            unregisterReceiver(appInstallReceiver)
+        } catch (e: Exception) {
+            // Ignore
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "Service onDestroy() called - Stopping monitoring")
-        // Cleanup if needed
-    }
-}*/
+}

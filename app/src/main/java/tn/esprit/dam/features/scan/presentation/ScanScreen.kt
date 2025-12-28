@@ -1,5 +1,7 @@
 package tn.esprit.dam.features.scan.presentation
 
+import tn.esprit.dam.features.scan.domain.RiskLevel
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
@@ -801,6 +803,7 @@ private fun AnalysisNoteCard(text: String) {
     }
 }
 
+
 @Composable
 private fun RiskBadgeChip(label: String, score: Int, color: Color) {
     Row(
@@ -819,12 +822,19 @@ private fun RiskBadgeChip(label: String, score: Int, color: Color) {
 private data class AppRisk(val label: String, val color: Color, val score: Int)
 
 private fun deriveAppRisk(app: LocalAppInfo): AppRisk {
-    val penalty = (app.permissions.size * 2) + (app.trackers.size * 5)
-    val score = (100 - penalty).coerceIn(15, 95)
-    val (label, color) = when {
-        score < 40 -> "Élevé" to Color(0xFFEF4444)
-        score < 70 -> "Moyen" to Color(0xFFFB923C)
-        else -> "Faible" to Color(0xFF10B981)
+    // Use pre-calculated risk result if available
+    val risk = app.riskResult
+    
+    if (risk != null) {
+        val color = when (risk.riskLevel) {
+            RiskLevel.CRITICAL, RiskLevel.HIGH -> Color(0xFFEF4444)
+            RiskLevel.MEDIUM -> Color(0xFFFB923C)
+            RiskLevel.LOW -> Color(0xFF10B981)
+            RiskLevel.SAFE -> Color(0xFF10B981)
+        }
+        return AppRisk(label = risk.riskLevel.label, color = color, score = risk.score)
     }
-    return AppRisk(label = label, color = color, score = score)
+
+    // Fallback if risk result is missing (should not happen with new logic)
+    return AppRisk("Inconnu", Color.Gray, 0)
 }

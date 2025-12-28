@@ -18,12 +18,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import tn.esprit.dam.data.api.models.AppInfoDto
 import tn.esprit.dam.data.api.models.AppScanHistoryDto
 import tn.esprit.dam.data.api.models.StoreDataDto
 import tn.esprit.dam.data.api.models.AnalysisResultDto
+import tn.esprit.dam.features.scan.domain.SecurityUtils
+import tn.esprit.dam.features.scan.domain.RiskLevel
+import tn.esprit.dam.features.scan.domain.ScanRiskResult
 import tn.esprit.dam.utils.SecurityScoring
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -119,12 +123,13 @@ private fun AppDetailContent(
     history: List<AppScanHistoryDto>,
     onBackClick: () -> Unit
 ) {
-    val riskLevel = app.scanResults?.aiRiskLevel ?: "low"
-    val smoothedScore = SecurityScoring.computeUserFriendlyScore(
-        rawScore = app.scanResults?.aiRiskScore ?: app.finalScore,
-        riskLevel = riskLevel
-    )
-    val lastScanDate = app.lastScanned ?: history.firstOrNull()?.scanDate
+    val riskResult = remember(app) {
+        SecurityUtils.calculateAppRisk(
+            permissions = app.permissions,
+            trackers = app.trackers.map { it.name },
+            isSystemApp = false
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -135,24 +140,21 @@ private fun AppDetailContent(
         item {
             DetailHeader(onBackClick = onBackClick)
         }
+        // Helper variable
+        val lastScanDate = app.lastScanned
 
         // App Header
         item {
             AppHeaderCard(
                 app = app,
-                riskLevel = riskLevel,
+                riskResult = riskResult,
                 lastScanDate = lastScanDate,
                 historyCount = history.size
             )
         }
 
-        if (smoothedScore > 0) {
-            item {
-                ScoreBreakdownCard(
-                    finalScore = smoothedScore,
-                    riskLevel = riskLevel
-                )
-            }
+        item {
+            ScoreBreakdownCard(riskResult = riskResult)
         }
 
         // Store Data
@@ -162,49 +164,81 @@ private fun AppDetailContent(
             }
         }
 
-        // AI Analysis Results with status badge
+        // AI Analysis Results
         if (app.scanResults != null) {
             item {
                 AIAnalysisCard(
                     scanResults = app.scanResults!!,
+                    confidence = riskResult.confidence.label,
                     aiStatus = app.scanResults!!.aiStatus ?: "fallback"
                 )
             }
         }
 
-        if (history.isNotEmpty()) {
+        // --- ENRICHED PERMISSION ANALYSIS ---
+        val processedPermissions = app.permissions.map { SecurityUtils.analyzePermission(it) }
+        val riskyPermissions = processedPermissions.filter { it.risk == RiskLevel.HIGH || it.risk == RiskLevel.CRITICAL }
+        val otherPermissions = processedPermissions.filter { it.risk != RiskLevel.HIGH && it.risk != RiskLevel.CRITICAL }
+
+        if (riskyPermissions.isNotEmpty()) {
             item {
-                AppHistorySection(history)
+                SectionTitle(title = "⚠️ Permissions Critiques (${riskyPermissions.size})", color = Color(0xFFEF4444))
+            }
+            items(riskyPermissions) { perm ->
+                EnrichedPermissionCard(perm)
             }
         }
 
-        // Permissions (only if non-empty)
-        if (app.permissions.isNotEmpty()) {
+        if (otherPermissions.isNotEmpty()) {
             item {
-                SectionTitle(title = "Permissions détectées (${app.permissions.size})")
+                SectionTitle(title = "Permissions Standards (${otherPermissions.size})")
             }
-            items(app.permissions.take(10)) { permission ->
-                PermissionCard(permission = permission)
-            }
-            if (app.permissions.size > 10) {
+            // Collapse others if too many
+            if (otherPermissions.size > 5) {
+                 items(otherPermissions.take(5)) { perm ->
+                    EnrichedPermissionCard(perm)
+                }
                 item {
                     Text(
-                        text = "+ ${app.permissions.size - 10} autres permissions",
+                        text = "+ ${otherPermissions.size - 5} autres permissions sûres",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                     )
+                }
+            } else {
+                 items(otherPermissions) { perm ->
+                    EnrichedPermissionCard(perm)
                 }
             }
         }
 
-        // Trackers (only if non-empty)
+        // --- ENRICHED TRACKER ANALYSIS ---
         if (app.trackers.isNotEmpty()) {
-            item {
-                SectionTitle(title = "Trackers identifiés (${app.trackers.size})")
+            val enrichedTrackers = app.trackers.map { tracker ->
+                tracker to SecurityUtils.analyzeTracker(tracker.name)
             }
-            items(app.trackers) { tracker ->
-                TrackerCard(tracker = tracker)
+            
+            item {
+                SectionTitle(title = "Trackers & Publicité (${app.trackers.size})")
+            }
+            items(enrichedTrackers) { (tracker, analysis) ->
+                EnrichedTrackerCard(tracker, analysis)
+            }
+        } else {
+            // Reassuring message if no trackers
+            item {
+                SafeStateCard(
+                    title = "Aucun tracker détecté",
+                    message = "Cette application ne semble pas contenir de trackers publicitaires ou analytiques connus.",
+                    icon = Icons.Default.CheckCircle
+                )
+            }
+        }
+        
+        if (history.isNotEmpty()) {
+            item {
+                AppHistorySection(history)
             }
         }
     }
@@ -323,7 +357,7 @@ private fun riskColor(riskLevel: String): Color {
 @Composable
 private fun AppHeaderCard(
     app: AppInfoDto,
-    riskLevel: String,
+    riskResult: ScanRiskResult,
     lastScanDate: String?,
     historyCount: Int
 ) {
@@ -343,7 +377,7 @@ private fun AppHeaderCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            RiskLevelBadge(riskLevel = riskLevel)
+            RiskLevelBadge(riskLevel = riskResult.riskLevel.toString())
 
             // App Icon
             AsyncImage(
@@ -482,10 +516,14 @@ private fun StoreDataItem(
 
 @Composable
 private fun ScoreBreakdownCard(
-    finalScore: Int,
-    riskLevel: String
+    riskResult: ScanRiskResult
 ) {
-    val scoreColor = riskColor(riskLevel)
+    val scoreColor = when (riskResult.riskLevel) {
+            RiskLevel.CRITICAL, RiskLevel.HIGH -> Color(0xFFEF4444)
+            RiskLevel.MEDIUM -> Color(0xFFFB923C)
+            RiskLevel.LOW -> Color(0xFF10B981)
+            RiskLevel.SAFE -> Color(0xFF10B981)
+    }
 
     Card(
         modifier = Modifier
@@ -500,7 +538,7 @@ private fun ScoreBreakdownCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Score de Risque",
+                text = "Score de Sécurité",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -518,7 +556,7 @@ private fun ScoreBreakdownCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "$finalScore",
+                        text = "${riskResult.score}",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = scoreColor
@@ -529,7 +567,7 @@ private fun ScoreBreakdownCard(
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = riskLevel.uppercase(),
+                        text = riskResult.riskLevel.label.uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = scoreColor
@@ -544,7 +582,7 @@ private fun ScoreBreakdownCard(
 
             // Progress Bar
             LinearProgressIndicator(
-                progress = { finalScore / 100f },
+                progress = { riskResult.score / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -553,19 +591,34 @@ private fun ScoreBreakdownCard(
                 trackColor = scoreColor.copy(alpha = 0.2f)
             )
 
-            // Breakdown explanation
-            Text(
-                text = "Score calculé: Ollama (70%) + Play Store (30%)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline
-            )
+            // Factors
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Facteurs de risque:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                
+                ScoreFactorRow("Permissions", riskResult.permissionScore)
+                ScoreFactorRow("Trackers & Pubs", riskResult.trackerScore)
+            }
         }
+    }
+}
+
+@Composable
+private fun ScoreFactorRow(label: String, subScore: Int) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "$subScore/100", 
+            style = MaterialTheme.typography.bodySmall, 
+            fontWeight = FontWeight.Bold,
+            color = if(subScore < 70) Color(0xFFEF4444) else if (subScore < 90) Color(0xFFFB923C) else Color(0xFF10B981)
+        )
     }
 }
 
 @Composable
 private fun AIAnalysisCard(
     scanResults: AnalysisResultDto,
+    confidence: String,
     aiStatus: String = "fallback"
 ) {
     Card(
@@ -600,6 +653,19 @@ private fun AIAnalysisCard(
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.weight(1f)
                 )
+                // Confidence Badge
+                 Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                ) {
+                    Text(
+                        text = "Confiance: $confidence",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
                 // AI Status Badge
                 Surface(
                     shape = RoundedCornerShape(4.dp),
@@ -662,75 +728,72 @@ private fun AIAnalysisCard(
 }
 
 @Composable
-private fun SectionTitle(title: String) {
+private fun SectionTitle(title: String, color: Color = MaterialTheme.colorScheme.onBackground) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
+        color = color,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
     )
 }
 
 @Composable
-private fun PermissionCard(permission: String) {
-    val isDangerous = permission.contains("CAMERA") ||
-            permission.contains("LOCATION") ||
-            permission.contains("CONTACTS") ||
-            permission.contains("MICROPHONE") ||
-            permission.contains("RECORD_AUDIO") ||
-            permission.contains("SMS") ||
-            permission.contains("CALL") ||
-            permission.contains("STORAGE")
+private fun EnrichedPermissionCard(analysis: SecurityUtils.PermissionAnalysis) {
+    val isRisky = analysis.risk == RiskLevel.HIGH || analysis.risk == RiskLevel.CRITICAL
+    val cardColor = if (isRisky) Color(0xFFEF4444).copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDangerous) 
-                Color(0xFFF44336).copy(alpha = 0.1f) 
-            else 
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(14.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Icon(
-                imageVector = if (isDangerous) Icons.Default.Warning else Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = if (isDangerous) Color(0xFFF44336) else Color(0xFF4CAF50)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = permission.split(".").lastOrNull() ?: permission,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = permission,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        if (isRisky) Color(0xFFEF4444).copy(alpha = 0.2f) else MaterialTheme.colorScheme.background,
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isRisky) Icons.Default.Warning else Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (isRisky) Color(0xFFEF4444) else Color(0xFF10B981)
                 )
             }
-            if (isDangerous) {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFFF44336).copy(alpha = 0.2f)
+
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = analysis.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = analysis.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                 Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "DANGER",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF44336),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                    CategoryChip(analysis.category.label)
+                    if (isRisky) RiskChip(analysis.risk.label)
                 }
             }
         }
@@ -738,12 +801,47 @@ private fun PermissionCard(permission: String) {
 }
 
 @Composable
-private fun TrackerCard(tracker: tn.esprit.dam.data.api.models.SimpleTrackerInfo) {
+private fun CategoryChip(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(4.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            color = MaterialTheme.colorScheme.outline
+        )
+    }
+}
+
+@Composable
+private fun RiskChip(text: String) {
+    Surface(
+        color = Color(0xFFEF4444).copy(alpha = 0.2f),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = text.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            color = Color(0xFFEF4444)
+        )
+    }
+}
+
+@Composable
+private fun EnrichedTrackerCard(
+    tracker: tn.esprit.dam.data.api.models.SimpleTrackerInfo, 
+    analysis: SecurityUtils.TrackerAnalysis
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFF9800).copy(alpha = 0.1f)
         )
@@ -751,29 +849,54 @@ private fun TrackerCard(tracker: tn.esprit.dam.data.api.models.SimpleTrackerInfo
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
+             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(24.dp),
                 tint = Color(0xFFFF9800)
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = tracker.name,
+                    text = analysis.name,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
-                if (tracker.riskLevel != null) {
-                    Text(
-                        text = "Risque: ${tracker.riskLevel}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
+                Text(
+                    text = analysis.category,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                 Text(
+                    text = analysis.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SafeStateCard(title: String, message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF10B981).copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = Color(0xFF10B981))
+             Column {
+                Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF047857))
+                Text(message, style = MaterialTheme.typography.bodySmall, color = Color(0xFF047857))
             }
         }
     }

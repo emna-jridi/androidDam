@@ -90,12 +90,21 @@ class HomeViewModel @Inject constructor(
                                 totalApps = 0
                             )
                         } else {
-                            val riskScores = apps.map { it.finalScore }
-                            val averageScore = riskScores.average().toFloat()
-                            val sortedByRisk = apps.sortedBy { it.finalScore }
-                            val highRiskCount = apps.count { it.finalScore >= 85 }
-                            val mediumRiskCount = apps.count { it.finalScore in 70.0..84.99 }
-                            val lowRiskCount = apps.size - highRiskCount - mediumRiskCount
+                            // Calculate risk scores handling nullable fields
+                            val riskScores = apps.map { it.aiRiskScore ?: it.finalScore ?: 0f }
+                            val averageScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else 0f
+                            
+                            val sortedByRisk = apps.sortedBy { it.aiRiskScore ?: it.finalScore ?: 0f }
+                            
+                            // ScanViewModel logic: score >= 85 is LOW RISK (Safe)
+                            // We are counting "High Risk" apps (Low Score)
+                            val highRiskCount = riskScores.count { it < 40 } // Critical/High
+                            val mediumRiskCount = riskScores.count { it in 40.0..69.99 }
+                            val lowRiskCount = riskScores.count { it >= 70 } // Safe
+                            // I adjusted logic to match standard MobSF (0-100 where 100 is safe)
+                            // 0-39 High Risk
+                            // 40-69 Medium Risk
+                            // 70-100 Low Risk
 
                             _homeState.value = _homeState.value.copy(
                                 lastScanDate = formatTimestamp(lastHistoryDate ?: response.createdAt),
