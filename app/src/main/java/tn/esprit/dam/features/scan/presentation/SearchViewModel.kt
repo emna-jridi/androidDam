@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

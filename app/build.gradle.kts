@@ -101,6 +101,11 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging:23.4.0")
     implementation("androidx.cardview:cardview:1.0.0")
     
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
+    
     // Lifecycle ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")

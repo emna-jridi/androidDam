@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -182,7 +182,7 @@ private fun AppDetailContent(
 
         if (riskyPermissions.isNotEmpty()) {
             item {
-                SectionTitle(title = "⚠️ Permissions Critiques (${riskyPermissions.size})", color = Color(0xFFEF4444))
+                SectionTitle(title = "âš ï¸ Permissions Critiques (${riskyPermissions.size})", color = Color(0xFFEF4444))
             }
             items(riskyPermissions) { perm ->
                 EnrichedPermissionCard(perm)
@@ -200,7 +200,7 @@ private fun AppDetailContent(
                 }
                 item {
                     Text(
-                        text = "+ ${otherPermissions.size - 5} autres permissions sûres",
+                        text = "+ ${otherPermissions.size - 5} autres permissions sÃ»res",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)

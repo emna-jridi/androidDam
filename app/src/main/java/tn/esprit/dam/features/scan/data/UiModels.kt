@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.data
+﻿package tn.esprit.dam.features.scan.data
 
 import tn.esprit.dam.features.scan.domain.SecurityUtils
 import tn.esprit.dam.features.scan.domain.ScanRiskResult

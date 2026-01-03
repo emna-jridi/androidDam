@@ -29,7 +29,7 @@ fun NewPasswordScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigation automatique vers succÃ¨s
+    // Navigation automatique vers succès
     LaunchedEffect(uiState.currentStep) {
         if (uiState.currentStep == ResetPasswordStep.SUCCESS) {
             onPasswordResetSuccess()

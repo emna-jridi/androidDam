@@ -31,7 +31,7 @@ fun EmailVerificationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigation automatique au succÃ¨s
+    // Navigation automatique au succès
     LaunchedEffect(uiState.isVerified) {
         if (uiState.isVerified) {
             onVerificationSuccess()
@@ -138,7 +138,7 @@ fun EmailVerificationScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Bouton VÃ©rifier
+                    // Bouton Vérifier
                     Button(
                         onClick = { viewModel.verifyEmail(email) },
                         modifier = Modifier
@@ -210,7 +210,7 @@ fun EmailVerificationScreen(
                         }
                     }
 
-                    // Message de succÃ¨s resend
+                    // Message de succès resend
                     uiState.resendMessage?.let { message ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Card(
@@ -296,7 +296,7 @@ fun EmailVerificationScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "VÃ©rifiez vos spams si vous ne voyez pas l'email",
+                        text = "Vérifiez vos spams si vous ne voyez pas l'email",
                         color = Color(0xFFB4B4C6),
                         style = MaterialTheme.typography.bodySmall
                     )

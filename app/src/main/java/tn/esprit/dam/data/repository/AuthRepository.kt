@@ -19,7 +19,7 @@ class AuthRepository(private val context: Context) {
     private val apiClient = ApiClient.getInstance(context)
 
     // ========================================
-    // INSCRIPTION & VÃ‰RIFICATION
+    // INSCRIPTION & VÉRIFICATION
     // ========================================
 
     suspend fun register(
@@ -72,7 +72,7 @@ class AuthRepository(private val context: Context) {
     }
 
     // ========================================
-    // CONNEXION & DÃ‰CONNEXION
+    // CONNEXION & DÉCONNEXION
     // ========================================
 
 
@@ -124,7 +124,7 @@ class AuthRepository(private val context: Context) {
     }
 
     // ========================================
-    // RÃ‰INITIALISATION MOT DE PASSE
+    // RÉINITIALISATION MOT DE PASSE
     // ========================================
 
     suspend fun requestPasswordReset(email: String): Result<RequestPasswordResetResponse> {
@@ -166,7 +166,7 @@ class AuthRepository(private val context: Context) {
         newPassword: String
     ): Result<ResetPasswordResponse> {
         return try {
-            Log.d(TAG, "ðŸ“¤ Repository: Resetting password for $email")
+            Log.d(TAG, "🔤 Repository: Resetting password for $email")
 
             // Call the Ktor API function with the updated parameters
             val response = apiClient.resetPassword(email, code, newPassword)
@@ -182,13 +182,13 @@ class AuthRepository(private val context: Context) {
 
 
     // ========================================
-    // Ã‰TAT & PROFIL
+    // ÉTAT & PROFIL
     // ========================================
 
     suspend fun isLoggedIn(): Boolean {
         return try {
             val isLoggedIn = apiClient.isLoggedIn()
-            Log.d(TAG, "ðŸ” Repository: User logged in status = $isLoggedIn")
+            Log.d(TAG, "🔑 Repository: User logged in status = $isLoggedIn")
             isLoggedIn
         } catch (e: Exception) {
             Log.e(TAG, "âŒ Repository: Error checking login status - ${e.message}", e)

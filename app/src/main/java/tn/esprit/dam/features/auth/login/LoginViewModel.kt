@@ -30,7 +30,7 @@ data class LoginUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
 
-    // Ã‰tats de chargement/succÃ¨s/erreur
+    // États de chargement/succès/erreur
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val errorMessage: String? = null
@@ -49,10 +49,10 @@ class AuthViewModel : ViewModel() {
         private const val TAG = "AuthViewModel"
     }
 
-    // âœ… Repository sera initialisÃ© depuis le Composable
+    // ✅ Repository sera initialisé depuis le Composable
     private lateinit var repository: AuthRepository
 
-    // Ã‰tat de l'UI exposÃ© aux Composables
+    // État de l'UI exposé aux Composables
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -61,7 +61,7 @@ class AuthViewModel : ViewModel() {
 
     /**
      * âœ… Initialiser le repository avec le context
-     * AppelÃ© une seule fois depuis le Composable
+     * Appelé une seule fois depuis le Composable
      */
     fun initialize(context: Context) {
         if (!::repository.isInitialized) {
@@ -116,7 +116,7 @@ class AuthViewModel : ViewModel() {
 
         val error = when {
             password.isEmpty() -> "Mot de passe requis"
-            password.length < 6 -> "Minimum 6 caractÃ¨res"
+            password.length < 6 -> "Minimum 6 caractères"
             else -> null
         }
 
@@ -135,9 +135,9 @@ class AuthViewModel : ViewModel() {
     // ========================================
 
     fun login() {
-        Log.d(TAG, "ðŸ”µ login() called")
+        Log.d(TAG, "📅 login() called")
 
-        // VÃ©rifier que le repository est initialisÃ©
+        // Vérifier que le repository est initialisé
         if (!::repository.isInitialized) {
             Log.e(TAG, "âŒ Repository not initialized!")
             _uiState.value = _uiState.value.copy(
@@ -154,9 +154,9 @@ class AuthViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ” Attempting login for: ${_uiState.value.email}")
+                Log.d(TAG, "📧 Attempting login for: ${_uiState.value.email}")
 
-                // Mettre en Ã©tat de chargement
+                // Mettre en état de chargement
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,
                     errorMessage = null
@@ -171,7 +171,7 @@ class AuthViewModel : ViewModel() {
                 result.onSuccess { response ->
                     Log.d(TAG, "âœ… Login successful for user: ${response.user.name}")
 
-                    // SuccÃ¨s
+                    // Succès
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,
@@ -185,7 +185,7 @@ class AuthViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = false,
-                        errorMessage = error.message ?: "Connexion Ã©chouÃ©e"
+                        errorMessage = error.message ?: "Connexion échouée"
                     )
                 }
 

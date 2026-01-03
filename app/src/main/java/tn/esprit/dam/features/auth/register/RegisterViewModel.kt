@@ -25,7 +25,7 @@ data class RegisterUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
 
-    // Ã‰tats de chargement/succÃ¨s/erreur
+    // États de chargement/succès/erreur
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val registeredEmail: String? = null, // Email pour passer à l'écran de vérification
@@ -140,7 +140,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
         val error = when {
             password.isEmpty() -> "Mot de passe requis"
-            password.length < 6 -> "Minimum 6 caractÃ¨res"
+            password.length < 6 -> "Minimum 6 caractères"
             !password.any { it.isDigit() } -> "Doit contenir au moins un chiffre"
             !password.any { it.isLetter() } -> "Doit contenir au moins une lettre"
             else -> null
@@ -179,7 +179,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ“ Attempting registration for: ${_uiState.value.email}")
+                Log.d(TAG, "📧 Attempting registration for: ${_uiState.value.email}")
 
                 // Mettre en état de chargement
                 _uiState.value = _uiState.value.copy(
@@ -199,7 +199,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     Log.d(TAG, "âœ… Registration successful")
                     Log.d(TAG, "Message: ")
 
-                    // SuccÃ¨s
+                    // Succès
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,

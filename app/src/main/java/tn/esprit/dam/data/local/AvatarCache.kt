@@ -16,7 +16,7 @@ object AvatarCache {
     private const val BASE_URL = tn.esprit.dam.data.Config.ROOT_URL
 
     /**
-     * TÃ©lÃ©charger et mettre en cache un avatar
+     * Télécharger et mettre en cache un avatar
      * âœ… Prend le nom du fichier et construit l'URL
      */
     suspend fun cacheAvatar(
@@ -25,23 +25,23 @@ object AvatarCache {
         avatarFileName: String
     ): String? = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "ðŸ”„ Caching avatar for user: $userId")
+            Log.d(TAG, "📧 Caching avatar for user: $userId")
 
-            // VÃ©rifier si dÃ©jÃ  en cache
+            // Vérifier si déjà en cache
             val cachedFileName = getCachedAvatarFileName(context, userId)
             if (cachedFileName == avatarFileName && FileDownloader.fileExists(context, avatarFileName)) {
                 Log.d(TAG, "âœ… Avatar already cached")
                 return@withContext FileDownloader.getLocalFilePath(context, avatarFileName)
             }
 
-            // âœ… Construire l'URL complÃ¨te Ã  partir du nom du fichier
+            // ✅ Construire l'URL complète à partir du nom du fichier
             val avatarUrl = "$BASE_URL/uploads/avatars/$avatarFileName"
 
-            // TÃ©lÃ©charger le nouvel avatar
+            // Télécharger le nouvel avatar
             val localFile = FileDownloader.downloadFile(context, avatarUrl, avatarFileName)
 
             if (localFile != null) {
-                // Sauvegarder les mÃ©tadonnÃ©es
+                // Sauvegarder les métadonnées
                 saveCacheMetadata(context, userId, avatarFileName)
                 Log.d(TAG, "âœ… Avatar cached successfully")
                 localFile.absolutePath
@@ -57,7 +57,7 @@ object AvatarCache {
     }
 
     /**
-     * RÃ©cupÃ©rer le chemin local de l'avatar
+     * Récupérer le chemin local de l'avatar
      */
     fun getCachedAvatarPath(context: Context, userId: String): String? {
         val fileName = getCachedAvatarFileName(context, userId)

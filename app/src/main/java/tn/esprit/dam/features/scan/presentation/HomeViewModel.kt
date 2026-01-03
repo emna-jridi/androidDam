@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import android.content.Context
 import android.net.Uri
@@ -220,7 +220,7 @@ class HomeViewModel @Inject constructor(
     private fun formatTimestamp(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return try {
-            val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy 'à' HH:mm", Locale.FRENCH)
+            val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy 'Ã ' HH:mm", Locale.FRENCH)
             formatter.format(Instant.parse(raw).atZone(ZoneId.systemDefault()))
         } catch (e: Exception) {
             raw

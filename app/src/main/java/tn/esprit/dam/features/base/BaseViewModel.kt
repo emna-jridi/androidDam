@@ -16,7 +16,7 @@ import kotlin.math.pow
 private const val TAG = "BaseViewModel"
 
 /**
- * Sealed class pour les Ã©tats UI
+ * Sealed class pour les états UI
  */
 sealed class UiState<out T> {
     object Initial : UiState<Nothing>()
@@ -26,7 +26,7 @@ sealed class UiState<out T> {
 }
 
 /**
- * Sealed class pour les Ã©vÃ©nements UI
+ * Sealed class pour les événements UI
  */
 sealed class UiEvent {
     data class ShowMessage(val message: String) : UiEvent()
@@ -151,7 +151,7 @@ abstract class BaseViewModel : ViewModel() {
             }
 
             Log.w(TAG, "Polling timeout after ${System.currentTimeMillis() - startTime}ms")
-            onError("Timeout: L'opÃ©ration a pris trop de temps (${maxDurationMs}ms)")
+            onError("Timeout: L'opération a pris trop de temps (${maxDurationMs}ms)")
         }
     }
 

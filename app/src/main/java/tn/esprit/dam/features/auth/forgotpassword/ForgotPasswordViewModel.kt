@@ -93,7 +93,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
 
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ”‘ Requesting password reset for: ${_uiState.value.email}")
+                Log.d(TAG, "🔑 Requesting password reset for: ${_uiState.value.email}")
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,
@@ -111,17 +111,17 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
                         successMessage = response.message
                     )
 
-                    // DÃ©marrer le countdown
+                    // Démarrer le countdown
                     startResendCountdown()
 
                 }.onFailure { error ->
                     Log.e(TAG, "âŒ Request failed: ${error.message}", error)
 
-                    // MÃªme si Ã§a Ã©choue, on passe Ã  l'Ã©tape suivante (sÃ©curitÃ©)
+                    // Même si ça échoue, on passe à l'étape suivante (sécurité)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         currentStep = ResetPasswordStep.VERIFY_OTP,
-                        successMessage = "Si cet email existe, un code a Ã©tÃ© envoyÃ©."
+                        successMessage = "Si cet email existe, un code a été envoyé."
                     )
 
                     startResendCountdown()
@@ -211,7 +211,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
     fun resendResetOTP() {
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ”„ Resending reset OTP")
+                Log.d(TAG, "📧 Resending reset OTP")
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,
@@ -224,7 +224,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         otp = "",
-                        successMessage = "Code renvoyÃ© avec succÃ¨s",
+                        successMessage = "Code renvoyé avec succès",
                         canResend = false,
                         resendCountdown = COUNTDOWN_SECONDS
                     )
@@ -308,7 +308,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
         // Valider password
         val passwordError = when {
             password.isEmpty() -> "Mot de passe requis"
-            password.length < 6 -> "Minimum 6 caractÃ¨res"
+            password.length < 6 -> "Minimum 6 caractères"
             !password.any { it.isDigit() } -> "Doit contenir au moins un chiffre"
             !password.any { it.isLetter() } -> "Doit contenir au moins une lettre"
             else -> null
@@ -343,7 +343,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
 
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ”„ Resetting password")
+                Log.d(TAG, "📧 Resetting password")
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,
@@ -370,7 +370,7 @@ class ForgotPasswordViewModel(application: Application) : AndroidViewModel(appli
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Ã‰chec de rÃ©initialisation"
+                        errorMessage = error.message ?: "Échec de réinitialisation"
                     )
                 }
 

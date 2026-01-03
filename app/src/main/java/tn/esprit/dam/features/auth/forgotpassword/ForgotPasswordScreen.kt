@@ -27,7 +27,7 @@ fun ForgotPasswordScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigation automatique vers OTP aprÃ¨s envoi
+    // Navigation automatique vers OTP après envoi
     LaunchedEffect(uiState.currentStep) {
         if (uiState.currentStep == ResetPasswordStep.VERIFY_OTP) {
             onNavigateToOTP()

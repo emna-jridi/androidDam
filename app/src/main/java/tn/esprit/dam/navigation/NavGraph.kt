@@ -54,18 +54,18 @@ import tn.esprit.dam.features.components.BottomNavItem
 import tn.esprit.dam.features.components.NavigationScreen
 import tn.esprit.dam.features.profile.ProfileScreen
 import tn.esprit.dam.features.scan.presentation.HomeScreen
-import tn.esprit.dam.features.scan.presentation.ScanScreen
-import com.shadowguard.dam.data.remote.api.VaultApi
-import com.shadowguard.dam.data.remote.ai.OllamaPasswordAdvisor
-import com.shadowguard.dam.data.repository.VaultRepository
-import com.shadowguard.dam.ui.vault.viewmodel.VaultViewModel
-import com.shadowguard.dam.ui.vault.viewmodel.PasswordViewModel
-import com.shadowguard.dam.ui.vault.viewmodel.VaultUiState
-import com.shadowguard.dam.ui.vault.screens.CreateMasterPasswordScreen
-import com.shadowguard.dam.ui.vault.screens.VaultUnlockScreen
-import com.shadowguard.dam.ui.vault.screens.PasswordListScreen
+import tn.esprit.dam.features.alert.AlertsScreen
+import tn.esprit.dam.features.vault.viewmodel.VaultViewModel
+import tn.esprit.dam.features.vault.viewmodel.PasswordViewModel
+import tn.esprit.dam.features.vault.viewmodel.VaultUiState
+import tn.esprit.dam.features.vault.screens.CreateMasterPasswordScreen
+import tn.esprit.dam.features.vault.screens.VaultUnlockScreen
+import tn.esprit.dam.features.vault.screens.PasswordListScreen
+import tn.esprit.dam.data.remote.api.VaultApi
+import tn.esprit.dam.data.remote.ai.OllamaPasswordAdvisor
+import tn.esprit.dam.data.repository.VaultRepository
 import tn.esprit.dam.data.api.KtorClient
-import tn.esprit.dam.screens.AlertScreen.AlertsScreen
+import tn.esprit.dam.features.scan.presentation.ScanScreen
 
 @Composable
 fun AppNavGraph(
@@ -459,7 +459,7 @@ fun AppNavGraph(
                     }
                 }
 
-                com.shadowguard.dam.ui.vault.screens.AddPasswordScreen(
+                tn.esprit.dam.features.vault.screens.AddPasswordScreen(
                     viewModel = passwordViewModel,
                     onBack = { navController.popBackStack() }
                 )
@@ -471,7 +471,7 @@ fun AppNavGraph(
                 val passwordState = selectedPassword
 
                 if (passwordState != null) {
-                    com.shadowguard.dam.ui.vault.screens.PasswordDetailScreen(
+                    tn.esprit.dam.features.vault.screens.PasswordDetailScreen(
                         data = passwordState,
                         onBack = { navController.popBackStack() },
                         onDelete = {
@@ -489,7 +489,7 @@ fun AppNavGraph(
             }
             // Dark Web Monitoring
             composable(Screens.DarkWebMonitoring.route) {
-                com.shadowguard.dam.ui.darkweb.screens.DarkWebMonitoringScreen(
+                tn.esprit.dam.features.darkweb.screens.DarkWebMonitoringScreen(
                     navController = navController
                 )
             }
@@ -499,7 +499,7 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("breachId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val breachId = backStackEntry.arguments?.getString("breachId") ?: ""
-                com.shadowguard.dam.ui.darkweb.screens.BreachDetailScreen(
+                tn.esprit.dam.features.darkweb.screens.BreachDetailScreen(
                     navController = navController,
                     breachId = breachId
                 )

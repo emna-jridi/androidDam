@@ -1,4 +1,4 @@
-package tn.esprit.dam.utils
+﻿package tn.esprit.dam.utils
 
 /**
  * Security scoring helper for user-friendly score presentation

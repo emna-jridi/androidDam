@@ -1,4 +1,4 @@
-package tn.esprit.dam.data.model
+﻿package tn.esprit.dam.data.model
 
 
 import kotlinx.serialization.Serializable

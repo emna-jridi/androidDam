@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -15,7 +15,7 @@ class ScanViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
             modelClass.isAssignableFrom(ScanViewModel::class.java) -> {
-                ScanViewModel(repository, appScanner) as T
+                ScanViewModel(repository, appScanner, context) as T
             }
             modelClass.isAssignableFrom(HomeViewModel::class.java) -> {
                 HomeViewModel(repository, context) as T

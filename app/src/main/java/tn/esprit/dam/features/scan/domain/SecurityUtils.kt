@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.domain
+﻿package tn.esprit.dam.features.scan.domain
 
 import tn.esprit.dam.features.scan.data.LocalAppInfo
 import java.util.Locale
@@ -18,7 +18,7 @@ data class ScanRiskResult(
 )
 
 enum class RiskLevel(val label: String) {
-    SAFE("Sûr"),
+    SAFE("SÃ»r"),
     LOW("Faible"),
     MEDIUM("Moyen"),
     HIGH("Élevé"),

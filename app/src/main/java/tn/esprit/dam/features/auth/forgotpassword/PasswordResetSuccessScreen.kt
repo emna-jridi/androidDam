@@ -23,7 +23,7 @@ import kotlinx.coroutines.delay
 fun PasswordResetSuccessScreen(
     onNavigateToLogin: () -> Unit
 ) {
-    // Auto-navigation aprÃ¨s 3 secondes
+    // Auto-navigation après 3 secondes
     LaunchedEffect(Unit) {
         delay(3000)
         onNavigateToLogin()
@@ -48,7 +48,7 @@ fun PasswordResetSuccessScreen(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // IcÃ´ne de succÃ¨s
+            // Icône de succès
             Surface(
                 modifier = Modifier.size(120.dp),
                 shape = RoundedCornerShape(60.dp),

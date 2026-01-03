@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.data
+﻿package tn.esprit.dam.features.scan.data
 
 import com.google.gson.annotations.SerializedName
 

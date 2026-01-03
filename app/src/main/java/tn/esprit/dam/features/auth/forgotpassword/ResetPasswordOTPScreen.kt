@@ -134,7 +134,7 @@ fun ResetPasswordOTPScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Bouton VÃ©rifier
+                    // Bouton Vérifier
                     Button(
                         onClick = { viewModel.verifyResetOTP() },
                         modifier = Modifier
@@ -206,7 +206,7 @@ fun ResetPasswordOTPScreen(
                         }
                     }
 
-                    // Message de succÃ¨s
+                    // Message de succès
                     uiState.successMessage?.let { message ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Card(

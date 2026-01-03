@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import android.content.Intent
 import android.net.Uri
@@ -402,9 +402,9 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
 
                 Text(
                     text = when (clampedScore) {
-                        0 -> "Aucun scan effectué"
-                        in 1..30 -> "⚠️ Score faible – recommandations disponibles"
-                        in 31..70 -> "🟠 Score moyen"
+                        0 -> "Aucun scan effectuÃ©"
+                        in 1..30 -> "âš ï¸ Score faible â€“ recommandations disponibles"
+                        in 31..70 -> "ðŸŸ  Score moyen"
                         else -> "🟢 Très bon score"
                     },
                     style = MaterialTheme.typography.titleMedium,
@@ -413,9 +413,9 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
                 )
                 Text(
                     text = when (clampedScore) {
-                        0 -> "Aucun scan effectué"
+                        0 -> "Aucun scan effectuÃ©"
                         in 1..30 -> "Plusieurs risques importants"
-                        in 31..70 -> "Quelques risques à surveiller"
+                        in 31..70 -> "Quelques risques Ã  surveiller"
                         else -> "Appareil globalement sécurisé"
                     },
                     style = MaterialTheme.typography.bodySmall,

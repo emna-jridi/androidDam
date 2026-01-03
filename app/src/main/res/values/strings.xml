@@ -34,4 +34,27 @@
     <string name="nav_scan">Analyse de sécurité</string>
     <string name="nav_history">Historique</string>
     <string name="nav_profile">Profil</string>
+    
+    <!-- Error Messages -->
+    <string name="error_no_apps_selected">Aucune application sélectionnée</string>
+    <string name="error_too_many_apps">Trop d\'applications (maximum 100)</string>
+    <string name="error_user_id_required">Identification utilisateur requise</string>
+    <string name="error_device_id_required">Identification appareil requise</string>
+    <string name="error_invalid_package">Nom de package invalide : %1$s</string>
+    <string name="error_scan_id_required">Identifiant de scan requis</string>
+    <string name="error_scan_id_invalid">Identifiant de scan invalide</string>
+    <string name="error_cannot_read_apk">Impossible de lire le fichier APK</string>
+    <string name="error_server">Erreur serveur (HTTP %1$d) : %2$s</string>
+    <string name="error_scan_id_empty">Erreur serveur : scanId vide</string>
+    <string name="error_empty_response">Erreur serveur : données vides</string>
+    <string name="error_network">Erreur de connexion</string>
+    <string name="error_network_with_message">Erreur réseau : %1$s</string>
+    <string name="error_unknown">Erreur inconnue</string>
+    <string name="error_select_app">Sélectionnez au moins une application à analyser</string>
+    <string name="error_user_not_initialized">ID utilisateur ou appareil non initialisé</string>
+    <string name="error_user_not_logged_in">Utilisateur non connecté</string>
+    <string name="error_data">Erreur de données : %1$s</string>
+    <string name="error_scan_failed">L\'analyse a échoué sur le serveur</string>
+    <string name="error_scan_timeout">Timeout : l\'analyse prend trop de temps</string>
 </resources>
+

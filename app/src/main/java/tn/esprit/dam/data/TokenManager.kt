@@ -80,7 +80,7 @@ object TokenManager {
     }
 
     /**
-     * RÃ©cupÃ©rer l'access token
+     * Récupérer l'access token
      */
     suspend fun getAccessToken(context: Context): String? {
         return try {

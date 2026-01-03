@@ -1,4 +1,4 @@
-package tn.esprit.dam.data.api
+﻿package tn.esprit.dam.data.api
 
 import android.content.Context
 import android.net.Uri
@@ -17,6 +17,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import tn.esprit.dam.R
 import tn.esprit.dam.data.api.models.ApiResponse
 import tn.esprit.dam.data.api.models.ApiResult
 import tn.esprit.dam.data.api.models.AppDetailsResponse
@@ -66,7 +67,7 @@ class ScanApiService(
                 }
                 
                 return ApiResult.ApiError(
-                    message = "Erreur serveur (HTTP $statusCode): $errorMessage",
+                    message = context.getString(R.string.error_server, statusCode, errorMessage),
                     code = statusCode
                 )
             }
@@ -77,8 +78,8 @@ class ScanApiService(
             if (apiResponse.success && apiResponse.data != null) {
                 ApiResult.Success(apiResponse.data!!)
             } else {
-                // ✅ Backend uses 'error' field for error messages
-                val errorMsg = apiResponse.error ?: apiResponse.message ?: "Erreur inconnue"
+                // âœ… Backend uses 'error' field for error messages
+                val errorMsg = apiResponse.error ?: apiResponse.message ?: context.getString(R.string.error_unknown)
                 Log.e(TAG, "[$endpoint] API error: $errorMsg")
                 ApiResult.ApiError(
                     message = errorMsg,
@@ -96,6 +97,9 @@ class ScanApiService(
 
     /**
      * Start a security scan for selected apps
+     * @param apps List of package names to scan (validates non-empty, max 100 apps)
+     * @param userId User identifier (validates non-blank)
+     * @param deviceId Device identifier (validates non-blank)
      */
     suspend fun startScan(
         apps: List<String>,
@@ -103,6 +107,26 @@ class ScanApiService(
         deviceId: String,
         includeSystemApps: Boolean = false
     ): ApiResult<StartScanResponse> {
+        // ✅ INPUT VALIDATION
+        if (apps.isEmpty()) {
+            return ApiResult.ApiError(context.getString(R.string.error_no_apps_selected), -1)
+        }
+        if (apps.size > 100) {
+            return ApiResult.ApiError(context.getString(R.string.error_too_many_apps), -1)
+        }
+        if (userId.isBlank()) {
+            return ApiResult.ApiError(context.getString(R.string.error_user_id_required), -1)
+        }
+        if (deviceId.isBlank()) {
+            return ApiResult.ApiError(context.getString(R.string.error_device_id_required), -1)
+        }
+        
+        // Validate package names (basic format check)
+        val invalidPackages = apps.filter { !it.matches(Regex("^[a-zA-Z0-9._]+$")) }
+        if (invalidPackages.isNotEmpty()) {
+            return ApiResult.ApiError(context.getString(R.string.error_invalid_package, invalidPackages.first()), -1)
+        }
+
         val appDtos = apps.map { packageName ->
             StartScanAppDto(
                 packageName = packageName,
@@ -112,9 +136,7 @@ class ScanApiService(
         }
 
         // Generate ISO 8601 timestamp (compatible with API 24+)
-        val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }.format(java.util.Date())
+        val timestamp = java.time.Instant.now().toString()
 
         val request = StartScanRequest(
             deviceId = deviceId,
@@ -125,10 +147,8 @@ class ScanApiService(
             timestamp = timestamp
         )
 
-        // ✅ DETAILED LOGGING: Log full request payload
+        // ✅ SAFE LOGGING: Avoid logging sensitive user data in production
         Log.d(TAG, "[/api/scan/start] === SCAN REQUEST ===")
-        Log.d(TAG, "  userId: $userId")
-        Log.d(TAG, "  deviceId: $deviceId")
         Log.d(TAG, "  platform: android")
         Log.d(TAG, "  includeSystemApps: false")
         Log.d(TAG, "  timestamp: $timestamp")
@@ -151,8 +171,17 @@ class ScanApiService(
 
     /**
      * Get the status of an ongoing scan
+     * @param scanId Scan identifier (validates format)
      */
     suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse> {
+        // ✅ INPUT VALIDATION
+        if (scanId.isBlank()) {
+            return ApiResult.ApiError(context.getString(R.string.error_scan_id_required), -1)
+        }
+        if (scanId.length > 100) {
+            return ApiResult.ApiError(context.getString(R.string.error_scan_id_invalid), -1)
+        }
+        
         return safeApiCall("/api/scan/status/$scanId") {
             client.get("/api/scan/status/$scanId")
         }
@@ -201,7 +230,7 @@ class ScanApiService(
      * Get scan history for a user
      */
     suspend fun getScanHistory(userId: String, limit: Int = 10, offset: Int = 0): ApiResult<ScanHistoryResponse> {
-        Log.d(TAG, "[/api/scan/history] Fetching history for user: $userId")
+        Log.d(TAG, "[/api/scan/history] Fetching history (limit=$limit, offset=$offset)")
 
         return safeApiCall("/api/scan/history") {
             client.get("/api/scan/history?userId=$userId&limit=$limit&offset=$offset")
@@ -227,7 +256,7 @@ class ScanApiService(
         Log.d(TAG, "[scanApk] Preparing upload: $fileName")
 
         val inputStream: InputStream = contentResolver.openInputStream(uri)
-            ?: return ApiResult.ApiError("Impossible de lire le fichier APK", -1)
+            ?: return ApiResult.ApiError(context.getString(R.string.error_cannot_read_apk), -1)
 
         val bytes = inputStream.use { it.readBytes() }
         Log.d(TAG, "[scanApk] Read ${bytes.size} bytes from APK")

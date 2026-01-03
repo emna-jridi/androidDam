@@ -1,4 +1,4 @@
-package tn.esprit.dam.data.api.models
+﻿package tn.esprit.dam.data.api.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,7 +21,7 @@ data class ApiResponse<T>(
     @SerialName("message")
     val message: String? = null,
     @SerialName("error")
-    val error: String? = null,  // ✅ Backend uses 'error' field for errors
+    val error: String? = null,  // âœ… Backend uses 'error' field for errors
     @SerialName("timestamp")
     val timestamp: String? = null
 )

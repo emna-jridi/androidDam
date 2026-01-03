@@ -50,7 +50,7 @@ class EmailVerificationViewModel(application: Application) : AndroidViewModel(ap
     // GESTION OTP
 
     fun onOtpChange(otp: String) {
-        // Accepter seulement les chiffres et max 6 caractÃ¨res
+        // Accepter seulement les chiffres et max 6 caractères
         if (otp.length <= OTP_LENGTH && otp.all { it.isDigit() }) {
             _uiState.value = _uiState.value.copy(
                 otp = otp,
@@ -132,7 +132,7 @@ class EmailVerificationViewModel(application: Application) : AndroidViewModel(ap
     fun resendOTP(email: String) {
         viewModelScope.launch {
             try {
-                Log.d(TAG, "ðŸ”„ Resending OTP to: $email")
+                Log.d(TAG, "📧 Resending OTP to: $email")
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,

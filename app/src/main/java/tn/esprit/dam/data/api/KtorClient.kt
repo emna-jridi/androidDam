@@ -1,4 +1,4 @@
-package tn.esprit.dam.data.api
+﻿package tn.esprit.dam.data.api
 
 import android.content.Context
 import android.util.Log
@@ -61,11 +61,11 @@ object KtorClient {
                         when {
                             // Request lines - show full URL
                             message.contains("REQUEST:") || message.contains("-> ") -> {
-                                Log.d(tag, "➡️  $message")
+                                Log.d(tag, "âž¡ï¸  $message")
                             }
                             // Response lines  
                             message.contains("RESPONSE:") || message.contains("<- ") -> {
-                                Log.d(tag, "⬅️  $message")
+                                Log.d(tag, "â¬…ï¸  $message")
                             }
                             // Method and URL
                             message.startsWith("METHOD:") || message.startsWith("URL:") -> {
@@ -85,7 +85,7 @@ object KtorClient {
                             }
                             // Error messages
                             message.contains("Exception") || message.contains("ERROR") -> {
-                                Log.e(tag, "❌  $message")
+                                Log.e(tag, "âŒ  $message")
                             }
                             // Everything else
                             else -> {

@@ -1,4 +1,4 @@
-package tn.esprit.dam.report.receiver
+﻿package tn.esprit.dam.report.receiver
 
 
 import android.content.BroadcastReceiver
@@ -13,11 +13,11 @@ class AppInstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_PACKAGE_ADDED) {
 
-            Log.d("AppInstallReceiver", "🆕 New App Installed detected!")
+            Log.d("AppInstallReceiver", "👤 New App Installed detected!")
 
             // 1. Check if we have permission to draw over apps
             if (!Settings.canDrawOverlays(context)) {
-                Log.w("AppInstallReceiver", "❌ Overlay permission missing. Cannot show bubble.")
+                Log.w("AppInstallReceiver", "âŒ Overlay permission missing. Cannot show bubble.")
                 return
             }
 

@@ -25,7 +25,7 @@ object FileDownloader {
     }
 
     /**
-     * TÃ©lÃ©charger un fichier depuis une URL et le sauvegarder localement
+     * Télécharger un fichier depuis une URL et le sauvegarder localement
      */
     suspend fun downloadFile(
         context: Context,
@@ -33,12 +33,12 @@ object FileDownloader {
         fileName: String
     ): File? {
         return try {
-            Log.d(TAG, "ðŸ“¥ Downloading: $url")
+            Log.d(TAG, "🛥 Downloading: $url")
 
-            // TÃ©lÃ©charger le fichier
+            // Télécharger le fichier
             val bytes: ByteArray = client.get(url).body()
 
-            // CrÃ©er le dossier de cache si nÃ©cessaire
+            // Créer le dossier de cache si nécessaire
             val cacheDir = File(context.cacheDir, "avatars")
             if (!cacheDir.exists()) {
                 cacheDir.mkdirs()

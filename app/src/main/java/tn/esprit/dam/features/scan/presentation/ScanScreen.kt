@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import tn.esprit.dam.features.scan.domain.RiskLevel
 
@@ -150,7 +150,7 @@ fun ScanScreen(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  BOTTOM BAR (NEW – FIXED CTA)                                               */
+/*  BOTTOM BAR (NEW â€“ FIXED CTA)                                               */
 /* -------------------------------------------------------------------------- */
 
 @Composable
@@ -670,13 +670,13 @@ private fun ResultsContent(
                                 if (app.permissions.isNotEmpty()) {
                                     Text("Permissions sensibles", style = MaterialTheme.typography.bodySmall, color = ScanTheme.TextPrimary, fontWeight = FontWeight.SemiBold)
                                     app.permissions.take(6).forEach {
-                                        Text("• $it", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
+                                        Text("\u2022 $it", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
                                     }
                                 }
                                 if (app.trackers.isNotEmpty()) {
                                     Text("Trackers détectés", style = MaterialTheme.typography.bodySmall, color = ScanTheme.TextPrimary, fontWeight = FontWeight.SemiBold)
                                     app.trackers.take(6).forEach { tracker ->
-                                        Text("• ${tracker.name}", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
+                                        Text("\u2022 ${tracker.name}", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
                                     }
                                 }
                                 if (app.permissions.isEmpty() && app.trackers.isEmpty()) {

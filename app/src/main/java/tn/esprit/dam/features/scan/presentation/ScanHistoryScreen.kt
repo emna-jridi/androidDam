@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

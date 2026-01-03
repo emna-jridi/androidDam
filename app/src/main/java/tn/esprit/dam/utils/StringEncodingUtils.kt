@@ -1,4 +1,4 @@
-package tn.esprit.dam.utils
+﻿package tn.esprit.dam.utils
 
 import java.nio.charset.StandardCharsets
 
@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets
  */
 fun String?.fixEncoding(): String {
     if (this == null || this.isEmpty()) return this ?: ""
-    
+
     return try {
         val bytes = this.toByteArray(StandardCharsets.ISO_8859_1)
         String(bytes, StandardCharsets.UTF_8)
@@ -26,28 +26,39 @@ fun String?.fixEncoding(): String {
  */
 fun String?.sanitizeForUI(): String {
     if (this == null) return ""
-    
+
     val fixed = this.fixEncoding()
-    
+
     var result = fixed
-    
+
     // Replace common encoding corruption patterns
     val replacements = mapOf(
+        "ÃƒÂ©" to "é",
+        "ÃƒÂ¨" to "è",
+        "ÃƒÂ°" to "ð",
+        "ÃƒÂ¬" to "ì",
+        "ÃƒÂ¢" to "â",
+        "ÃƒÂ§" to "ç",
+        "ÃƒÂ±" to "ñ",
         "Ã©" to "é",
         "Ã¨" to "è",
-        "Ã°" to "ð",
-        "Ã¬" to "ì",
-        "Ã¢" to "â",
         "Ã§" to "ç",
-        "Ã±" to "ñ",
-        "Â" to "",
-        "Â " to " "
+        "Ã¢" to "â",
+        "Ã " to "à",
+        "Ã„" to "",
+        "Ã‚" to "",
+        "Ã‚ " to " ",
+        "â€¢" to "•",
+        "â€œ" to "\"",
+        "â€" to "\"",
+        "â€" to "—",
+        "â€" to "–",
     )
-    
+
     for ((corrupted, correct) in replacements) {
         result = result.replace(corrupted, correct)
     }
-    
+
     return result.trim()
 }
 

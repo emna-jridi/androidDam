@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Composant OTP Input (Version corrigÃ©e sans crash)
+ * Composant OTP Input (Version corrigée sans crash)
  */
 @Composable
 fun OTPInput(
@@ -84,7 +84,7 @@ fun OTPInput(
         BasicTextField(
             value = textFieldValue,
             onValueChange = { newValue ->
-                // Accepter seulement les chiffres et max 6 caractÃ¨res
+                // Accepter seulement les chiffres et max 6 caractères
                 val newText = newValue.text.filter { it.isDigit() }.take(6)
 
                 if (newText != otp) {
@@ -98,7 +98,7 @@ fun OTPInput(
                 )
             },
             modifier = Modifier
-                .size(1.dp) // TrÃ¨s petit mais pas 0
+                .size(1.dp) // Très petit mais pas 0
                 .focusRequester(focusRequester),
             enabled = enabled,
             keyboardOptions = KeyboardOptions(
@@ -106,7 +106,7 @@ fun OTPInput(
             ),
             cursorBrush = SolidColor(Color.Transparent),
             decorationBox = { innerTextField ->
-                // Pas de dÃ©coration visible
+                // Pas de décoration visible
                 Box(modifier = Modifier.size(1.dp)) {
                     innerTextField()
                 }
@@ -114,9 +114,9 @@ fun OTPInput(
         )
     }
 
-    // Auto-focus au dÃ©marrage
+    // Auto-focus au démarrage
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(300) // Petit dÃ©lai pour Ã©viter le crash
+        kotlinx.coroutines.delay(300) // Petit délai pour éviter le crash
         focusRequester.requestFocus()
         keyboardController?.show()
     }

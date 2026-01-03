@@ -58,7 +58,7 @@ fun AvatarCustomizerDialog(
                     fontWeight = FontWeight.Bold
                 )
 
-                // Bouton gÃ©nÃ©ration alÃ©atoire
+                // Bouton génération aléatoire
                 IconButton(
                     onClick = {
                         viewModel.generateRandomAvatar(context, userHash)
@@ -137,7 +137,7 @@ fun AvatarCustomizerDialog(
                         mouthType = currentConfig.mouthType
                     )
 
-                    // âœ… CORRECTION : Le callback reÃ§oit maintenant fileName
+                    // ✅ CORRECTION : Le callback reçoit maintenant fileName
                     viewModel.updateAvatarConfig(
                         context = context,
                         userHash = userHash,

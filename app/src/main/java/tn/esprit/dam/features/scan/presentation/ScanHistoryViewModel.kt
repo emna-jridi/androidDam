@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import android.util.Base64
 import android.util.Log
@@ -59,7 +59,7 @@ class ScanHistoryViewModel @Inject constructor(
             val userId = user?.id ?: token?.let { decodeUserIdFromToken(it) }
 
             if (userId == null) {
-                Log.e(TAG, "❌ No user ID found - user not logged in")
+                Log.e(TAG, "âŒ No user ID found - user not logged in")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = "Utilisateur non connecté"
@@ -67,7 +67,7 @@ class ScanHistoryViewModel @Inject constructor(
                 return@launch
             }
 
-            Log.d(TAG, "📜 Loading scan history for user: $userId (page ${_uiState.value.currentPage})")
+            Log.d(TAG, "📋 Loading scan history for user: $userId (page ${_uiState.value.currentPage})")
             val offset = _uiState.value.currentPage * PAGE_SIZE
             val result = repository.getScanHistory(
                 userId = userId,
@@ -78,7 +78,7 @@ class ScanHistoryViewModel @Inject constructor(
             when (result) {
                 is ApiResult.Success -> {
                     val historyData = result.data
-                    Log.d(TAG, "✅ History loaded: ${historyData.scans.size} scans, total: ${historyData.total}")
+                    Log.d(TAG, "âœ… History loaded: ${historyData.scans.size} scans, total: ${historyData.total}")
 
                     val merged = if (_uiState.value.currentPage == 0) {
                         historyData.scans
@@ -99,21 +99,21 @@ class ScanHistoryViewModel @Inject constructor(
                     )
                 }
                 is ApiResult.ApiError -> {
-                    Log.e(TAG, "❌ API error loading history: ${result.message} (code: ${result.code})")
+                    Log.e(TAG, "âŒ API error loading history: ${result.message} (code: ${result.code})")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Erreur API: ${result.message}"
                     )
                 }
                 is ApiResult.NetworkError -> {
-                    Log.e(TAG, "❌ Network error loading history", result.exception)
+                    Log.e(TAG, "âŒ Network error loading history", result.exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Erreur réseau: ${result.exception.message ?: "vérifiez votre connexion"}"
                     )
                 }
                 is ApiResult.SerializationError -> {
-                    Log.e(TAG, "❌ Serialization error loading history", result.exception)
+                    Log.e(TAG, "âŒ Serialization error loading history", result.exception)
                     Log.e(TAG, "Raw response: ${result.rawResponse?.take(500)}")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

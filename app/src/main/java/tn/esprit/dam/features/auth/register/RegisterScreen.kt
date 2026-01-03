@@ -26,21 +26,21 @@ import kotlinx.coroutines.delay
  *
  * @param onRegisterSuccess Callback avec l'email pour la vérification OTP
  * @param onNavigateToLogin Navigation vers la connexion
- * @param viewModel Le ViewModel (injectÃ© automatiquement)
+ * @param viewModel Le ViewModel (injecté automatiquement)
  */
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: (String) -> Unit, // â­ Passe l'email pour la vÃ©rification OTP
+    onRegisterSuccess: (String) -> Unit, // ⭐ Passe l'email pour la vérification OTP
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
-    // Observer l'Ã©tat du ViewModel
+    // Observer l'état du ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigation automatique vers vÃ©rification email au succÃ¨s
+    // Navigation automatique vers vérification email au succès
     LaunchedEffect(uiState.isSuccess, uiState.registeredEmail) {
         if (uiState.isSuccess && uiState.registeredEmail != null) {
-            delay(2000) // Montrer le message de succÃ¨s 2 secondes
+            delay(2000) // Montrer le message de succès 2 secondes
             onRegisterSuccess(uiState.registeredEmail!!)
         }
     }
@@ -290,7 +290,7 @@ fun RegisterScreen(
                         }
                     }
 
-                    // Message de succÃ¨s
+                    // Message de succès
                     uiState.successMessage?.let { message ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Card(
@@ -356,7 +356,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // DÃ©jÃ  un compte
+            // Déjà un compte
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -379,7 +379,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Footer sÃ©curitÃ©
+            // Footer sécurité
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center

@@ -100,7 +100,7 @@ class ApiClient private constructor(private val context: Context) {
 
                     if (refreshToken != null) {
                         try {
-                            Log.d(TAG, "ðŸ”„ Attempting to refresh token...")
+                            Log.d(TAG, "📧 Attempting to refresh token...")
                             val refreshResponse = runBlocking {
                                 client.post("/auth/refresh") {
                                     setBody(mapOf("refreshToken" to refreshToken))
@@ -152,7 +152,7 @@ class ApiClient private constructor(private val context: Context) {
 
     suspend fun register(email: String, password: String, name: String): RegisterResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/register - Email: $email")
+            Log.d(TAG, "🔤 POST /auth/register - Email: $email")
 
             val response: HttpResponse = client.post("/auth/register") {
                 setBody(RegisterRequest(email, password, name))
@@ -199,7 +199,7 @@ class ApiClient private constructor(private val context: Context) {
 
     suspend fun resendVerificationOTP(email: String): ResendOTPResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/resend-otp - Email: $email")
+            Log.d(TAG, "🔤 POST /auth/resend-otp - Email: $email")
 
             val response: HttpResponse = client.post("/auth/resend-otp") {
                 setBody(ResendOTPRequest(email))
@@ -229,7 +229,7 @@ class ApiClient private constructor(private val context: Context) {
     suspend fun login(email: String, password: String): LoginResponse {
         return try {
             val cleanEmail = email.trim().lowercase()
-            Log.d(TAG, "ðŸ“¤ POST /auth/login - Email: $cleanEmail")
+            Log.d(TAG, "🔤 POST /auth/login - Email: $cleanEmail")
 
             val response: HttpResponse = client.post("/auth/login") {
                 setBody(LoginRequest(cleanEmail, password))
@@ -271,7 +271,7 @@ class ApiClient private constructor(private val context: Context) {
 
     suspend fun requestPasswordReset(email: String): RequestPasswordResetResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/request-password-reset - Email: $email")
+            Log.d(TAG, "🔤 POST /auth/request-password-reset - Email: $email")
 
             val response: HttpResponse = client.post("/auth/request-password-reset") {
                 setBody(RequestPasswordResetRequest(email))
@@ -301,7 +301,7 @@ class ApiClient private constructor(private val context: Context) {
 
     suspend fun verifyPasswordResetOTP(email: String, otp: String): VerifyPasswordResetOTPResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/verify-reset-otp - Email: $email, OTP: $otp")
+            Log.d(TAG, "🔤 POST /auth/verify-reset-otp - Email: $email, OTP: $otp")
 
             val response: HttpResponse = client.post("/auth/verify-reset-code") {
                 setBody(VerifyPasswordResetOTPRequest(email, otp))
@@ -334,7 +334,7 @@ class ApiClient private constructor(private val context: Context) {
         newPassword: String
     ): ResetPasswordResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/reset-password")
+            Log.d(TAG, "🔤 POST /auth/reset-password")
 
             // Build request body according to backend DTO
             val requestBody = mapOf(
@@ -371,7 +371,7 @@ class ApiClient private constructor(private val context: Context) {
 
     suspend fun googleLogin(idToken: String): LoginResponse {
         return try {
-            Log.d(TAG, "ðŸ“¤ POST /auth/google")
+            Log.d(TAG, "🔤 POST /auth/google")
 
             val response: HttpResponse = client.post("/auth/google") {
                 setBody(GoogleLoginRequest(idToken))
@@ -407,9 +407,9 @@ class ApiClient private constructor(private val context: Context) {
     }
 
     suspend fun logout() {
-        Log.d(TAG, "ðŸšª Logging out...")
+        Log.d(TAG, "🚪 Logging out...")
         TokenManager.clearAll(context)
-        Log.d(TAG, "âœ… Logged out successfully")
+        Log.d(TAG, "✅ Logged out successfully")
     }
 
 
@@ -421,14 +421,14 @@ class ApiClient private constructor(private val context: Context) {
     // ================== USER PROFILE ==================
 
     /**
-     * ðŸ‘¤ Get user profile
+     * 👤 Get user profile
      */
     suspend fun getUserProfile(): User {
         return try {
             val token = TokenManager.getAccessToken(context)
                 ?: throw AuthException("No access token")
 
-            Log.d(TAG, "ðŸ“¤ GET /users/profile")
+            Log.d(TAG, "🔤 GET /users/profile")
 
             val response: HttpResponse = client.get("/users/profile") {
                 bearerAuth(token)
@@ -458,15 +458,13 @@ class ApiClient private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * âœï¸ Update user profile (name + avatarUrl)
-     */
+
     suspend fun updateUserProfile(request: UpdateUserRequest): User {
         return try {
             val token = TokenManager.getAccessToken(context)
                 ?: throw AuthException("No access token")
 
-            Log.d(TAG, "ðŸ“¤ PATCH /users/me - Request: $request")
+            Log.d(TAG, "🔤 PATCH /users/me - Request: $request")
 
             val response: HttpResponse = client.patch("/users/me") {
                 bearerAuth(token)
@@ -527,7 +525,7 @@ class ApiClient private constructor(private val context: Context) {
         return try {
             // ⚠️ REPLACE WITH YOUR PC'S LOCAL IP (e.g., 192.168.1.5)
             // Do not use "localhost" because that refers to the phone itself!
-            val response: HttpResponse = client.get("http://172.20.10.3:3000/report/$packageName")
+            val response: HttpResponse = client.get("http://172.18.1.18:3000/report/$packageName")
 
             if (response.status == HttpStatusCode.OK) {
                 response.body()

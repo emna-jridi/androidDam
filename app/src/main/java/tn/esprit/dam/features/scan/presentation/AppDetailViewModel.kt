@@ -1,4 +1,4 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -42,7 +42,7 @@ class AppDetailViewModel @Inject constructor(
             )
 
             // Try to get full details from apps endpoint first
-            when (val result = repository.getFullAppDetails(packageName)) {
+            when (val result = repository.getAppDetails(packageName)) {
                 is ApiResult.Success -> {
                     Log.d(TAG, "Successfully loaded app details for $packageName")
                     _uiState.value = _uiState.value.copy(

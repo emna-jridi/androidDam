@@ -1,10 +1,12 @@
-package tn.esprit.dam.features.scan.presentation
+﻿package tn.esprit.dam.features.scan.presentation
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import tn.esprit.dam.R
 import tn.esprit.dam.data.api.models.ApiResult
 import tn.esprit.dam.data.api.models.AppDetailsResponse
 import tn.esprit.dam.data.local.AppScanner
@@ -24,7 +27,8 @@ import tn.esprit.dam.features.scan.domain.RiskLevel
 @HiltViewModel
 class ScanViewModel @Inject constructor(
     private val repository: ScanRepository,
-    private val appScanner: AppScanner
+    private val appScanner: AppScanner,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _scanState = MutableStateFlow(ScanState())
@@ -115,18 +119,20 @@ class ScanViewModel @Inject constructor(
     }
 
     fun selectAllApps() {
-        val updatedApps = _availableApps.value.map { it.copy(isSelected = true) }
+        val updatedApps = _availableApps.value.toList().map { it.copy(isSelected = true) }
         _availableApps.value = updatedApps
         _scanState.value = _scanState.value.copy(
-            selectedApps = updatedApps
+            selectedApps = updatedApps,
+            error = null
         )
     }
 
     fun deselectAllApps() {
-        val updatedApps = _availableApps.value.map { it.copy(isSelected = false) }
+        val updatedApps = _availableApps.value.toList().map { it.copy(isSelected = false) }
         _availableApps.value = updatedApps
         _scanState.value = _scanState.value.copy(
-            selectedApps = emptyList()
+            selectedApps = emptyList(),
+            error = null
         )
     }
 
@@ -140,14 +146,14 @@ class ScanViewModel @Inject constructor(
     fun startScan() {
         if (_scanState.value.selectedApps.isEmpty()) {
             _scanState.value = _scanState.value.copy(
-                error = "Sélectionnez au moins une application à analyser"
+                error = context.getString(R.string.error_select_app)
             )
             return
         }
 
         if (userId == null || deviceId == null) {
             _scanState.value = _scanState.value.copy(
-                error = "ID utilisateur ou appareil non initialisé"
+                error = context.getString(R.string.error_user_not_initialized)
             )
             return
         }
@@ -168,12 +174,21 @@ class ScanViewModel @Inject constructor(
                 )
 
                 val selectedPackages = currentSelectedApps.map { it.packageName }
-                Log.d(TAG, "📦 Selected packages: ${selectedPackages.take(3).joinToString()}") 
+                Log.d(TAG, "📦 Selected packages: ${selectedPackages.take(3).joinToString()}")
 
                 // Start scan on server
                 when (val result = repository.startScan(selectedPackages, userId!!, deviceId!!, false)) {
                     is ApiResult.Success -> {
-                        val scanId = result.data.scanId
+                        val scanId = result.data?.scanId
+                        if (scanId == null) {
+                            Log.e(TAG, "❌ Null scanId in response")
+                            _scanState.value = _scanState.value.copy(
+                                status = "FAILED",
+                                error = context.getString(R.string.error_scan_id_empty),
+                                selectedApps = currentSelectedApps
+                            )
+                            return@launch
+                        }
                         Log.d(TAG, "🚀 Scan started with ID: $scanId")
                         
                         _scanState.value = _scanState.value.copy(
@@ -192,7 +207,7 @@ class ScanViewModel @Inject constructor(
                         startPolling(scanId)
                     }
                     is ApiResult.ApiError -> {
-                        Log.e(TAG, "❌ API Error: ${result.message} (code: ${result.code})")
+                        Log.e(TAG, "âŒ API Error: ${result.message} (code: ${result.code})")
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
                             error = result.message,
@@ -218,7 +233,7 @@ class ScanViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Unexpected error in startScan: ${e.message}", e)
+                Log.e(TAG, "âŒ Unexpected error in startScan: ${e.message}", e)
                 val currentSelectedApps = _scanState.value.selectedApps
                 val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Erreur inconnue"}"
                 _scanState.value = _scanState.value.copy(
@@ -249,7 +264,15 @@ class ScanViewModel @Inject constructor(
 
                 when (val result = repository.scanApk(uri, userId!!, deviceId)) {
                     is ApiResult.Success -> {
-                        val app = result.data.app
+                        val appData = result.data?.app
+                        if (appData == null) {
+                            _scanState.value = _scanState.value.copy(
+                                status = "FAILED",
+                                error = "Erreur serveur: données vides"
+                            )
+                            return@launch
+                        }
+                        val app = appData
                         val localApp = app.toUiModel(isSelected = false)
                         // Use calculated risk result
                         val riskResult = localApp.riskResult
@@ -421,19 +444,19 @@ class ScanViewModel @Inject constructor(
                         }
                     }
                     is ApiResult.ApiError -> {
-                        Log.e(TAG, "❌ Polling error: ${result.message}")
+                        Log.e(TAG, "âŒ Polling error: ${result.message}")
                     }
                     is ApiResult.NetworkError -> {
-                        Log.e(TAG, "❌ Network error during polling")
+                        Log.e(TAG, "âŒ Network error during polling")
                     }
                     is ApiResult.SerializationError -> {
-                        Log.e(TAG, "❌ Serialization error during polling")
+                        Log.e(TAG, "âŒ Serialization error during polling")
                     }
                 }
             }
             
             // Max attempts reached
-            Log.w(TAG, "⚠️ Max polling attempts reached")
+            Log.w(TAG, "âš ï¸ Max polling attempts reached")
             _scanState.value = _scanState.value.copy(
                 status = "FAILED",
                 error = "Timeout: l'analyse prend trop de temps"
