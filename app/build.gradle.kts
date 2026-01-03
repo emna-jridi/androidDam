@@ -25,12 +25,20 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_ROOT", "\"http://192.168.1.115:3000\"")
+            buildConfigField("String", "BASE_ROOT", "\"http://192.168.1.115:3000\"")
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // For release, use production API endpoint
+            buildConfigField("String", "API_ROOT", "\"https://api.production.com/api/v1\"")
+            buildConfigField("String", "BASE_ROOT", "\"https://api.production.com\"")
         }
     }
     compileOptions {

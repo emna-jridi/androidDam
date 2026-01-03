@@ -94,14 +94,15 @@ fun AppNavGraph(
                      !currentRoute.contains("new_password") &&
                      !currentRoute.contains("password_reset_success")
 
-    // Get current screen for TopBar
+    // Get current screen for TopBar - use exact matching to avoid route conflicts
     val currentScreen = when {
-        currentRoute.contains(Screens.Home.route) -> NavigationScreen.Home
-        currentRoute.contains(Screens.Scan.route) -> NavigationScreen.Scan
-        currentRoute.contains(Screens.ScanHistory.route) -> NavigationScreen.History
-        currentRoute.contains(Screens.Profile.route) -> NavigationScreen.Profile
-        currentRoute.contains(Screens.Vault.route) -> NavigationScreen.Vault
-        currentRoute.contains(Screens.VaultAddPassword.route) -> NavigationScreen.Vault
+        currentRoute.startsWith(Screens.Vault.route) && !currentRoute.contains(Screens.VaultDetail.route) -> NavigationScreen.Vault
+        currentRoute.startsWith(Screens.VaultDetail.route) -> NavigationScreen.Vault
+        currentRoute.startsWith(Screens.VaultAddPassword.route) -> NavigationScreen.Vault
+        currentRoute.startsWith(Screens.Home.route) -> NavigationScreen.Home
+        currentRoute.startsWith(Screens.Scan.route) -> NavigationScreen.Scan
+        currentRoute.startsWith(Screens.ScanHistory.route) -> NavigationScreen.History
+        currentRoute.startsWith(Screens.Profile.route) -> NavigationScreen.Profile
         else -> NavigationScreen.Home
     }
 

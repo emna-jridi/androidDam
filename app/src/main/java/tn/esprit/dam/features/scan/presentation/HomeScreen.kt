@@ -48,6 +48,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.scale
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -566,13 +567,30 @@ private fun RecentActivitySection(
                 val score = app.aiRiskScore ?: app.finalScore ?: 0f
                 val name = app.appName ?: app.packageName ?: "App"
                 
+                var appCardPressed by remember { mutableStateOf(false) }
+                val appCardScale by animateFloatAsState(
+                    targetValue = if (appCardPressed) 0.98f else 1f,
+                    animationSpec = tween(durationMillis = 100),
+                    label = "appCardPress"
+                )
+                
                 Card(
                     colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
                     shape = RoundedCornerShape(ScanTheme.CornerLarge),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { 
-                            app.packageName?.let { onNavigateToAppDetails(it) }
+                        .scale(appCardScale)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    appCardPressed = true
+                                    val success = try { tryAwaitRelease(); true } catch (e: Exception) { false }
+                                    appCardPressed = false
+                                    if (success) {
+                                        app.packageName?.let { onNavigateToAppDetails(it) }
+                                    }
+                                }
+                            )
                         }
                 ) {
                     Row(

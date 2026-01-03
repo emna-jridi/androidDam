@@ -1,9 +1,17 @@
 ﻿package tn.esprit.dam.data
 
+import tn.esprit.dam.BuildConfig
+
+/**
+ * Configuration object that uses BuildConfig for dynamic values
+ * Separate API roots for debug/release builds
+ * - Debug: http://10.0.2.2:3000 (emulator) or local IP (device)
+ * - Release: Production endpoint
+ */
 object Config {
-    // Centralized backend root URL. Update this to match your local/backend address.
-    // Use http://10.0.2.2:3000 for emulator, or your machine IP when testing on device.
-    const val ROOT_URL: String = "http://192.168.1.115:3000"
-    const val API_ROOT: String = "$ROOT_URL/api/v1"
-    const val BASE_URL: String = ROOT_URL
+    // Dynamic configuration from BuildConfig based on build type
+    const val ROOT_URL: String = BuildConfig.BASE_ROOT
+    const val API_ROOT: String = BuildConfig.API_ROOT
+    const val BASE_URL: String = BuildConfig.BASE_ROOT
 }
+

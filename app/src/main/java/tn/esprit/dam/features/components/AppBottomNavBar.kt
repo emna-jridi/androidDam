@@ -1,5 +1,8 @@
 ﻿package tn.esprit.dam.features.components
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -18,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.RowScope
 import tn.esprit.dam.R
 
 sealed class BottomNavItem(
@@ -46,7 +50,9 @@ fun AppBottomNavBar(
     BottomAppBar(
         containerColor = Color(0xFF1A1F3A),
         contentColor = Color.White,
-        tonalElevation = 0.dp
+        tonalElevation = 8.dp,
+        modifier = Modifier.height(72.dp),
+        windowInsets = WindowInsets.navigationBars
     ) {
         BottomNavItem.items().forEach { item ->
             NavigationBarItem(
@@ -60,12 +66,16 @@ fun AppBottomNavBar(
                 label = {
                     Text(
                         text = stringResource(id = item.label),
-                        fontSize = MaterialTheme.typography.labelSmall.fontSize
+                        fontSize = MaterialTheme.typography.labelSmall.fontSize,
+                        maxLines = 1
                     )
                 },
-                selected = currentRoute.contains(item.route, ignoreCase = true),
+                selected = currentRoute.startsWith(item.route) && 
+                           (currentRoute.length == item.route.length || currentRoute[item.route.length] == '/' || currentRoute[item.route.length] == '?'),
                 onClick = {
-                    if (currentRoute != item.route) {
+                    val isCurrentlySelected = currentRoute.startsWith(item.route) && 
+                           (currentRoute.length == item.route.length || currentRoute[item.route.length] == '/' || currentRoute[item.route.length] == '?')
+                    if (!isCurrentlySelected) {
                         onNavigate(item.route)
                     }
                 },
@@ -74,8 +84,9 @@ fun AppBottomNavBar(
                     selectedTextColor = Color(0xFF7C3AED),
                     unselectedIconColor = Color.White.copy(alpha = 0.6f),
                     unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                    indicatorColor = Color(0xFF7C3AED).copy(alpha = 0.1f)
-                )
+                    indicatorColor = Color(0xFF7C3AED).copy(alpha = 0.15f)
+                ),
+                modifier = Modifier
             )
         }
     }

@@ -2,12 +2,14 @@ package tn.esprit.dam.features.vault.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import tn.esprit.dam.data.model.Vault
 import tn.esprit.dam.data.repository.VaultRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed class VaultUiState {
     object Initial : VaultUiState()
@@ -18,7 +20,8 @@ sealed class VaultUiState {
     data class Error(val message: String) : VaultUiState()
 }
 
-class VaultViewModel(private val repository: VaultRepository) : ViewModel() {
+@HiltViewModel
+class VaultViewModel @Inject constructor(private val repository: VaultRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VaultUiState>(VaultUiState.Initial)
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()

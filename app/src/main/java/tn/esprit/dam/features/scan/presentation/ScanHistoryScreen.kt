@@ -33,42 +33,17 @@ fun ScanHistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedScan by remember { mutableStateOf<ScanHistoryItemDto?>(null) }
-    
+
     LaunchedEffect(Unit) {
         viewModel.loadHistory()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Historique des Scans",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0F172A),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
-            )
-        },
-        containerColor = Color(0xFF0F172A)
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+    // TopAppBar is provided by NavGraph, don't duplicate it here
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F172A))
+    ) {
             when {
                 uiState.isLoading && uiState.scans.isEmpty() -> {
                     HistoryLoadingState()
@@ -102,7 +77,6 @@ fun ScanHistoryScreen(
                     onDismiss = { selectedScan = null }
                 )
             }
-
             // Error snackbar
             uiState.error?.takeIf { uiState.scans.isNotEmpty() }?.let { error ->
                 Snackbar(
@@ -120,7 +94,6 @@ fun ScanHistoryScreen(
             }
         }
     }
-}
 
 @Composable
 fun HistoryLoadingState() {
@@ -593,7 +566,7 @@ private fun formatDuration(durationMs: Long): String {
     val seconds = durationMs / 1000
     val minutes = seconds / 60
     val hours = minutes / 60
-    
+
     return when {
         hours > 0 -> "${hours}h ${minutes % 60}m"
         minutes > 0 -> "${minutes}m ${seconds % 60}s"
