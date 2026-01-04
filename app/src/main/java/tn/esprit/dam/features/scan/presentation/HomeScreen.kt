@@ -85,6 +85,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import tn.esprit.dam.R
 import tn.esprit.dam.data.api.models.AppResult
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
+import tn.esprit.dam.ui.components.AppEmptyState
+import tn.esprit.dam.ui.components.AppPrimaryButton
 
 @Composable
 fun HomeScreen(
@@ -136,9 +142,9 @@ fun HomeScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScanTheme.DarkBg)
-            .padding(horizontal = ScanTheme.Spacing20, vertical = ScanTheme.Spacing20),
-        verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing20)
+            .background(AppColors.background)
+            .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)
     ) {
             item {
                 if (homeState.loading) {
@@ -161,9 +167,8 @@ fun HomeScreen(
             item {
                 Text(
                     text = "Actions rapides",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = ScanTheme.TextPrimary,
-                    fontWeight = FontWeight.Bold
+                    style = AppTypography.titleMedium,
+                    color = AppColors.textPrimary
                 )
             }
 
@@ -199,31 +204,13 @@ fun HomeScreen(
 
             if (!homeState.hasScan && !homeState.loading) {
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
-                        shape = RoundedCornerShape(ScanTheme.CornerLarge),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(ScanTheme.Spacing16),
-                            verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)
-                        ) {
-                            Text(
-                                text = "Aucun scan effectué",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = ScanTheme.TextPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Lancez votre premier scan pour sécuriser vos applications.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = ScanTheme.TextSecondary
-                            )
-                            TextButton(onClick = onNavigateToScan) {
-                                Text("Commencer un scan", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
+                    AppEmptyState(
+                        icon = Icons.Default.Search,
+                        title = "Aucun scan effectué",
+                        message = "Lancez votre premier scan pour sécuriser vos applications.",
+                        onAction = onNavigateToScan,
+                        actionText = "Commencer un scan"
+                    )
                 }
             }
         }

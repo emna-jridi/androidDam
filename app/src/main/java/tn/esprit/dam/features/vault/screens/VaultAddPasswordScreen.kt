@@ -22,6 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import tn.esprit.dam.features.vault.viewmodel.VaultViewModel
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
 
 @Composable
 fun VaultAddPasswordScreen(
@@ -43,47 +47,39 @@ fun VaultAddPasswordScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A), // Deep Navy
-                        Color(0xFF1E293B)  // Slate
-                    )
-                )
-            )
+            .background(AppColors.background)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
             // 🔐 Title
             Text(
-                text = "Add New Password",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                text = "Ajouter un mot de passe",
+                color = AppColors.textPrimary,
+                style = AppTypography.displayLarge,
+                modifier = Modifier.padding(bottom = AppSpacing.sm)
             )
 
             // Service Name
             TextField(
                 value = serviceName,
                 onValueChange = { serviceName = it },
-                label = { Text("Service Name") },
-                placeholder = { Text("e.g., Gmail, Twitter") },
+                label = { Text("Service") },
+                placeholder = { Text("ex: Gmail, Twitter") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                    focusedLabelColor = Color(0xFF7C3AED),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
+                    focusedContainerColor = AppColors.surface,
+                    unfocusedContainerColor = AppColors.surface,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    focusedLabelColor = AppColors.primary,
+                    unfocusedLabelColor = AppColors.textSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppCorners.large),
                 singleLine = true
             )
 
@@ -91,18 +87,18 @@ fun VaultAddPasswordScreen(
             TextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username or Email") },
-                placeholder = { Text("your.email@example.com") },
+                label = { Text("Identifiant") },
+                placeholder = { Text("votre.email@exemple.com") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                    focusedLabelColor = Color(0xFF7C3AED),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
+                    focusedContainerColor = AppColors.surface,
+                    unfocusedContainerColor = AppColors.surface,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    focusedLabelColor = AppColors.primary,
+                    unfocusedLabelColor = AppColors.textSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppCorners.large),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
@@ -111,24 +107,24 @@ fun VaultAddPasswordScreen(
             TextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Mot de passe") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                    focusedLabelColor = Color(0xFF7C3AED),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
+                    focusedContainerColor = AppColors.surface,
+                    unfocusedContainerColor = AppColors.surface,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    focusedLabelColor = AppColors.primary,
+                    unfocusedLabelColor = AppColors.textSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppCorners.large),
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showPassword = !showPassword }) {
                         Icon(
                             imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = if (showPassword) "Hide Password" else "Show Password",
-                            tint = Color(0xFF7C3AED)
+                            contentDescription = if (showPassword) "Masquer" else "Afficher",
+                            tint = AppColors.primary
                         )
                     }
                 },
@@ -139,24 +135,24 @@ fun VaultAddPasswordScreen(
             TextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Confirm Password") },
+                label = { Text("Confirmer") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                    focusedLabelColor = Color(0xFF7C3AED),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
+                    focusedContainerColor = AppColors.surface,
+                    unfocusedContainerColor = AppColors.surface,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    focusedLabelColor = AppColors.primary,
+                    unfocusedLabelColor = AppColors.textSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppCorners.large),
                 visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
                         Icon(
                             imageVector = if (showConfirmPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = if (showConfirmPassword) "Hide Password" else "Show Password",
-                            tint = Color(0xFF7C3AED)
+                            contentDescription = if (showConfirmPassword) "Masquer" else "Afficher",
+                            tint = AppColors.primary
                         )
                     }
                 },
@@ -167,34 +163,34 @@ fun VaultAddPasswordScreen(
             TextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Notes (Optional)") },
-                placeholder = { Text("Additional notes or security questions") },
+                label = { Text("Notes (optionnel)") },
+                placeholder = { Text("Questions de sécurité, remarques...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(AppSpacing.xl),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                    focusedLabelColor = Color(0xFF7C3AED),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f)
+                    focusedContainerColor = AppColors.surface,
+                    unfocusedContainerColor = AppColors.surface,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    focusedLabelColor = AppColors.primary,
+                    unfocusedLabelColor = AppColors.textSecondary
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(AppCorners.large)
             )
 
             // Error Message
             if (error.isNotEmpty()) {
                 Surface(
-                    color = Color(0xFFDC2626).copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp),
+                    color = AppColors.error.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(AppCorners.large),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = error,
-                        color = Color(0xFFFCA5A5),
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 12.sp
+                        color = AppColors.error,
+                        modifier = Modifier.padding(AppSpacing.md),
+                        style = AppTypography.labelMedium
                     )
                 }
             }
@@ -204,14 +200,13 @@ fun VaultAddPasswordScreen(
                 onClick = {
                     error = ""
                     when {
-                        serviceName.isBlank() -> error = "Service name is required"
-                        username.isBlank() -> error = "Username or email is required"
-                        password.isBlank() -> error = "Password is required"
-                        password != confirmPassword -> error = "Passwords do not match"
-                        password.length < 6 -> error = "Password must be at least 6 characters"
+                        serviceName.isBlank() -> error = "Le service est requis"
+                        username.isBlank() -> error = "L'identifiant est requis"
+                        password.isBlank() -> error = "Le mot de passe est requis"
+                        password != confirmPassword -> error = "Les mots de passe ne correspondent pas"
+                        password.length < 6 -> error = "Le mot de passe doit avoir au moins 6 caractères"
                         else -> {
                             isLoading = true
-                            // Simulate saving - in real app, call vaultViewModel
                             onPasswordAdded()
                             isLoading = false
                         }
@@ -219,26 +214,26 @@ fun VaultAddPasswordScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(56.dp),
                 enabled = !isLoading && serviceName.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7C3AED),
-                    disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                    containerColor = AppColors.primary,
+                    disabledContainerColor = AppColors.surfaceVariant
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(AppCorners.large)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = AppColors.textPrimary,
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Save Password", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Enregistrer", style = AppTypography.labelLarge, color = AppColors.textPrimary)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.lg))
         }
     }
 }

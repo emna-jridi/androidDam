@@ -22,6 +22,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import tn.esprit.dam.data.model.Alert
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
+import tn.esprit.dam.ui.components.AppLoadingState
+import tn.esprit.dam.ui.components.AppEmptyState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,63 +42,57 @@ fun AlertsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A), // Deep Navy
-                        Color(0xFF1E293B)  // Slate
-                    )
-                )
-            )
+            .background(AppColors.background)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = AppSpacing.md)
         ) {
             // 📋 Custom Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 20.dp),
+                    .padding(top = AppSpacing.lg, bottom = AppSpacing.md),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 // Back Button
                 IconButton(
                     onClick = { navController.popBackStack() },
-                    modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    modifier = Modifier.background(AppColors.textPrimary.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textPrimary)
                 }
 
                 Text(
                     text = "Security Logs",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    color = AppColors.textPrimary,
+                    style = AppTypography.titleMedium
                 )
 
                 // Refresh Button
                 IconButton(
                     onClick = { viewModel.loadAlerts() },
-                    modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    modifier = Modifier.background(AppColors.textPrimary.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF7C3AED))
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = AppColors.primary)
                 }
             }
 
             // 📝 Content Area
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF7C3AED))
-                }
+                AppLoadingState(message = "Chargement des logs...")
             } else if (alerts.isEmpty()) {
-                EmptyState()
+                AppEmptyState(
+                    icon = Icons.Default.Security,
+                    title = "No threats detected",
+                    message = "All your applications are secure"
+                )
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
+                    contentPadding = PaddingValues(bottom = AppSpacing.lg)
                 ) {
                     items(alerts) { alert ->
                         AlertCard(alert)

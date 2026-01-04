@@ -86,6 +86,11 @@ import tn.esprit.dam.features.scan.data.LocalAppInfo
 import tn.esprit.dam.features.scan.data.ScanState
 import tn.esprit.dam.features.scan.presentation.ScanTheme.Surface
 import tn.esprit.dam.ui.theme.Surface
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
+import tn.esprit.dam.ui.components.AppLoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,15 +107,18 @@ fun ScanScreen(
     LaunchedEffect(Unit) {
         viewModel.initialize(userId, deviceId)
     }
-
         // Scaffold removed - AppNavGraph already provides topBar
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ScanTheme.DarkBg)
+                .background(AppColors.background)
         ) {
 
         when (scanState.status) {
+            "LOADING" -> Box(modifier = Modifier.weight(1f)) {
+                AppLoadingState(message = "Chargement des applications installées...")
+            }
+
             "ANALYZING" -> AnimatedLoadingState(
                 totalApps = scanState.totalApps.coerceAtLeast(scanState.selectedApps.size.coerceAtLeast(1)),
                 scannedApps = scanState.scannedApps,

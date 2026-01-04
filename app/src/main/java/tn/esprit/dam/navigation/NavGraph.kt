@@ -106,6 +106,15 @@ fun AppNavGraph(
         else -> NavigationScreen.Home
     }
 
+    val bottomBarRoutes = setOf(
+        Screens.Home.route,
+        Screens.Scan.route,
+        Screens.ScanHistory.route,
+        Screens.Profile.route,
+        Screens.Vault.route
+    )
+    val showBottomBar = isLoggedIn && bottomBarRoutes.contains(currentRoute)
+
     Scaffold(
         topBar = {
             if (isLoggedIn) {
@@ -118,7 +127,7 @@ fun AppNavGraph(
             }
         },
         bottomBar = {
-            if (isLoggedIn) {
+            if (showBottomBar) {
                 AppBottomNavBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->

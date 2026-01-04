@@ -23,6 +23,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import tn.esprit.dam.data.api.models.ScanHistoryItemDto
 import java.text.SimpleDateFormat
 import java.util.*
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
+import tn.esprit.dam.ui.components.AppLoadingState
+import tn.esprit.dam.ui.components.AppErrorState
+import tn.esprit.dam.ui.components.AppEmptyState
+import tn.esprit.dam.ui.components.AppPrimaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,20 +50,24 @@ fun ScanHistoryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
+            .background(AppColors.background)
     ) {
             when {
                 uiState.isLoading && uiState.scans.isEmpty() -> {
-                    HistoryLoadingState()
+                    AppLoadingState(message = "Chargement de l'historique...")
                 }
                 uiState.error != null && uiState.scans.isEmpty() -> {
-                    HistoryErrorState(
-                        error = uiState.error!!,
+                    AppErrorState(
+                        message = uiState.error!!,
                         onRetry = { viewModel.refresh() }
                     )
                 }
                 uiState.scans.isEmpty() -> {
-                    HistoryEmptyState()
+                    AppEmptyState(
+                        icon = Icons.Default.History,
+                        title = "Aucun scan",
+                        message = "Commencez un scan pour voir l'historique"
+                    )
                 }
                 else -> {
                     HistoryList(
@@ -203,31 +215,36 @@ fun HistoryList(
 ) {
     val listState = rememberLazyListState()
 
-    LazyColumn(
-        state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        items(scans) { scan ->
-            ScanHistoryCard(scan, onClick = onScanClick)
-        }
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(scans) { scan ->
+                ScanHistoryCard(scan, onClick = onScanClick)
+            }
 
-        if (hasMore) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color(0xFF6366F1),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        TextButton(onClick = onLoadMore) {
-                            Text("Charger plus", color = Color(0xFF6366F1))
+            if (hasMore) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF6366F1),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            TextButton(onClick = onLoadMore) {
+                                Text("Charger plus", color = Color(0xFF6366F1))
+                            }
                         }
                     }
                 }
@@ -248,337 +265,389 @@ fun HistoryList(
 
 @Composable
 fun ScanHistoryCard(scan: ScanHistoryItemDto, onClick: (ScanHistoryItemDto) -> Unit) {
-    val scanType = if (scan.totalApps <= 1) "APK" else "Applications"
-    val riskLevel = deriveRiskLevel(scan.averageScore)
+            val scanType = if (scan.totalApps <= 1) "APK" else "Applications"
+            val riskLevel = deriveRiskLevel(scan.averageScore)
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick(scan) },
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E293B)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header: Status and date
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onClick(scan) },
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E293B)
+                )
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    StatusChip(status = scan.status)
-                    TypeChip(label = scanType)
-                    RiskLevelChip(riskLevel = riskLevel)
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    // Header: Status and date
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            StatusChip(status = scan.status)
+                            TypeChip(label = scanType)
+                            RiskLevelChip(riskLevel = riskLevel)
+                        }
+                        Text(
+                            formatDate(scan.createdAt),
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Stats
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        StatItem(
+                            label = "Apps",
+                            value = "${scan.scannedApps}/${scan.totalApps}",
+                            icon = Icons.Default.Apps
+                        )
+
+                        if (scan.status == "completed" && scan.averageScore != null) {
+                            StatItem(
+                                label = "Score global",
+                                value = "${scan.averageScore}/100",
+                                icon = Icons.Default.Score,
+                                color = getScoreColor(scan.averageScore)
+                            )
+                        }
+
+                        if (scan.duration != null) {
+                            StatItem(
+                                label = "Durée",
+                                value = formatDuration(scan.duration),
+                                icon = Icons.Default.Timer
+                            )
+                        }
+                    }
+
+                    // Risk breakdown (if completed)
+                    if (scan.status == "completed") {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        RiskBreakdown(
+                            high = scan.highRiskApps ?: 0,
+                            medium = scan.mediumRiskApps ?: 0,
+                            low = scan.lowRiskApps ?: 0
+                        )
+                    }
                 }
+            }
+        }
+
+        @Composable
+        fun StatusChip(status: String) {
+            val (text, color) = when (status) {
+                "completed" -> "Terminé" to Color(0xFF10B981)
+                "analyzing" -> "En cours" to Color(0xFFFBBF24)
+                "failed" -> "Échoué" to Color(0xFFEF4444)
+                else -> "En attente" to Color(0xFF94A3B8)
+            }
+
+            Surface(
+                color = color.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Text(
-                    formatDate(scan.createdAt),
+                    text,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+        }
+
+        @Composable
+        fun TypeChip(label: String) {
+            Surface(
+                color = Color(0xFF334155),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFCBD5E1)
+                )
+            }
+        }
+
+        @Composable
+        fun RiskLevelChip(riskLevel: String) {
+            val color = riskLevelColor(riskLevel)
+            Surface(
+                color = color.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = when (riskLevel.lowercase()) {
+                        "low" -> "Faible"
+                        "medium" -> "Moyen"
+                        "high" -> "Élevé"
+                        "critical" -> "Critique"
+                        else -> "Inconnu"
+                    },
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+        }
+
+        @OptIn(ExperimentalMaterial3Api::class)
+        @Composable
+        private fun ScanDetailSheet(scan: ScanHistoryItemDto, onDismiss: () -> Unit) {
+            ModalBottomSheet(
+                onDismissRequest = onDismiss,
+                containerColor = Color(0xFF0F172A)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                "Détails du scan",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                formatDate(scan.createdAt),
+                                color = Color(0xFF94A3B8),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        StatusChip(status = scan.status)
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        DetailStatCard(
+                            title = "Apps",
+                            value = "${scan.scannedApps}/${scan.totalApps}",
+                            icon = Icons.Default.Apps
+                        )
+                        DetailStatCard(
+                            title = "Score",
+                            value = scan.averageScore?.let { "$it/100" } ?: "N/A",
+                            icon = Icons.Default.Score,
+                            color = getScoreColor(scan.averageScore ?: 0)
+                        )
+                    }
+
+                    scan.duration?.let {
+                        DetailStatCard(
+                            title = "Durée",
+                            value = formatDuration(it),
+                            icon = Icons.Default.Timer
+                        )
+                    }
+
+                    Text(
+                        "Répartition des risques",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        RiskBadge("Élevé", scan.highRiskApps ?: 0, Color(0xFFEF4444))
+                        RiskBadge("Moyen", scan.mediumRiskApps ?: 0, Color(0xFFFBBF24))
+                        RiskBadge("Faible", scan.lowRiskApps ?: 0, Color(0xFF10B981))
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Type de scan",
+                        color = Color(0xFFCBD5E1),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TypeChip(label = if (scan.totalApps <= 1) "APK" else "Applications")
+                    Spacer(Modifier.height(16.dp))
+                }
+            }
+        }
+
+        @Composable
+        private fun DetailStatCard(
+            title: String,
+            value: String,
+            icon: androidx.compose.ui.graphics.vector.ImageVector,
+            color: Color = Color(0xFF6366F1)
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1F2937)),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        title,
+                        color = Color(0xFF94A3B8),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        value,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        @Composable
+        fun StatItem(
+            label: String,
+            value: String,
+            icon: androidx.compose.ui.graphics.vector.ImageVector,
+            color: Color = Color(0xFF6366F1)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    value,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    label,
+                    fontSize = 11.sp,
                     color = Color(0xFF94A3B8)
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Stats
+        @Composable
+        fun RiskBreakdown(high: Int, medium: Int, low: Int) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                StatItem(
-                    label = "Apps",
-                    value = "${scan.scannedApps}/${scan.totalApps}",
-                    icon = Icons.Default.Apps
-                )
-
-                if (scan.status == "completed" && scan.averageScore != null) {
-                    StatItem(
-                        label = "Score global",
-                        value = "${scan.averageScore}/100",
-                        icon = Icons.Default.Score,
-                        color = getScoreColor(scan.averageScore)
-                    )
-                }
-
-                if (scan.duration != null) {
-                    StatItem(
-                        label = "Durée",
-                        value = formatDuration(scan.duration),
-                        icon = Icons.Default.Timer
-                    )
-                }
-            }
-
-            // Risk breakdown (if completed)
-            if (scan.status == "completed") {
-                Spacer(modifier = Modifier.height(12.dp))
-                RiskBreakdown(
-                    high = scan.highRiskApps ?: 0,
-                    medium = scan.mediumRiskApps ?: 0,
-                    low = scan.lowRiskApps ?: 0
-                )
+                RiskBadge("Élevé", high, Color(0xFFEF4444))
+                RiskBadge("Moyen", medium, Color(0xFFFBBF24))
+                RiskBadge("Faible", low, Color(0xFF10B981))
             }
         }
-    }
-}
 
-@Composable
-fun StatusChip(status: String) {
-    val (text, color) = when (status) {
-        "completed" -> "Terminé" to Color(0xFF10B981)
-        "analyzing" -> "En cours" to Color(0xFFFBBF24)
-        "failed" -> "Échoué" to Color(0xFFEF4444)
-        else -> "En attente" to Color(0xFF94A3B8)
-    }
-
-    Surface(
-        color = color.copy(alpha = 0.2f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-    }
-}
-
-@Composable
-fun TypeChip(label: String) {
-    Surface(
-        color = Color(0xFF334155),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFFCBD5E1)
-        )
-    }
-}
-
-@Composable
-fun RiskLevelChip(riskLevel: String) {
-    val color = riskLevelColor(riskLevel)
-    Surface(
-        color = color.copy(alpha = 0.18f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = when (riskLevel.lowercase()) {
-                "low" -> "Faible"
-                "medium" -> "Moyen"
-                "high" -> "Élevé"
-                "critical" -> "Critique"
-                else -> "Inconnu"
-            },
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ScanDetailSheet(scan: ScanHistoryItemDto, onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF0F172A)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        @Composable
+        fun RiskBadge(label: String, count: Int, color: Color) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.2f))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Détails du scan", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(formatDate(scan.createdAt), color = Color(0xFF94A3B8), style = MaterialTheme.typography.bodySmall)
-                }
-                StatusChip(status = scan.status)
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                DetailStatCard(title = "Apps", value = "${scan.scannedApps}/${scan.totalApps}", icon = Icons.Default.Apps)
-                DetailStatCard(
-                    title = "Score",
-                    value = scan.averageScore?.let { "$it/100" } ?: "N/A",
-                    icon = Icons.Default.Score,
-                    color = getScoreColor(scan.averageScore ?: 0)
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(color)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    "$label: $count",
+                    fontSize = 12.sp,
+                    color = color,
+                    fontWeight = FontWeight.Bold
                 )
             }
-
-            scan.duration?.let {
-                DetailStatCard(title = "Durée", value = formatDuration(it), icon = Icons.Default.Timer)
-            }
-
-            Text("Répartition des risques", color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                RiskBadge("Élevé", scan.highRiskApps ?: 0, Color(0xFFEF4444))
-                RiskBadge("Moyen", scan.mediumRiskApps ?: 0, Color(0xFFFBBF24))
-                RiskBadge("Faible", scan.lowRiskApps ?: 0, Color(0xFF10B981))
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Text("Type de scan", color = Color(0xFFCBD5E1), style = MaterialTheme.typography.bodySmall)
-            TypeChip(label = if (scan.totalApps <= 1) "APK" else "Applications")
-            Spacer(Modifier.height(16.dp))
         }
-    }
-}
 
-@Composable
-private fun DetailStatCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color = Color(0xFF6366F1)) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1F2937)),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-            Text(title, color = Color(0xFF94A3B8), style = MaterialTheme.typography.bodySmall)
-            Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        private fun deriveRiskLevel(score: Int?): String {
+            return when {
+                score == null -> "unknown"
+                score < 40 -> "low"
+                score < 70 -> "medium"
+                score < 85 -> "high"
+                else -> "critical"
+            }
         }
-    }
-}
 
-@Composable
-fun StatItem(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color = Color(0xFF6366F1)
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            value,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-        Text(
-            label,
-            fontSize = 11.sp,
-            color = Color(0xFF94A3B8)
-        )
-    }
-}
+        private fun riskLevelColor(riskLevel: String): Color {
+            return when (riskLevel.lowercase()) {
+                "low" -> Color(0xFF10B981)
+                "medium" -> Color(0xFFFBBF24)
+                "high" -> Color(0xFFFF6B6B)
+                "critical" -> Color(0xFFEF4444)
+                else -> Color(0xFFCBD5E1)
+            }
+        }
 
-@Composable
-fun RiskBreakdown(high: Int, medium: Int, low: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        RiskBadge("Élevé", high, Color(0xFFEF4444))
-        RiskBadge("Moyen", medium, Color(0xFFFBBF24))
-        RiskBadge("Faible", low, Color(0xFF10B981))
-    }
-}
+        private fun formatDate(dateString: String): String {
+            return try {
+                val inputFormat =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+                inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+                val date = inputFormat.parse(dateString)
+                val outputFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.FRENCH)
+                date?.let { outputFormat.format(it) } ?: dateString
+            } catch (e: Exception) {
+                dateString
+            }
+        }
 
-@Composable
-fun RiskBadge(label: String, count: Int, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(color.copy(alpha = 0.2f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(color)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            "$label: $count",
-            fontSize = 12.sp,
-            color = color,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
+        private fun formatDuration(durationMs: Long): String {
+            val seconds = durationMs / 1000
+            val minutes = seconds / 60
+            val hours = minutes / 60
 
-private fun deriveRiskLevel(score: Int?): String {
-    return when {
-        score == null -> "unknown"
-        score < 40 -> "low"
-        score < 70 -> "medium"
-        score < 85 -> "high"
-        else -> "critical"
-    }
-}
+            return when {
+                hours > 0 -> "${hours}h ${minutes % 60}m"
+                minutes > 0 -> "${minutes}m ${seconds % 60}s"
+                else -> "${seconds}s"
+            }
+        }
 
-private fun riskLevelColor(riskLevel: String): Color {
-    return when (riskLevel.lowercase()) {
-        "low" -> Color(0xFF10B981)
-        "medium" -> Color(0xFFFBBF24)
-        "high" -> Color(0xFFFF6B6B)
-        "critical" -> Color(0xFFEF4444)
-        else -> Color(0xFFCBD5E1)
-    }
-}
-
-private fun formatDate(dateString: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
-        val date = inputFormat.parse(dateString)
-        val outputFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.FRENCH)
-        date?.let { outputFormat.format(it) } ?: dateString
-    } catch (e: Exception) {
-        dateString
-    }
-}
-
-private fun formatDuration(durationMs: Long): String {
-    val seconds = durationMs / 1000
-    val minutes = seconds / 60
-    val hours = minutes / 60
-
-    return when {
-        hours > 0 -> "${hours}h ${minutes % 60}m"
-        minutes > 0 -> "${minutes}m ${seconds % 60}s"
-        else -> "${seconds}s"
-    }
-}
-
-private fun getScoreColor(score: Int): Color {
-    return when {
-        score < 40 -> Color(0xFF10B981)   // Low
-        score < 70 -> Color(0xFFFBBF24)   // Medium
-        score < 85 -> Color(0xFFFF6B6B)   // High
-        else -> Color(0xFFEF4444)         // Critical
-    }
-}
+        private fun getScoreColor(score: Int): Color {
+            return when {
+                score < 40 -> Color(0xFF10B981)   // Low
+                score < 70 -> Color(0xFFFBBF24)   // Medium
+                score < 85 -> Color(0xFFFF6B6B)   // High
+                else -> Color(0xFFEF4444)         // Critical
+            }
+        }

@@ -23,6 +23,12 @@ import tn.esprit.dam.data.model.User
 import tn.esprit.dam.features.profile.components.*
 import tn.esprit.dam.ui.theme.*
 import tn.esprit.dam.features.scan.presentation.ScanTheme
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
+import tn.esprit.dam.ui.theme.AppTypography
+import tn.esprit.dam.ui.components.AppErrorState
+import tn.esprit.dam.ui.components.AppPrimaryButton
 
 @Composable
 fun ProfileScreen(
@@ -43,7 +49,7 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScanTheme.DarkBg)
+            .background(AppColors.background)
     ) {
         when (val state = uiState) {
             is ProfileUiState.Loading -> {
@@ -56,11 +62,10 @@ fun ProfileScreen(
             }
 
             is ProfileUiState.Error -> {
-                    ErrorContent(
+                    AppErrorState(
                     message = state.message,
                     onRetry = { viewModel.loadProfile() },
-                    onLogout = { viewModel.logout(onLogout) },
-                    isSessionExpired = state.message.contains("session") || state.message.contains("Unauthorized")
+                    retryText = "Réessayer"
                 )
             }
 
