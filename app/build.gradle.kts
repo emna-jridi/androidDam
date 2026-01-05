@@ -26,8 +26,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_ROOT", "\"http://192.168.1.115:3000\"")
-            buildConfigField("String", "BASE_ROOT", "\"http://192.168.1.115:3000\"")
+            buildConfigField("String", "API_ROOT", "\"http://172.18.1.18:3000\"")
+            buildConfigField("String", "BASE_ROOT", "\"http://172.18.1.18:3000\"")
         }
         release {
             isMinifyEnabled = true
@@ -102,18 +102,18 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
     implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
     implementation(libs.androidx.compose.runtime)
-    
+
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("com.google.firebase:firebase-messaging:23.4.0")
     implementation("androidx.cardview:cardview:1.0.0")
-    
+
     // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
-    
+
     // Lifecycle ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")

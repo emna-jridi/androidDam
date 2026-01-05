@@ -5,6 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.*
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -12,6 +13,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
@@ -73,6 +75,7 @@ class KtorHttpClient @Inject constructor(
         val response = httpClient.get(url) {
             if (token != null) header("Authorization", "Bearer $token")
         }
+        enforceStatus(response)
         response.body()
     }
 
@@ -88,6 +91,7 @@ class KtorHttpClient @Inject constructor(
             if (token != null) header("Authorization", "Bearer $token")
             setBody(body)
         }
+        enforceStatus(response)
         response.body()
     }
 
@@ -103,6 +107,7 @@ class KtorHttpClient @Inject constructor(
             if (token != null) header("Authorization", "Bearer $token")
             setBody(body)
         }
+        enforceStatus(response)
         response.body()
     }
 
@@ -116,6 +121,7 @@ class KtorHttpClient @Inject constructor(
         val response = httpClient.delete(url) {
             if (token != null) header("Authorization", "Bearer $token")
         }
+        enforceStatus(response)
         response.body()
     }
 
@@ -126,10 +132,17 @@ class KtorHttpClient @Inject constructor(
     ): Result<T> {
         repeat(maxRetries) { attempt ->
             try {
-                Log.d("KtorClient", "Attempt {attempt + 1}/maxRetries")
+                Log.d("KtorClient", "Attempt ${attempt + 1}/$maxRetries")
                 return Result.success(block())
             } catch (e: Exception) {
-                Log.e("KtorClient", "Attempt {attempt + 1} failed: {e.message}")
+                if (e is ClientRequestException && e.response.status == HttpStatusCode.Unauthorized) {
+                    Log.w("KtorClient", "401 Unauthorized - clearing tokens and aborting retries")
+                    // Clear tokens so UI can redirect to login
+                    TokenManager.clearAll(context)
+                    return Result.failure(e)
+                }
+
+                Log.e("KtorClient", "Attempt ${attempt + 1} failed: ${e.message}")
                 if (attempt == maxRetries - 1) {
                     return Result.failure(e)
                 }
@@ -137,6 +150,17 @@ class KtorHttpClient @Inject constructor(
             }
         }
         return Result.failure(Exception("Max retries exceeded"))
+    }
+
+    private suspend fun enforceStatus(response: HttpResponse) {
+        if (response.status == HttpStatusCode.Unauthorized) {
+            Log.w("KtorClient", "401 Unauthorized - clearing tokens")
+            TokenManager.clearAll(context)
+            throw ClientRequestException(response, "Unauthorized")
+        }
+        if (!response.status.isSuccess()) {
+            throw ClientRequestException(response, "HTTP ${response.status}")
+        }
     }
 
     fun close() {

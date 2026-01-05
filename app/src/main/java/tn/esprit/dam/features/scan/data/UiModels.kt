@@ -1,6 +1,7 @@
 ﻿package tn.esprit.dam.features.scan.data
 
 import tn.esprit.dam.features.scan.domain.SecurityUtils
+import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.features.scan.domain.ScanRiskResult
 import tn.esprit.dam.features.scan.data.AppDto
 import tn.esprit.dam.data.api.models.SimpleTrackerInfo
@@ -129,12 +130,15 @@ data class ScanState(
     val scanId: String? = null,
     val status: String = "IDLE", // IDLE, LOADING, ANALYZING, COMPLETED, FAILED
     val selectedApps: List<LocalAppInfo> = emptyList(),
+    val scanLevel: ScanLevel = ScanLevel.SMART,
     val totalApps: Int = 0,
     val scannedApps: Int = 0,
     val highRiskCount: Int = 0,
     val mediumRiskCount: Int = 0,
     val lowRiskCount: Int = 0,
     val averageScore: Float = 0f,
+    val confidenceScore: Int? = null,
+    val recommendDeepAnalysis: Boolean = false,
     val error: String? = null,
     val showSystemApps: Boolean = false,
     val analysisNote: String? = null

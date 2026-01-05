@@ -55,7 +55,11 @@ data class ScanResponseDto(
   @SerializedName("createdAt")
   val createdAt: String,
   @SerializedName("updatedAt")
-  val updatedAt: String
+  val updatedAt: String,
+  @SerializedName("confidenceScore")
+  val confidenceScore: Int? = null,
+  @SerializedName("recommendDeepAnalysis")
+  val recommendDeepAnalysis: Boolean? = false
 )
 
 data class ScanResultsDto(
@@ -68,7 +72,11 @@ data class ScanResultsDto(
   @SerializedName("lowRiskApps")
   val lowRiskApps: Int,
   @SerializedName("averageScore")
-  val averageScore: Float
+  val averageScore: Float,
+  @SerializedName("confidenceScore")
+  val confidenceScore: Int? = null,
+  @SerializedName("recommendDeepAnalysis")
+  val recommendDeepAnalysis: Boolean? = false
 )
 
 data class AppDto(

@@ -26,12 +26,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import tn.esprit.dam.BuildConfig
 import tn.esprit.dam.data.TokenManager
+import tn.esprit.dam.data.security.TokenRepository
 import javax.inject.Singleton
 
 /**
  * Hilt Network Module
  * Provides network-related dependencies (HttpClient, etc.)
- * Uses TokenManager for token management (same as ApiClient)
+ * Uses TokenRepository for token management (aligned with encrypted storage)
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -40,13 +41,14 @@ object NetworkModule {
     private const val TAG = "NetworkModule"
     
     /**
-     * Provides Ktor HttpClient with bearer token authentication
-     * Uses TokenManager for token storage/retrieval (consistent with ApiClient)
+    * Provides Ktor HttpClient with bearer token authentication
+    * Uses TokenRepository for token storage/retrieval
      */
     @Provides
     @Singleton
     fun provideHttpClient(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        tokenRepository: TokenRepository
     ): HttpClient {
         val json = Json {
             ignoreUnknownKeys = true
@@ -74,25 +76,39 @@ object NetworkModule {
                 bearer {
                     loadTokens {
                         runBlocking {
-                            val token = TokenManager.getAccessToken(context)
-                            if (token != null) {
-                                Log.d(TAG, "[AUTH] Bearer token loaded: ${token.take(20)}...")
-                                BearerTokens(token, "")
-                            } else {
-                                Log.w(TAG, "[AUTH] No bearer token available")
-                                null
+                            // Primary: encrypted token storage
+                            val repoToken = tokenRepository.getAccessToken()
+                            if (!repoToken.isNullOrBlank()) {
+                                Log.d(TAG, "[AUTH] Bearer token loaded (repo): ${repoToken.take(20)}...")
+                                return@runBlocking BearerTokens(repoToken, "")
                             }
+
+                            // Fallback: legacy DataStore storage (TokenManager)
+                            val legacyToken = TokenManager.getAccessToken(context)
+                            if (!legacyToken.isNullOrBlank()) {
+                                Log.d(TAG, "[AUTH] Bearer token loaded (legacy): ${legacyToken.take(20)}...")
+                                // Migrate to repository for future requests using legacy refresh token when available
+                                val legacyRefresh = TokenManager.getRefreshToken(context)
+                                if (!legacyRefresh.isNullOrBlank()) {
+                                    tokenRepository.saveTokens(legacyToken, legacyRefresh)
+                                }
+                                return@runBlocking BearerTokens(legacyToken, "")
+                            }
+
+                            Log.w(TAG, "[AUTH] No bearer token available")
+                            null
                         }
                     }
                     
                     refreshTokens {
                         Log.d(TAG, "[REFRESH] Token refresh triggered")
                         runBlocking {
-                            val refreshToken = TokenManager.getRefreshToken(context)
-                            if (refreshToken != null) {
+                            val refreshToken = tokenRepository.getRefreshToken()
+                                ?: TokenManager.getRefreshToken(context)
+
+                            if (!refreshToken.isNullOrBlank()) {
                                 Log.d(TAG, "[REFRESH] Refresh token available, attempting refresh...")
-                                // Token refresh would be handled here, but for now return null
-                                // to trigger re-authentication
+                                // TODO: implement refresh call; returning null forces re-auth
                                 null
                             } else {
                                 Log.w(TAG, "[WARN] No refresh token available")

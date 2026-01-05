@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -25,9 +24,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -439,7 +435,6 @@ private fun ScoreTag(text: String, bgColor: Color, textColor: Color) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FeatureGrid(
     onScan: () -> Unit,
@@ -449,39 +444,73 @@ private fun FeatureGrid(
     onShadowGuard: () -> Unit,
     onAlerts: () -> Unit
 ) {
-    val items = listOf(
-        FeatureItem("Nouveau scan", Icons.Default.Security, "Analyser maintenant", onScan, listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))),
-        FeatureItem("Historique", Icons.Default.History, "Derniers résultats", onHistory, listOf(Color(0xFF0EA5E9), Color(0xFF2563EB))),
-        FeatureItem("Scanner un APK", Icons.Default.Android, "Fichier externe", onScanApk, listOf(Color(0xFF10B981), Color(0xFF059669))),
-        FeatureItem("Rechercher une application", Icons.Default.Search, "Vérifier un app", onSearch, listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9))),
-        FeatureItem("Alertes de sécurité", Icons.Default.Error, "Journaux d'accès", onAlerts, listOf(Color(0xFFEF4444), Color(0xFFF97316))),
-        FeatureItem("ShadowVault", Icons.Default.Lock, "Gestion des mots de passe", onShadowGuard, listOf(Color(0xFF7C3AED), Color(0xFF4F46E5)))
-    )
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing16),
-        verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing16),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height((140.dp * 3) + (ScanTheme.Spacing16 * 2))
-    ) {
-        items(items) { item ->
-            FeatureCard(item)
+    Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+            FeatureCard(
+                title = "Nouveau scan",
+                icon = Icons.Default.Security,
+                description = "Analyser maintenant",
+                onClick = onScan,
+                gradient = listOf(Color(0xFF4F46E5), Color(0xFF7C3AED)),
+                modifier = Modifier.weight(1f)
+            )
+            FeatureCard(
+                title = "Historique",
+                icon = Icons.Default.History,
+                description = "Derniers résultats",
+                onClick = onHistory,
+                gradient = listOf(Color(0xFF0EA5E9), Color(0xFF2563EB)),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+            FeatureCard(
+                title = "Scanner un APK",
+                icon = Icons.Default.Android,
+                description = "Fichier externe",
+                onClick = onScanApk,
+                gradient = listOf(Color(0xFF10B981), Color(0xFF059669)),
+                modifier = Modifier.weight(1f)
+            )
+            FeatureCard(
+                title = "Rechercher une application",
+                icon = Icons.Default.Search,
+                description = "Vérifier un app",
+                onClick = onSearch,
+                gradient = listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9)),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+            FeatureCard(
+                title = "Alertes de sécurité",
+                icon = Icons.Default.Error,
+                description = "Journaux d'accès",
+                onClick = onAlerts,
+                gradient = listOf(Color(0xFFEF4444), Color(0xFFF97316)),
+                modifier = Modifier.weight(1f)
+            )
+            FeatureCard(
+                title = "ShadowVault",
+                icon = Icons.Default.Lock,
+                description = "Gestion des mots de passe",
+                onClick = onShadowGuard,
+                gradient = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5)),
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
 
-private data class FeatureItem(
-    val title: String,
-    val icon: ImageVector,
-    val description: String,
-    val onClick: () -> Unit,
-    val gradient: List<Color>
-)
-
 @Composable
-private fun FeatureCard(item: FeatureItem) {
+private fun FeatureCard(
+    title: String,
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit,
+    gradient: List<Color>,
+    modifier: Modifier = Modifier
+) {
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.95f else 1f,
@@ -490,8 +519,8 @@ private fun FeatureCard(item: FeatureItem) {
     )
 
     Card(
-        modifier = Modifier
-            .size(width = 160.dp, height = 140.dp)
+        modifier = modifier
+            .height(112.dp)
             .scale(scale)
             .clip(RoundedCornerShape(ScanTheme.CornerLarge))
             .pointerInput(Unit) {
@@ -500,32 +529,55 @@ private fun FeatureCard(item: FeatureItem) {
                         pressed = true
                         val success = try { tryAwaitRelease(); true } catch (e: Exception) { false }
                         pressed = false
-                        if (success) item.onClick()
+                        if (success) onClick()
                     }
                 )
             },
         colors = CardDefaults.cardColors(containerColor = ScanTheme.SurfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, ScanTheme.Border.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(ScanTheme.Spacing12),
+                .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(brush = Brush.linearGradient(item.gradient), shape = RoundedCornerShape(ScanTheme.CornerMedium)),
+                    .size(36.dp)
+                    .background(brush = Brush.linearGradient(gradient), shape = RoundedCornerShape(ScanTheme.CornerMedium)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(item.icon, contentDescription = item.title, tint = Color.White, modifier = Modifier.size(28.dp))
+                Icon(
+                    icon,
+                    contentDescription = title,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(ScanTheme.Spacing8))
-            Text(item.title, style = MaterialTheme.typography.labelLarge, color = ScanTheme.TextPrimary, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(item.description, style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(7.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.labelSmall,
+                color = ScanTheme.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 11.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                description,
+                style = MaterialTheme.typography.labelSmall,
+                color = ScanTheme.TextSecondary,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 9.sp
+            )
         }
     }
 }
@@ -553,14 +605,14 @@ private fun RecentActivitySection(
             riskyApps.take(3).forEach { app ->
                 val score = app.aiRiskScore ?: app.finalScore ?: 0f
                 val name = app.appName ?: app.packageName ?: "App"
-                
+
                 var appCardPressed by remember { mutableStateOf(false) }
                 val appCardScale by animateFloatAsState(
                     targetValue = if (appCardPressed) 0.98f else 1f,
                     animationSpec = tween(durationMillis = 100),
                     label = "appCardPress"
                 )
-                
+
                 Card(
                     colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
                     shape = RoundedCornerShape(ScanTheme.CornerLarge),
@@ -850,9 +902,9 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
     val score = app.aiRiskScore ?: app.finalScore ?: 0f
     val appName = app.appName ?: app.packageName ?: "Unknown App"
     val pkgName = app.packageName ?: ""
-    
+
     val scoreColor = riskColorForScore(score)
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()

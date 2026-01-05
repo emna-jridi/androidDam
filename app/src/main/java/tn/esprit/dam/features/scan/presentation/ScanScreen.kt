@@ -43,12 +43,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
+;import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tn.esprit.dam.features.scan.data.LocalAppInfo
 import tn.esprit.dam.features.scan.data.ScanState
+import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.features.scan.presentation.ScanTheme.Surface
 import tn.esprit.dam.ui.theme.Surface
 import tn.esprit.dam.ui.theme.AppColors
@@ -107,12 +110,12 @@ fun ScanScreen(
     LaunchedEffect(Unit) {
         viewModel.initialize(userId, deviceId)
     }
-        // Scaffold removed - AppNavGraph already provides topBar
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppColors.background)
-        ) {
+    // Scaffold removed - AppNavGraph already provides topBar
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.background)
+    ) {
 
         when (scanState.status) {
             "LOADING" -> Box(modifier = Modifier.weight(1f)) {
@@ -139,10 +142,12 @@ fun ScanScreen(
                 availableApps = availableApps,
                 selectedCount = scanState.selectedApps.size,
                 error = scanState.error,
+                scanLevel = scanState.scanLevel,
                 onToggleApp = { viewModel.toggleAppSelection(it) },
                 onSelectAll = { viewModel.selectAllApps() },
                 onDeselectAll = { viewModel.deselectAllApps() },
                 onClearError = { viewModel.clearError() },
+                onLevelChange = { viewModel.setScanLevel(it) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -254,10 +259,12 @@ private fun SelectionContent(
     availableApps: List<LocalAppInfo>,
     selectedCount: Int,
     error: String?,
+    scanLevel: ScanLevel,
     onToggleApp: (String) -> Unit,
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
     onClearError: () -> Unit,
+    onLevelChange: (ScanLevel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val userApps = availableApps.filterNot { it.isSystemApp }
@@ -277,7 +284,9 @@ private fun SelectionContent(
             HeaderCard(
                 selectedCount = selectedCount,
                 onSelectAll = onSelectAll,
-                onDeselectAll = onDeselectAll
+                onDeselectAll = onDeselectAll,
+                scanLevel = scanLevel,
+                onLevelChange = onLevelChange
             )
         }
 
@@ -345,7 +354,9 @@ private fun ErrorCard(
 private fun HeaderCard(
     selectedCount: Int,
     onSelectAll: () -> Unit,
-    onDeselectAll: () -> Unit
+    onDeselectAll: () -> Unit,
+    scanLevel: ScanLevel,
+    onLevelChange: (ScanLevel) -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
@@ -369,6 +380,8 @@ private fun HeaderCard(
                     color = ScanTheme.TextSecondary,
                     fontSize = 12.sp
                 )
+                Spacer(Modifier.height(8.dp))
+                ScanLevelToggle(scanLevel = scanLevel, onLevelChange = onLevelChange)
             }
 
             TextButton(
@@ -380,6 +393,51 @@ private fun HeaderCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ScanLevelToggle(
+    scanLevel: ScanLevel,
+    onLevelChange: (ScanLevel) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LevelChip(
+            label = "SMART",
+            selected = scanLevel == ScanLevel.SMART,
+            onClick = { onLevelChange(ScanLevel.SMART) }
+        )
+        LevelChip(
+            label = "DEEP",
+            selected = scanLevel == ScanLevel.DEEP,
+            onClick = { onLevelChange(ScanLevel.DEEP) }
+        )
+    }
+}
+
+@Composable
+private fun LevelChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val container = if (selected) Color(0xFF6B7FBD).copy(alpha = 0.2f) else ScanTheme.SurfaceVariant
+    val border = if (selected) Color(0xFF6B7FBD) else ScanTheme.Border.copy(alpha = 0.4f)
+    val text = if (selected) Color(0xFF6B7FBD) else ScanTheme.TextSecondary
+
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        color = container,
+        border = BorderStroke(1.dp, border)
+    ) {
+        Text(
+            label,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = text,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 @Composable
@@ -619,6 +677,14 @@ private fun ResultsContent(
             low = scanState.lowRiskCount
         )
 
+        // Confidence Score Badge
+        scanState.confidenceScore?.let { confidence ->
+            ConfidenceScoreBadge(
+                score = confidence,
+                recommendDeepAnalysis = scanState.recommendDeepAnalysis && scanState.scanLevel == ScanLevel.SMART
+            )
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)
@@ -845,4 +911,98 @@ private fun deriveAppRisk(app: LocalAppInfo): AppRisk {
 
     // Fallback if risk result is missing (should not happen with new logic)
     return AppRisk("Inconnu", Color.Gray, 0)
+}
+
+@Composable
+private fun ConfidenceScoreBadge(
+    score: Int,
+    recommendDeepAnalysis: Boolean = false
+) {
+    val scoreColor = when {
+        score >= 80 -> Color(0xFF10B981) // Green - High confidence
+        score >= 60 -> Color(0xFFFB923C) // Amber - Medium confidence
+        else -> Color(0xFFEF4444) // Red - Low confidence
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = ScanTheme.Spacing8),
+        shape = RoundedCornerShape(ScanTheme.CornerMedium),
+        colors = CardDefaults.cardColors(
+            containerColor = scoreColor.copy(alpha = 0.15f)
+        ),
+        border = BorderStroke(1.dp, scoreColor.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(ScanTheme.Spacing12),
+            verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4)) {
+                    Text(
+                        "Confiance de l'analyse",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ScanTheme.TextSecondary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(scoreColor, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "$score%",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            when {
+                                score >= 80 -> "Très élevée"
+                                score >= 60 -> "Moyenne"
+                                else -> "Faible"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ScanTheme.TextPrimary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            if (recommendDeepAnalysis) {
+                Divider(color = scoreColor.copy(alpha = 0.2f), thickness = 1.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = scoreColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        "Lancer un scan DEEP pour une analyse plus complète",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ScanTheme.TextSecondary
+                    )
+                }
+            }
+        }
+    }
 }

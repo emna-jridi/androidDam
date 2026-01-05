@@ -53,11 +53,10 @@ fun AppBottomNavBar(
 
     NavigationBar(
         containerColor = AppColors.surface,
-        tonalElevation = 10.dp,
+        tonalElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
             .navigationBarsPadding(),
         windowInsets = WindowInsets.navigationBars
     ) {
@@ -67,17 +66,18 @@ fun AppBottomNavBar(
                     Icon(
                         imageVector = item.icon,
                         contentDescription = stringResource(id = item.label),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 },
                 label = {
                     Text(
                         text = stringResource(id = item.label),
-                        fontSize = MaterialTheme.typography.labelSmall.fontSize,
+                        style = MaterialTheme.typography.labelSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 },
+                alwaysShowLabel = false,
                 selected = currentRoute.startsWith(item.route) && 
                            (currentRoute.length == item.route.length || currentRoute[item.route.length] == '/' || currentRoute[item.route.length] == '?'),
                 onClick = {

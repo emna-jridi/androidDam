@@ -3,6 +3,20 @@
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+// Scan mode (aligned to backend SMART/DEEP only)
+@Serializable
+enum class ScanLevel {
+    @SerialName("SMART") SMART,
+    @SerialName("DEEP") DEEP
+}
+
+// Scan analysis type (installed app vs direct APK upload)
+@Serializable
+enum class AnalysisType {
+    @SerialName("installed_app") INSTALLED_APP,
+    @SerialName("apk_upload") APK_UPLOAD
+}
+
 // ============= Safe API Result Wrapper =============
 sealed class ApiResult<out T> {
     data class Success<T>(val data: T) : ApiResult<T>()
@@ -74,7 +88,11 @@ data class LatestScanResultsDto(
     @SerialName("globalScore")
     val globalScore: Int = 0,
     @SerialName("maxRiskLevel")
-    val maxRiskLevel: String? = null
+    val maxRiskLevel: String? = null,
+    @SerialName("confidenceScore")
+    val confidenceScore: Double? = null,
+    @SerialName("recommendDeepAnalysis")
+    val recommendDeepAnalysis: Boolean? = null
 )
 
 // ============= Scan Request/Response =============
@@ -91,7 +109,11 @@ data class StartScanRequest(
     @SerialName("userId")
     val userId: String,
     @SerialName("timestamp")
-    val timestamp: String  // ISO 8601 format: 2025-12-12T16:52:07.123Z
+    val timestamp: String,  // ISO 8601 format: 2025-12-12T16:52:07.123Z
+    @SerialName("level")
+    val level: ScanLevel = ScanLevel.SMART,
+    @SerialName("analysisType")
+    val analysisType: AnalysisType = AnalysisType.INSTALLED_APP
 )
 
 @Serializable
@@ -111,13 +133,17 @@ data class StartScanResponse(
     @SerialName("status")
     val status: String,
     @SerialName("userId")
-    val userId: String,
+    val userId: String? = null,
     @SerialName("deviceId")
-    val deviceId: String,
+    val deviceId: String? = null,
     @SerialName("platform")
-    val platform: String,
+    val platform: String? = null,
     @SerialName("createdAt")
-    val createdAt: String
+    val createdAt: String? = null,
+    @SerialName("level")
+    val level: ScanLevel? = null,
+    @SerialName("analysisType")
+    val analysisType: AnalysisType? = null
 )
 
 // ============= Scan Status =============
@@ -126,15 +152,49 @@ data class ScanStatusResponse(
     @SerialName("scanId")
     val scanId: String,
     @SerialName("status")
-    val status: String,
+    val status: String? = null,
+    @SerialName("analysisType")
+    val analysisType: AnalysisType? = null,
+    @SerialName("level")
+    val level: ScanLevel? = null,
     @SerialName("progress")
     val progress: Int? = null,
+    @SerialName("percentage")
+    val percentage: Int? = null,
+    @SerialName("currentStep")
+    val currentStep: String? = null,
+    @SerialName("steps")
+    val steps: List<ScanStepProgress> = emptyList(),
+    @SerialName("estimatedTimeRemaining")
+    val estimatedTimeRemaining: Int? = null,
+    @SerialName("elapsed")
+    val elapsed: Int? = null,
     @SerialName("totalApps")
     val totalApps: Int? = null,
     @SerialName("scannedApps")
     val scannedApps: Int? = null,
     @SerialName("results")
-    val results: ScanResultsDto? = null
+    val results: ScanResultsDto? = null,
+    @SerialName("confidenceScore")
+    val confidenceScore: Double? = null,
+    @SerialName("recommendDeepAnalysis")
+    val recommendDeepAnalysis: Boolean? = null
+)
+
+@Serializable
+data class ScanStepProgress(
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("status")
+    val status: String? = null,
+    @SerialName("progress")
+    val progress: Int? = null,
+    @SerialName("startTime")
+    val startTime: String? = null,
+    @SerialName("duration")
+    val duration: Int? = null,
+    @SerialName("endTime")
+    val endTime: String? = null
 )
 
 @Serializable
@@ -148,7 +208,11 @@ data class ScanResultsDto(
     @SerialName("lowRiskApps")
     val lowRiskApps: Int,
     @SerialName("averageScore")
-    val averageScore: Float
+    val averageScore: Float,
+    @SerialName("confidenceScore")
+    val confidenceScore: Double? = null,
+    @SerialName("recommendDeepAnalysis")
+    val recommendDeepAnalysis: Boolean? = null
 )
 
 // ============= App Information =============
@@ -216,13 +280,90 @@ data class AnalysisResultDto(
     val aiStatus: String? = "fallback"
 )
 
-// ============= App Details =============
+// ============= App Details (from /scan/app/{packageName}) =============
 @Serializable
 data class AppDetailsResponse(
+    @SerialName("scanId")
+    val scanId: String? = null,
+    @SerialName("packageName")
+    val packageName: String? = null,
+    @SerialName("appName")
+    val appName: String? = null,
+    @SerialName("level")
+    val level: ScanLevel? = null,
+    @SerialName("analysisType")
+    val analysisType: AnalysisType? = null,
+    @SerialName("status")
+    val status: String? = null,
+    @SerialName("securityScore")
+    val securityScore: Float? = null,
+    @SerialName("privacyScore")
+    val privacyScore: Float? = null,
+    @SerialName("globalRisk")
+    val globalRisk: String? = null,
+    @SerialName("overallScore")
+    val overallScore: Float? = null,
+    @SerialName("confidenceScore")
+    val confidenceScore: Double? = null,
+    @SerialName("recommendDeepAnalysis")
+    val recommendDeepAnalysis: Boolean? = null,
+    @SerialName("ml")
+    val ml: ScanMLResult? = null,
+    @SerialName("trackers")
+    val trackers: AppTrackersResult? = null,
+    @SerialName("recommendations")
+    val recommendations: List<String> = emptyList(),
+    @SerialName("permissions")
+    val permissions: List<String> = emptyList(),
+    @SerialName("errors")
+    val errors: List<String> = emptyList(),
+    @SerialName("warnings")
+    val warnings: List<String> = emptyList(),
+    // Legacy fields for backward compatibility
     @SerialName("app")
-    val app: AppInfoDto,
+    val app: AppInfoDto? = null,
     @SerialName("history")
     val history: List<AppScanHistoryDto> = emptyList()
+)
+
+@Serializable
+data class AppTrackersResult(
+    @SerialName("totalFound")
+    val totalFound: Int? = null,
+    @SerialName("categories")
+    val categories: TrackerCategories? = null,
+    @SerialName("trackers")
+    val trackers: List<TrackerItemDto> = emptyList(),
+    @SerialName("privacyScore")
+    val privacyScore: Int? = null,
+    @SerialName("apiUsed")
+    val apiUsed: String? = null,
+    @SerialName("cachingStatus")
+    val cachingStatus: String? = null
+)
+
+@Serializable
+data class TrackerCategories(
+    @SerialName("advertising")
+    val advertising: Int = 0,
+    @SerialName("analytics")
+    val analytics: Int = 0,
+    @SerialName("crossapp")
+    val crossapp: Int = 0,
+    @SerialName("location")
+    val location: Int = 0
+)
+
+@Serializable
+data class TrackerItemDto(
+    @SerialName("id")
+    val id: String? = null,
+    @SerialName("name")
+    val name: String,
+    @SerialName("category")
+    val category: String? = null,
+    @SerialName("found")
+    val found: Boolean = true
 )
 
 @Serializable
@@ -341,6 +482,65 @@ data class PermissionDetailDto(
     val riskLevel: String = "normal",
     @SerialName("explanation")
     val explanation: String = ""
+)
+
+// ============= Scan Result (from /scan/{scanId}) =============
+@Serializable
+data class ScanResultResponse(
+    @SerialName("scanId")
+    val scanId: String,
+    @SerialName("packageName")
+    val packageName: String? = null,
+    @SerialName("appName")
+    val appName: String? = null,
+    @SerialName("level")
+    val level: ScanLevel? = null,
+    @SerialName("analysisType")
+    val analysisType: AnalysisType? = null,
+    @SerialName("status")
+    val status: String? = null,
+    @SerialName("securityScore")
+    val securityScore: Float? = null,
+    @SerialName("privacyScore")
+    val privacyScore: Float? = null,
+    @SerialName("globalRisk")
+    val globalRisk: String? = null,
+    @SerialName("overallScore")
+    val overallScore: Float? = null,
+    @SerialName("confidenceScore")
+    val confidenceScore: Double? = null,
+    @SerialName("recommendDeepAnalysis")
+    val recommendDeepAnalysis: Boolean? = null,
+    @SerialName("ml")
+    val ml: ScanMLResult? = null,
+    @SerialName("trackers")
+    val trackers: ScanTrackersResult? = null,
+    @SerialName("recommendations")
+    val recommendations: List<String> = emptyList(),
+    @SerialName("permissions")
+    val permissions: List<String> = emptyList(),
+    @SerialName("errors")
+    val errors: List<String> = emptyList(),
+    @SerialName("warnings")
+    val warnings: List<String> = emptyList()
+)
+
+@Serializable
+data class ScanMLResult(
+    @SerialName("malwareProbability")
+    val malwareProbability: Float? = null,
+    @SerialName("verdict")
+    val verdict: String? = null,
+    @SerialName("confidence")
+    val confidence: Float? = null
+)
+
+@Serializable
+data class ScanTrackersResult(
+    @SerialName("count")
+    val count: Int? = null,
+    @SerialName("categories")
+    val categories: Map<String, Int> = emptyMap()
 )
 
 // ============= Tracker Details =============

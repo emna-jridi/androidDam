@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import tn.esprit.dam.R
 import tn.esprit.dam.data.api.models.ApiResult
 import tn.esprit.dam.data.api.models.AppDetailsResponse
+import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.data.local.AppScanner
 import tn.esprit.dam.data.repository.ScanRepository
 import tn.esprit.dam.features.scan.data.LocalAppInfo
@@ -143,6 +145,10 @@ class ScanViewModel @Inject constructor(
         loadAvailableApps()
     }
 
+    fun setScanLevel(level: ScanLevel) {
+        _scanState.value = _scanState.value.copy(scanLevel = level)
+    }
+
     fun startScan() {
         if (_scanState.value.selectedApps.isEmpty()) {
             _scanState.value = _scanState.value.copy(
@@ -177,7 +183,13 @@ class ScanViewModel @Inject constructor(
                 Log.d(TAG, "📦 Selected packages: ${selectedPackages.take(3).joinToString()}")
 
                 // Start scan on server
-                when (val result = repository.startScan(selectedPackages, userId!!, deviceId!!, false)) {
+                when (val result = repository.startScan(
+                    apps = selectedPackages,
+                    userId = userId!!,
+                    deviceId = deviceId!!,
+                    includeSystemApps = false,
+                    level = _scanState.value.scanLevel
+                )) {
                     is ApiResult.Success -> {
                         val scanId = result.data?.scanId
                         if (scanId == null) {
@@ -253,10 +265,12 @@ class ScanViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                // For APK upload, force DEEP scan mode for thorough analysis
                 _scanState.value = _scanState.value.copy(
                     status = "ANALYZING",
                     error = null,
-                    analysisNote = "Téléversement et analyse APK en cours...",
+                    scanLevel = ScanLevel.DEEP, // APK uploads always use DEEP
+                    analysisNote = "Validation et analyse APK en cours...",
                     selectedApps = emptyList(),
                     totalApps = 1,
                     scannedApps = 0
@@ -268,7 +282,7 @@ class ScanViewModel @Inject constructor(
                         if (appData == null) {
                             _scanState.value = _scanState.value.copy(
                                 status = "FAILED",
-                                error = "Erreur serveur: données vides"
+                                error = "Erreur serveur: aucune donnée d'application"
                             )
                             return@launch
                         }
@@ -280,9 +294,9 @@ class ScanViewModel @Inject constructor(
                         val level = riskResult?.riskLevel ?: RiskLevel.LOW
                         
                         val note = if (app.scanResults?.aiStatus == "ok") {
-                            "Analyse basée sur MobSF + IA + Heuristiques locales"
+                            "Analyse APK complète: MobSF + IA + Heuristiques"
                         } else {
-                            "Analyse basée sur MobSF + Heuristiques locales"
+                            "Analyse APK: MobSF + Heuristiques locales"
                         }
 
                         _scanState.value = _scanState.value.copy(
@@ -331,6 +345,8 @@ class ScanViewModel @Inject constructor(
     
     /**
      * Poll scan status every 3 seconds until completed or failed
+     * For DEEP scans: 5 minute timeout (100 attempts)
+     * For SMART scans: 2 minute timeout (40 attempts)
      */
     private fun startPolling(scanId: String) {
         // Cancel any existing polling job
@@ -338,104 +354,126 @@ class ScanViewModel @Inject constructor(
         
         pollingJob = viewModelScope.launch {
             var attempts = 0
-            val maxAttempts = 100 // Max 5 minutes (100 * 3s)
+            val maxAttempts = if (_scanState.value.scanLevel == ScanLevel.DEEP) {
+                100 // DEEP: 5 minutes max (100 * 3s)
+            } else {
+                40 // SMART: 2 minutes max (40 * 3s)
+            }
             
             while (attempts < maxAttempts) {
                 delay(3000) // Poll every 3 seconds
                 attempts++
                 
-                Log.d(TAG, "📊 Polling scan status #$attempts for $scanId")
-                
+                Log.d(TAG, "📊 Polling scan status #$attempts/$maxAttempts for $scanId")
+
                 when (val result = repository.getScanStatus(scanId)) {
                     is ApiResult.Success -> {
                         val status = result.data
+                        val derivedStatus = when {
+                            status.status?.equals("completed", ignoreCase = true) == true -> "completed"
+                            status.status?.equals("failed", ignoreCase = true) == true -> "failed"
+                            status.steps.isNotEmpty() && status.steps.all { it.status?.equals("COMPLETED", ignoreCase = true) == true } -> "completed"
+                            (status.percentage ?: status.progress ?: 0) >= 100 -> "completed"
+                            else -> status.status?.lowercase() ?: "processing"
+                        }
                         val currentSelectedApps = _scanState.value.selectedApps
-                        
+                        val recommendationNote = if (status.recommendDeepAnalysis == true && _scanState.value.scanLevel == ScanLevel.SMART) {
+                            "Suggestion: lancer un scan DEEP pour approfondir (confiance ${status.confidenceScore?.roundToInt() ?: 0}%)."
+                        } else null
+
                         // Update progress
-                        if (status.status != "completed" && status.status != "failed") {
+                        if (derivedStatus != "completed" && derivedStatus != "failed") {
                              _scanState.value = _scanState.value.copy(
-                                scannedApps = status.scannedApps ?: 0,
+                                scannedApps = status.scannedApps ?: _scanState.value.scannedApps,
                                 totalApps = status.totalApps ?: _scanState.value.totalApps,
                                 selectedApps = currentSelectedApps,
                                 highRiskCount = status.results?.highRiskApps ?: 0,
                                 mediumRiskCount = status.results?.mediumRiskApps ?: 0,
                                 lowRiskCount = status.results?.lowRiskApps ?: 0,
-                                averageScore = status.results?.averageScore ?: 0f
+                                averageScore = status.results?.averageScore ?: 0f,
+                                confidenceScore = status.results?.confidenceScore?.toInt(),
+                                recommendDeepAnalysis = status.results?.recommendDeepAnalysis ?: false,
+                                analysisNote = recommendationNote ?: _scanState.value.analysisNote
                             )
-                        } else if (status.status == "completed") {
-                            // Completed!
-                            val latestResult = repository.getLatestScan(userId!!)
+                        } else if (derivedStatus == "completed") {
+                            // Completed! Get full scan result by scanId
+                            Log.d(TAG, "✅ Scan completed, fetching result for $scanId")
+                            val scanResult = repository.getScanResult(scanId)
 
-                            if (latestResult is ApiResult.Success) {
-                                val apps = latestResult.data.results?.apps ?: latestResult.data.apps
+                            if (scanResult is ApiResult.Success) {
+                                val result = scanResult.data
+                                val pkgName = result.packageName ?: "unknown"
                                 
-                                // Create UI models with risk mapping
-                                val uiApps = apps.mapNotNull { appResult ->
-                                    // Handle missing package name (skip if null)
-                                    val pkgName = appResult.packageName ?: return@mapNotNull null
-                                    
-                                    // Determine score (prefer AI score, fallback to finalScore)
-                                    val scoreFloat = appResult.aiRiskScore ?: appResult.finalScore ?: 0f
-                                    val score = scoreFloat.toInt()
-                                    
-                                    // Determine risk level (prefer AI level, fallback to calculated)
-                                    val riskStr = appResult.aiRiskLevel ?: appResult.riskLevel
-                                    val level = when (riskStr?.lowercase()) {
-                                        "low", "safe" -> RiskLevel.LOW
-                                        "medium" -> RiskLevel.MEDIUM
-                                        "high" -> RiskLevel.HIGH
-                                        "critical" -> RiskLevel.CRITICAL
-                                        else -> if (score >= 85) RiskLevel.LOW
-                                            else if (score >= 70) RiskLevel.MEDIUM
-                                            else if (score >= 40) RiskLevel.HIGH
-                                            else RiskLevel.CRITICAL
-                                    }
-                                        
-                                    val risk = tn.esprit.dam.features.scan.domain.ScanRiskResult(
-                                        score = score,
-                                        riskLevel = level,
-                                        permissionScore = 100,
-                                        trackerScore = 100,
-                                        codeScore = 100,
-                                        criticalIssues = emptyList(),
-                                        warnings = emptyList(),
-                                        confidence = tn.esprit.dam.features.scan.domain.ConfidenceLevel.LOW
-                                    )
-                                    
-                                    LocalAppInfo(
-                                        packageName = pkgName,
-                                        displayName = appResult.appName ?: pkgName,
-                                        category = null,
-                                        isSystemApp = false,
-                                        permissions = emptyList(),
-                                        trackers = emptyList(),
-                                        isSelected = false,
-                                        riskResult = risk
-                                    )
+                                // Determine score from result
+                                val score = result.overallScore?.toInt() 
+                                    ?: result.securityScore?.toInt() 
+                                    ?: 0
+                                
+                                // Determine risk level from globalRisk or score
+                                val riskLevel = when (result.globalRisk?.lowercase()) {
+                                    "low", "safe" -> RiskLevel.LOW
+                                    "medium" -> RiskLevel.MEDIUM
+                                    "high" -> RiskLevel.HIGH
+                                    "critical" -> RiskLevel.CRITICAL
+                                    else -> if (score >= 85) RiskLevel.LOW
+                                        else if (score >= 70) RiskLevel.MEDIUM
+                                        else if (score >= 40) RiskLevel.HIGH
+                                        else RiskLevel.CRITICAL
                                 }
                                 
-                                val riskScores = uiApps.mapNotNull { it.riskResult?.score }
-                                val avgScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else 0f
+                                val risk = tn.esprit.dam.features.scan.domain.ScanRiskResult(
+                                    score = score,
+                                    riskLevel = riskLevel,
+                                    permissionScore = 100,
+                                    trackerScore = 100 - ((result.trackers?.count ?: 0) * 10),
+                                    codeScore = ((1f - (result.ml?.malwareProbability ?: 0f)) * 100).toInt(),
+                                    criticalIssues = result.errors,
+                                    warnings = result.warnings,
+                                    confidence = if ((result.confidenceScore ?: 0.0) > 80) 
+                                        tn.esprit.dam.features.scan.domain.ConfidenceLevel.HIGH
+                                    else if ((result.confidenceScore ?: 0.0) > 50)
+                                        tn.esprit.dam.features.scan.domain.ConfidenceLevel.MEDIUM
+                                    else tn.esprit.dam.features.scan.domain.ConfidenceLevel.LOW
+                                )
                                 
-                                val high = uiApps.count { 
-                                    it.riskResult?.riskLevel == RiskLevel.HIGH || it.riskResult?.riskLevel == RiskLevel.CRITICAL 
-                                }
-                                val med = uiApps.count { it.riskResult?.riskLevel == RiskLevel.MEDIUM }
-                                val low = uiApps.size - high - med
+                                val uiApp = LocalAppInfo(
+                                    packageName = pkgName,
+                                    displayName = result.appName ?: pkgName,
+                                    category = null,
+                                    isSystemApp = false,
+                                    permissions = result.permissions,
+                                    trackers = emptyList(),
+                                    isSelected = false,
+                                    riskResult = risk
+                                )
+                                
+                                val high = if (riskLevel == RiskLevel.HIGH || riskLevel == RiskLevel.CRITICAL) 1 else 0
+                                val med = if (riskLevel == RiskLevel.MEDIUM) 1 else 0
+                                val low = if (riskLevel == RiskLevel.LOW || riskLevel == RiskLevel.SAFE) 1 else 0
 
                                 _scanState.value = _scanState.value.copy(
                                     status = "COMPLETED",
-                                    selectedApps = uiApps,
-                                    totalApps = uiApps.size,
-                                    scannedApps = uiApps.size,
-                                    averageScore = avgScore,
+                                    selectedApps = listOf(uiApp),
+                                    totalApps = 1,
+                                    scannedApps = 1,
+                                    averageScore = score.toFloat(),
+                                    confidenceScore = result.confidenceScore?.toInt(),
+                                    recommendDeepAnalysis = result.recommendDeepAnalysis ?: false,
                                     highRiskCount = high,
                                     mediumRiskCount = med,
                                     lowRiskCount = low
                                 )
+                                Log.d(TAG, "✅ Scan result displayed: $pkgName score=$score risk=$riskLevel")
+                            } else {
+                                Log.e(TAG, "❌ Failed to fetch scan result: $scanResult")
+                                // Still mark as completed but without detailed results
+                                _scanState.value = _scanState.value.copy(
+                                    status = "COMPLETED",
+                                    analysisNote = "Analyse terminée. Détails non disponibles."
+                                )
                             }
                             return@launch
-                        } else if (status.status == "failed") {
+                        } else if (derivedStatus == "failed") {
                             _scanState.value = _scanState.value.copy(
                                 status = "FAILED",
                                 error = "L'analyse a échoué sur le serveur"
@@ -455,11 +493,16 @@ class ScanViewModel @Inject constructor(
                 }
             }
             
-            // Max attempts reached
-            Log.w(TAG, "âš ï¸ Max polling attempts reached")
+            // Max attempts reached (timeout)
+            val timeoutMsg = if (_scanState.value.scanLevel == ScanLevel.DEEP) {
+                "Délai d'expiration: l'analyse cloud prend plus de 5 minutes. Vérifiez l'état du serveur N8N."
+            } else {
+                "Délai d'expiration: l'analyse prend plus de 2 minutes. Vérifiez votre connexion réseau."
+            }
+            Log.w(TAG, "⚠️ Max polling attempts reached ($attempts/$maxAttempts)")
             _scanState.value = _scanState.value.copy(
                 status = "FAILED",
-                error = "Timeout: l'analyse prend trop de temps"
+                error = timeoutMsg
             )
         }
     }

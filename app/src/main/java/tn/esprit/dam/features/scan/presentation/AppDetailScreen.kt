@@ -55,9 +55,31 @@ fun AppDetailScreen(
                 onRetry = { viewModel.refresh(packageName) }
             )
         }
-        uiState.app != null -> {
+        uiState.details != null -> {
+            // Build an AppInfoDto from the new response format
+            val details = uiState.details!!
+            val app = details.app ?: AppInfoDto(
+                packageName = details.packageName ?: packageName,
+                displayName = details.appName ?: packageName,
+                permissions = details.permissions,
+                trackers = details.trackers?.trackers?.map { 
+                    tn.esprit.dam.data.api.models.SimpleTrackerInfo(
+                        name = it.name,
+                        riskLevel = it.category
+                    )
+                } ?: emptyList(),
+                finalScore = details.overallScore ?: details.securityScore ?: 0f,
+                scanResults = tn.esprit.dam.data.api.models.AnalysisResultDto(
+                    aiRiskScore = (100f - (details.securityScore ?: 0f)),
+                    aiRiskLevel = details.globalRisk ?: "LOW",
+                    aiSummary = "Score de sécurité: ${details.securityScore?.toInt() ?: 0}/100, Score de confidentialité: ${details.privacyScore?.toInt() ?: 0}/100",
+                    aiRecommendations = details.recommendations,
+                    permissionsScore = details.privacyScore,
+                    trackersScore = details.trackers?.privacyScore?.toFloat()
+                )
+            )
             AppDetailContent(
-                app = uiState.app!!,
+                app = app,
                 history = uiState.history,
                 onBackClick = onBackClick
             )

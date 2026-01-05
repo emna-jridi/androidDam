@@ -10,12 +10,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tn.esprit.dam.data.api.models.ApiResult
-import tn.esprit.dam.data.api.models.AppInfoDto
+import tn.esprit.dam.data.api.models.AppDetailsResponse
 import tn.esprit.dam.data.api.models.AppScanHistoryDto
 import tn.esprit.dam.data.repository.ScanRepository
 
 data class AppDetailUIState(
-    val app: AppInfoDto? = null,
+    val details: AppDetailsResponse? = null,
+    val packageName: String? = null,
+    val appName: String? = null,
+    val securityScore: Float? = null,
+    val privacyScore: Float? = null,
+    val overallScore: Float? = null,
+    val globalRisk: String? = null,
+    val trackerCount: Int = 0,
+    val permissionCount: Int = 0,
+    val permissions: List<String> = emptyList(),
+    val trackers: List<String> = emptyList(),
+    val recommendations: List<String> = emptyList(),
     val history: List<AppScanHistoryDto> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
@@ -41,21 +52,39 @@ class AppDetailViewModel @Inject constructor(
                 error = null
             )
 
-            // Try to get full details from apps endpoint first
             when (val result = repository.getAppDetails(packageName)) {
                 is ApiResult.Success -> {
+                    val data = result.data
                     Log.d(TAG, "Successfully loaded app details for $packageName")
+                    Log.d(TAG, "  - securityScore: ${data.securityScore}")
+                    Log.d(TAG, "  - privacyScore: ${data.privacyScore}")
+                    Log.d(TAG, "  - trackers: ${data.trackers?.totalFound ?: 0}")
+                    Log.d(TAG, "  - permissions: ${data.permissions.size}")
+                    
                     _uiState.value = _uiState.value.copy(
-                        app = result.data.app,
-                        history = result.data.history.sortedByDescending { it.scanDate },
+                        details = data,
+                        packageName = data.packageName ?: data.app?.packageName ?: packageName,
+                        appName = data.appName ?: data.app?.displayName ?: packageName,
+                        securityScore = data.securityScore ?: data.overallScore,
+                        privacyScore = data.privacyScore,
+                        overallScore = data.overallScore,
+                        globalRisk = data.globalRisk,
+                        trackerCount = data.trackers?.totalFound ?: data.app?.trackers?.size ?: 0,
+                        permissionCount = data.permissions.size.takeIf { it > 0 } ?: data.app?.permissions?.size ?: 0,
+                        permissions = data.permissions.takeIf { it.isNotEmpty() } ?: data.app?.permissions ?: emptyList(),
+                        trackers = data.trackers?.trackers?.map { it.name } ?: data.app?.trackers?.map { it.name } ?: emptyList(),
+                        recommendations = data.recommendations,
+                        history = data.history.sortedByDescending { it.scanDate },
                         isLoading = false,
                         error = null
                     )
                 }
                 is ApiResult.ApiError -> {
-                    Log.w(TAG, "API Error from /api/apps/$packageName: ${result.message} (code: ${result.code})")
-                    // Fallback to scan endpoint
-                    loadFromScanEndpoint(packageName, result.message)
+                    Log.e(TAG, "API Error for $packageName: ${result.message} (code: ${result.code})")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Application non trouvée: ${result.message}"
+                    )
                 }
                 is ApiResult.NetworkError -> {
                     Log.e(TAG, "Network error loading app details", result.exception)
@@ -72,46 +101,6 @@ class AppDetailViewModel @Inject constructor(
                         error = "Erreur de format de données: ${result.exception.message}"
                     )
                 }
-            }
-        }
-    }
-
-    /**
-     * Fallback to load from scan endpoint
-     */
-    private suspend fun loadFromScanEndpoint(packageName: String, previousError: String) {
-        Log.d(TAG, "Trying fallback endpoint /api/scan/app/$packageName (previous error: $previousError)")
-        when (val result = repository.getAppDetails(packageName)) {
-            is ApiResult.Success -> {
-                Log.d(TAG, "Successfully loaded app details from scan endpoint for $packageName")
-                _uiState.value = _uiState.value.copy(
-                    app = result.data.app,
-                    history = result.data.history.sortedByDescending { it.scanDate },
-                    isLoading = false,
-                    error = null
-                )
-            }
-            is ApiResult.ApiError -> {
-                Log.e(TAG, "API Error from /api/scan/app/$packageName: ${result.message} (code: ${result.code})")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Application non trouvée: ${result.message}"
-                )
-            }
-            is ApiResult.NetworkError -> {
-                Log.e(TAG, "Network error from fallback endpoint", result.exception)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Erreur réseau: ${result.exception.message ?: "vérifiez votre connexion"}"
-                )
-            }
-            is ApiResult.SerializationError -> {
-                Log.e(TAG, "Serialization error from fallback endpoint", result.exception)
-                Log.e(TAG, "Raw response: ${result.rawResponse?.take(500)}")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Erreur de format: ${result.exception.message}"
-                )
             }
         }
     }

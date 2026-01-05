@@ -108,12 +108,13 @@ fun AppNavGraph(
 
     val bottomBarRoutes = setOf(
         Screens.Home.route,
-        Screens.Scan.route,
         Screens.ScanHistory.route,
         Screens.Profile.route,
         Screens.Vault.route
     )
-    val showBottomBar = isLoggedIn && bottomBarRoutes.contains(currentRoute)
+    val showBottomBar = isLoggedIn &&
+        !currentRoute.startsWith(Screens.Scan.route) &&
+        bottomBarRoutes.any { route -> currentRoute.startsWith(route) }
 
     Scaffold(
         topBar = {

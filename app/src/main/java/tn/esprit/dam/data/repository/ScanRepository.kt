@@ -7,7 +7,9 @@ import tn.esprit.dam.data.api.models.ApiResult
 import tn.esprit.dam.data.api.models.AppDetailsResponse
 import tn.esprit.dam.data.api.models.LatestScanResponse
 import tn.esprit.dam.data.api.models.ScanStatusResponse
+import tn.esprit.dam.data.api.models.ScanResultResponse
 import tn.esprit.dam.data.api.models.StartScanResponse
+import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.data.api.models.SearchAppResponse
 import tn.esprit.dam.data.api.models.ScanHistoryResponse
 
@@ -50,10 +52,11 @@ class ScanRepository @Inject constructor(
         apps: List<String>,
         userId: String,
         deviceId: String,
-        includeSystemApps: Boolean = false
+        includeSystemApps: Boolean = false,
+        level: ScanLevel = ScanLevel.SMART
     ): ApiResult<StartScanResponse> {
         return retryWithBackoff {
-            apiService.startScan(apps, userId, deviceId, includeSystemApps)
+            apiService.startScan(apps, userId, deviceId, includeSystemApps, level)
         }
     }
 
@@ -62,6 +65,13 @@ class ScanRepository @Inject constructor(
      */
     suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse> {
         return apiService.getScanStatus(scanId)
+    }
+
+    /**
+     * Get full scan result by scanId
+     */
+    suspend fun getScanResult(scanId: String): ApiResult<ScanResultResponse> {
+        return apiService.getScanResult(scanId)
     }
 
     /**

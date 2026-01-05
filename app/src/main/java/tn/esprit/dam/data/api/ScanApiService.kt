@@ -26,9 +26,12 @@ import tn.esprit.dam.data.api.models.ScanStatusResponse
 import tn.esprit.dam.data.api.models.StartScanAppDto
 import tn.esprit.dam.data.api.models.StartScanRequest
 import tn.esprit.dam.data.api.models.StartScanResponse
+import tn.esprit.dam.data.api.models.AnalysisType
+import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.data.api.models.SearchAppRequest
 import tn.esprit.dam.data.api.models.SearchAppResponse
 import tn.esprit.dam.data.api.models.ScanHistoryResponse
+import tn.esprit.dam.data.api.models.ScanResultResponse
 import tn.esprit.dam.data.TokenManager
 import java.io.IOException
 import java.io.InputStream
@@ -45,6 +48,7 @@ class ScanApiService(
      */
     private suspend inline fun <reified T> safeApiCall(
         endpoint: String,
+        expectApiWrapper: Boolean = true,
         block: suspend () -> HttpResponse
     ): ApiResult<T> {
         return try {
@@ -59,11 +63,15 @@ class ScanApiService(
                 Log.e(TAG, "[$endpoint] HTTP $statusCode - Error response: $rawBody")
                 
                 // Try to parse error message from response
-                val errorMessage = try {
-                    val errorResponse = response.body<ApiResponse<T>>()
-                    errorResponse.error ?: errorResponse.message ?: rawBody
-                } catch (e: Exception) {
-                    rawBody.take(200)  // Show first 200 chars of raw response
+                val errorMessage = if (expectApiWrapper) {
+                    try {
+                        val errorResponse = response.body<ApiResponse<T>>()
+                        errorResponse.error ?: errorResponse.message ?: rawBody
+                    } catch (e: Exception) {
+                        rawBody.take(200)  // Show first 200 chars of raw response
+                    }
+                } else {
+                    rawBody.take(200)
                 }
                 
                 return ApiResult.ApiError(
@@ -72,19 +80,25 @@ class ScanApiService(
                 )
             }
             
-            // Success - deserialize response
-            val apiResponse = response.body<ApiResponse<T>>()
-            
-            if (apiResponse.success && apiResponse.data != null) {
-                ApiResult.Success(apiResponse.data!!)
+            if (expectApiWrapper) {
+                // Success - deserialize wrapped response
+                val apiResponse = response.body<ApiResponse<T>>()
+                
+                if (apiResponse.success && apiResponse.data != null) {
+                    ApiResult.Success(apiResponse.data!!)
+                } else {
+                    // ✅ Backend uses 'error' field for error messages
+                    val errorMsg = apiResponse.error ?: apiResponse.message ?: context.getString(R.string.error_unknown)
+                    Log.e(TAG, "[$endpoint] API error: $errorMsg")
+                    ApiResult.ApiError(
+                        message = errorMsg,
+                        code = statusCode
+                    )
+                }
             } else {
-                // âœ… Backend uses 'error' field for error messages
-                val errorMsg = apiResponse.error ?: apiResponse.message ?: context.getString(R.string.error_unknown)
-                Log.e(TAG, "[$endpoint] API error: $errorMsg")
-                ApiResult.ApiError(
-                    message = errorMsg,
-                    code = statusCode
-                )
+                // Some endpoints return bare JSON without the ApiResponse wrapper
+                val body = response.body<T>()
+                ApiResult.Success(body)
             }
         } catch (e: IOException) {
             Log.e(TAG, "[$endpoint] Network error", e)
@@ -105,7 +119,8 @@ class ScanApiService(
         apps: List<String>,
         userId: String,
         deviceId: String,
-        includeSystemApps: Boolean = false
+        includeSystemApps: Boolean = false,
+        level: ScanLevel = ScanLevel.SMART
     ): ApiResult<StartScanResponse> {
         // ✅ INPUT VALIDATION
         if (apps.isEmpty()) {
@@ -144,7 +159,9 @@ class ScanApiService(
             includeSystemApps = false,
             apps = appDtos,
             userId = userId,
-            timestamp = timestamp
+            timestamp = timestamp,
+            level = level,
+            analysisType = AnalysisType.INSTALLED_APP
         )
 
         // ✅ SAFE LOGGING: Avoid logging sensitive user data in production
@@ -161,8 +178,8 @@ class ScanApiService(
         }
         Log.d(TAG, "===============================")
 
-        return safeApiCall("/api/scan/start") {
-            client.post("/api/scan/start") {
+        return safeApiCall("/scan/start", expectApiWrapper = false) {
+            client.post("/scan/start") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -182,8 +199,18 @@ class ScanApiService(
             return ApiResult.ApiError(context.getString(R.string.error_scan_id_invalid), -1)
         }
         
-        return safeApiCall("/api/scan/status/$scanId") {
-            client.get("/api/scan/status/$scanId")
+        return safeApiCall("/scan/$scanId/progress", expectApiWrapper = false) {
+            client.get("/scan/$scanId/progress")
+        }
+    }
+
+    /**
+     * Get scan result by scanId
+     * Use this to get full scan details after completion
+     */
+    suspend fun getScanResult(scanId: String): ApiResult<ScanResultResponse> {
+        return safeApiCall("/scan/$scanId", expectApiWrapper = false) {
+            client.get("/scan/$scanId")
         }
     }
 
@@ -201,8 +228,8 @@ class ScanApiService(
      * Get detailed analysis for a specific app
      */
     suspend fun getAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
-        return safeApiCall("/api/scan/app/$packageName") {
-            client.get("/api/scan/app/$packageName")
+        return safeApiCall("/scan/app/$packageName", expectApiWrapper = false) {
+            client.get("/scan/app/$packageName")
         }
     }
 
@@ -238,11 +265,11 @@ class ScanApiService(
     }
 
     /**
-     * Get full app details from apps endpoint (includes store data and analysis)
+     * Get full app details from scan endpoint (includes store data and analysis)
      */
     suspend fun getFullAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
-        return safeApiCall("/api/apps/$packageName") {
-            client.get("/api/apps/$packageName")
+        return safeApiCall("/scan/app/$packageName", expectApiWrapper = false) {
+            client.get("/scan/app/$packageName")
         }
     }
 
