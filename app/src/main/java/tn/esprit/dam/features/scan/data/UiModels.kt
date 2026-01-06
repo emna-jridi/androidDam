@@ -1,13 +1,29 @@
 ﻿package tn.esprit.dam.features.scan.data
 
+import android.graphics.drawable.Drawable
 import tn.esprit.dam.features.scan.domain.SecurityUtils
 import tn.esprit.dam.data.api.models.ScanLevel
 import tn.esprit.dam.features.scan.domain.ScanRiskResult
 import tn.esprit.dam.features.scan.data.AppDto
 import tn.esprit.dam.data.api.models.SimpleTrackerInfo
 import tn.esprit.dam.data.api.models.AppResult
+import tn.esprit.dam.data.api.models.MLAnalysisDto
 import tn.esprit.dam.features.scan.domain.RiskLevel
 import tn.esprit.dam.features.scan.domain.ConfidenceLevel
+
+/**
+ * ML Analysis data for UI display
+ */
+data class MLAnalysisInfo(
+    val explanation: String? = null,
+    val recommendations: List<String> = emptyList(),
+    val riskFactors: List<String> = emptyList(),
+    val safetyTips: List<String> = emptyList(),
+    val permissionsAnalysis: String? = null,
+    val trackersAnalysis: String? = null,
+    val behaviorAnalysis: String? = null,
+    val analysisSource: String? = null // "tensorflow", "gemini", or "hybrid"
+)
 
 /**
  * UI state wrapper for LocalAppInfo with selection tracking
@@ -20,7 +36,9 @@ data class LocalAppInfo(
     val permissions: List<String> = emptyList(),
     val trackers: List<SimpleTrackerInfo> = emptyList(),
     val isSelected: Boolean = false,
-    val riskResult: ScanRiskResult? = null
+    val riskResult: ScanRiskResult? = null,
+    val mlAnalysis: MLAnalysisInfo? = null,
+    val icon: Drawable? = null
 )
 
 /**
@@ -124,6 +142,84 @@ fun tn.esprit.dam.data.api.models.AppInfoDto.toUiModel(isSelected: Boolean = fal
 }
 
 /**
+ * Extension to convert AppDetailsResponse (from backend /scan/app) to LocalAppInfo
+ * Uses backend scores instead of recalculating
+ */
+fun tn.esprit.dam.data.api.models.AppDetailsResponse.toLocalAppInfo(
+    fallbackPackage: String,
+    fallbackName: String
+): LocalAppInfo {
+    val simpleTrackers = this.trackers?.trackers?.map {
+        tn.esprit.dam.data.api.models.SimpleTrackerInfo(
+            name = it.name,
+            riskLevel = it.category
+        )
+    } ?: emptyList()
+
+    // Use backend scores (overallScore or securityScore)
+    val backendScore = this.overallScore ?: this.securityScore ?: 50f
+    val score = backendScore.toInt().coerceIn(0, 100)
+    
+    // Log scores for debugging
+    android.util.Log.d("UiModels", "\uD83D\uDCCA Mapper for ${this.packageName}: overallScore=${this.overallScore}, securityScore=${this.securityScore}, privacyScore=${this.privacyScore}, finalScore=$score")
+
+    // Map globalRisk to RiskLevel
+    val riskLevel = when (this.globalRisk?.uppercase()) {
+        "LOW" -> RiskLevel.LOW
+        "MEDIUM" -> RiskLevel.MEDIUM
+        "HIGH" -> RiskLevel.HIGH
+        "CRITICAL" -> RiskLevel.CRITICAL
+        else -> when {
+            score >= 85 -> RiskLevel.LOW
+            score >= 70 -> RiskLevel.MEDIUM
+            score >= 40 -> RiskLevel.HIGH
+            else -> RiskLevel.CRITICAL
+        }
+    }
+
+    val risk = ScanRiskResult(
+        score = score,
+        riskLevel = riskLevel,
+        permissionScore = this.privacyScore?.toInt() ?: 100,
+        trackerScore = this.trackers?.privacyScore ?: 100,
+        codeScore = 100,
+        criticalIssues = this.errors,
+        warnings = this.warnings,
+        confidence = when {
+            (this.confidenceScore ?: 0.0) >= 80 -> ConfidenceLevel.HIGH
+            (this.confidenceScore ?: 0.0) >= 60 -> ConfidenceLevel.MEDIUM
+            else -> ConfidenceLevel.LOW
+        }
+    )
+
+    // Map ML Analysis from backend (Gemini + TensorFlow hybrid)
+    val mlAnalysisInfo = this.mlAnalysis?.let { ml ->
+        MLAnalysisInfo(
+            explanation = ml.explanation,
+            recommendations = ml.recommendations,
+            riskFactors = ml.riskFactors,
+            safetyTips = ml.safetyTips,
+            permissionsAnalysis = ml.analysisDetails?.permissionsAnalysis,
+            trackersAnalysis = ml.analysisDetails?.trackersAnalysis,
+            behaviorAnalysis = ml.analysisDetails?.behaviorAnalysis,
+            analysisSource = ml.analysisSource
+        )
+    }
+
+    return LocalAppInfo(
+        packageName = this.packageName ?: fallbackPackage,
+        displayName = this.appName ?: fallbackName,
+        category = null,
+        isSystemApp = false,
+        permissions = this.permissions,
+        trackers = simpleTrackers,
+        isSelected = false,
+        riskResult = risk,
+        mlAnalysis = mlAnalysisInfo
+    )
+}
+
+/**
  * Scan state for UI
  */
 data class ScanState(
@@ -141,5 +237,12 @@ data class ScanState(
     val recommendDeepAnalysis: Boolean = false,
     val error: String? = null,
     val showSystemApps: Boolean = false,
-    val analysisNote: String? = null
+    val analysisNote: String? = null,
+    // ML Analysis summary (aggregated from all apps)
+    val mlExplanation: String? = null,
+    val mlRecommendations: List<String> = emptyList(),
+    val mlRiskFactors: List<String> = emptyList(),
+    val mlSafetyTips: List<String> = emptyList(),
+    val analysisSource: String? = null, // "tensorflow", "gemini", or "hybrid"
+    val scanCompleted: Boolean = false // Track if a scan has ever been completed
 )

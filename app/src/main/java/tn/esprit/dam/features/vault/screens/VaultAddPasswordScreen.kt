@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -15,18 +16,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
 import tn.esprit.dam.features.vault.viewmodel.VaultViewModel
 import tn.esprit.dam.ui.theme.AppColors
 import tn.esprit.dam.ui.theme.AppCorners
 import tn.esprit.dam.ui.theme.AppSpacing
 import tn.esprit.dam.ui.theme.AppTypography
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultAddPasswordScreen(
     passwordViewModel: Any?,
@@ -44,28 +47,58 @@ fun VaultAddPasswordScreen(
     var error by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColors.background)
-    ) {
-        Column(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Nouveau mot de passe", style = AppTypography.titleLarge, color = AppColors.textPrimary) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.textPrimary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            )
+        }
+    ) { padding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                .background(AppColors.background)
         ) {
-            // 🔐 Title
-            Text(
-                text = "Ajouter un mot de passe",
-                color = AppColors.textPrimary,
-                style = AppTypography.displayLarge,
-                modifier = Modifier.padding(bottom = AppSpacing.sm)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(padding)
+                    .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+            ) {
+                // Hero header
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppCorners.xlarge),
+                    tonalElevation = 2.dp,
+                    color = AppColors.surface
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(AppColors.surface, AppColors.surfaceVariant)
+                                )
+                            )
+                            .padding(AppSpacing.lg),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("Ajouter un mot de passe", style = AppTypography.displayLarge, color = AppColors.textPrimary)
+                        Text("Sécurise-le, ajoute des notes et une catégorie pour le retrouver rapidement.",
+                            style = AppTypography.bodyMedium, color = AppColors.textSecondary)
+                    }
+                }
 
-            // Service Name
-            TextField(
+                // Service Name
+                TextField(
                 value = serviceName,
                 onValueChange = { serviceName = it },
                 label = { Text("Service") },
@@ -83,8 +116,8 @@ fun VaultAddPasswordScreen(
                 singleLine = true
             )
 
-            // Username/Email
-            TextField(
+                // Username/Email
+                TextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Identifiant") },
@@ -103,8 +136,8 @@ fun VaultAddPasswordScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
-            // Password
-            TextField(
+                // Password
+                TextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Mot de passe") },
@@ -120,19 +153,27 @@ fun VaultAddPasswordScreen(
                 shape = RoundedCornerShape(AppCorners.large),
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(
-                            imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = if (showPassword) "Masquer" else "Afficher",
-                            tint = AppColors.primary
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { password = generateStrongPassword() }) {
+                            Text("Générer", style = AppTypography.labelMedium, color = AppColors.primary)
+                        }
+                        IconButton(onClick = { showPassword = !showPassword }) {
+                            Icon(
+                                imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = if (showPassword) "Masquer" else "Afficher",
+                                tint = AppColors.primary
+                            )
+                        }
                     }
                 },
                 singleLine = true
             )
 
-            // Confirm Password
-            TextField(
+                // Strength meter
+                PasswordStrengthBar(password = password)
+
+                // Confirm Password
+                TextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirmer") },
@@ -159,8 +200,8 @@ fun VaultAddPasswordScreen(
                 singleLine = true
             )
 
-            // Notes (Optional)
-            TextField(
+                // Notes (Optional)
+                TextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes (optionnel)") },
@@ -179,8 +220,8 @@ fun VaultAddPasswordScreen(
                 shape = RoundedCornerShape(AppCorners.large)
             )
 
-            // Error Message
-            if (error.isNotEmpty()) {
+                // Error Message
+                if (error.isNotEmpty()) {
                 Surface(
                     color = AppColors.error.copy(alpha = 0.15f),
                     shape = RoundedCornerShape(AppCorners.large),
@@ -193,10 +234,10 @@ fun VaultAddPasswordScreen(
                         style = AppTypography.labelMedium
                     )
                 }
-            }
+                }
 
-            // Save Button
-            Button(
+                // Save Button
+                Button(
                 onClick = {
                     error = ""
                     when {
@@ -233,7 +274,54 @@ fun VaultAddPasswordScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(AppSpacing.lg))
+                Spacer(modifier = Modifier.height(AppSpacing.lg))
+            }
         }
     }
+}
+
+@Composable
+private fun PasswordStrengthBar(password: String) {
+    val score = remember(password) { passwordStrengthScore(password) }
+    val colors = listOf(
+        AppColors.error,
+        AppColors.primaryLight,
+        AppColors.primary,
+        Color(0xFF2ECC71)
+    )
+    val labels = listOf("Très faible", "Moyen", "Bon", "Excellent")
+    val index = (score.coerceIn(0, 100) / 25).coerceAtMost(3)
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LinearProgressIndicator(
+            progress = score / 100f,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(999.dp)),
+            color = colors[index]
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(labels[index], style = AppTypography.labelMedium, color = AppColors.textSecondary)
+            Text("${score}%", style = AppTypography.labelMedium, color = AppColors.textSecondary)
+        }
+    }
+}
+
+private fun passwordStrengthScore(pwd: String): Int {
+    if (pwd.isBlank()) return 0
+    var score = 0
+    if (pwd.length >= 12) score += 40 else score += (pwd.length * 3).coerceAtMost(30)
+    if (pwd.any { it.isLowerCase() }) score += 10
+    if (pwd.any { it.isUpperCase() }) score += 10
+    if (pwd.any { it.isDigit() }) score += 15
+    if (pwd.any { !it.isLetterOrDigit() }) score += 25
+    return score.coerceAtMost(100)
+}
+
+private fun generateStrongPassword(length: Int = 16): String {
+    val chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789@#&!*+-_=.?"
+    return (1..length)
+        .map { chars.random() }
+        .joinToString("")
 }

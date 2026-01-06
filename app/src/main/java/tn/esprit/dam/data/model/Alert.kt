@@ -10,7 +10,8 @@ data class Alert(
     @SerialName("_id") val id: String,
     val packageName: String,
     val event: String,     // e.g., "Camera Accessed"
-    val severity: String,  // "critical", "high", "info"
+    val severity: String,  // "critical", "high", "info", "low"
     val timestamp: String,
-    val notified: Boolean
+    val notified: Boolean,
+    val read: Boolean = false  // Track if alert has been read
 )

@@ -3,6 +3,7 @@
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import dagger.hilt.android.qualifiers.ApplicationContext
 import tn.esprit.dam.features.scan.data.LocalAppInfo
 import javax.inject.Inject
@@ -20,6 +21,11 @@ class AppScanner @Inject constructor(
             try {
                 val appName = pm.getApplicationLabel(app).toString()
                 val packageName = app.packageName
+                val appIcon: Drawable? = try {
+                    pm.getApplicationIcon(app)
+                } catch (e: Exception) {
+                    null
+                }
                 
                 LocalAppInfo(
                     packageName = packageName,
@@ -28,7 +34,8 @@ class AppScanner @Inject constructor(
                     isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
                     permissions = emptyList(),
                     trackers = emptyList(),
-                    isSelected = false
+                    isSelected = false,
+                    icon = appIcon
                 )
             } catch (e: Exception) {
                 null // Skip apps that can't be read

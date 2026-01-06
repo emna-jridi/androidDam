@@ -81,34 +81,34 @@ object SecurityScoring {
             in riskBands["high"]!! -> "ÉLEVÉ"
             in riskBands["medium"]!! -> "MOYEN"
             in riskBands["low"]!! -> "FAIBLE"
-            else -> "INCONNU"
+            else -> "UNKNOWN"
         }
     }
     
     /**
-     * Get reassuring risk level text (French)
+     * Get reassuring risk level text
      */
     fun getRiskLevelText(riskLevel: String): String {
         return when (riskLevel.lowercase()) {
-            "critical" -> "Risque critique"
-            "high" -> "Risque important"
-            "medium" -> "Risque modéré"
-            "low" -> "Risque limité"
-            else -> "Risque inconnu"
+            "critical" -> "Critical risk"
+            "high" -> "High risk"
+            "medium" -> "Moderate risk"
+            "low" -> "Low risk"
+            else -> "Unknown risk"
         }
     }
     
     /**
-     * Predefined security recommendations (French)
+     * Predefined security recommendations
      */
     fun getDefaultRecommendations(): List<String> {
         return listOf(
-            "Évitez d'accorder des permissions inutiles aux applications",
-            "Désinstallez les applications que vous n'utilisez plus",
-            "Vérifiez régulièrement les trackers publicitaires",
-            "Mettez à jour vos applications pour corriger les failles de sécurité",
-            "Évitez d'installer des applications provenant de sources inconnues",
-            "Révoquez les permissions sensibles pour les applications peu utilisées"
+            "Avoid granting unnecessary permissions to apps",
+            "Uninstall apps you no longer use",
+            "Regularly check for advertising trackers",
+            "Update your apps to fix security vulnerabilities",
+            "Avoid installing apps from unknown sources",
+            "Revoke sensitive permissions for rarely used apps"
         )
     }
     
@@ -130,11 +130,11 @@ object SecurityScoring {
         val recommendations = mutableListOf<String>()
         
         if (dangerousPermCount > 5) {
-            recommendations.add("Certaines applications demandent trop de permissions. Vérifiez-les dans les paramètres.")
+            recommendations.add("Some apps request too many permissions. Check them in settings.")
         }
         
         if (trackerCount > 3) {
-            recommendations.add("Plusieurs trackers détectés. Envisagez d'utiliser un bloqueur de publicités.")
+            recommendations.add("Multiple trackers detected. Consider using an ad blocker.")
         }
         
         // Fill with default recommendations
@@ -144,3 +144,4 @@ object SecurityScoring {
         return recommendations.take(count)
     }
 }
+

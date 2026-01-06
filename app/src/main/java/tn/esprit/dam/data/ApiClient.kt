@@ -106,19 +106,29 @@ class ApiClient private constructor(private val context: Context) {
                                     setBody(mapOf("refreshToken" to refreshToken))
                                 }.body<LoginResponse>()
                             }
-                            Log.d(TAG, "âœ… Token refreshed successfully")
+                            Log.d(TAG, "✅ Token refreshed successfully")
                             runBlocking {
                                 TokenManager.saveTokens(
                                     context,
                                     refreshResponse.accessToken,
                                     refreshResponse.refreshToken
                                 )
+                                // Also save to TokenRepository
+                                try {
+                                    val tokenRepository = tn.esprit.dam.data.security.TokenRepositoryImpl(context)
+                                    tokenRepository.saveTokens(
+                                        refreshResponse.accessToken,
+                                        refreshResponse.refreshToken ?: ""
+                                    )
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "⚠️ Failed to save refreshed token: ${e.message}")
+                                }
                             }
                             BearerTokens(refreshResponse.accessToken, "")
                         } catch (e: Exception) {
-                            Log.e(TAG, "âŒ Token refresh failed: ${e.message}")
+                            Log.e(TAG, "❌ Token refresh failed: ${e.message}")
                             runBlocking {
-                                TokenManager.clearAll(context)
+                                SessionManager.logout(context)
                             }
                             null
                         }
@@ -238,15 +248,28 @@ class ApiClient private constructor(private val context: Context) {
             when (response.status) {
                 HttpStatusCode.OK, HttpStatusCode.Created -> {
                     val loginResponse = response.body<LoginResponse>()
-                    Log.d(TAG, "âœ… Login successful")
+                    Log.d(TAG, "✅ Login successful")
 
-                    // Sauvegarder tokens et user
+                    // Save tokens to TokenManager (DataStore - primary)
                     TokenManager.saveTokens(
                         context,
                         loginResponse.accessToken,
                         loginResponse.refreshToken
                     )
                     TokenManager.saveUser(context, loginResponse.user)
+                    
+                    // Also save to TokenRepository (EncryptedSharedPreferences)
+                    // This ensures the Hilt-injected HttpClient uses fresh tokens
+                    try {
+                        val tokenRepository = tn.esprit.dam.data.security.TokenRepositoryImpl(context)
+                        tokenRepository.saveTokens(
+                            loginResponse.accessToken,
+                            loginResponse.refreshToken ?: ""
+                        )
+                        Log.d(TAG, "✅ Tokens saved to TokenRepository")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "⚠️ Failed to save to TokenRepository: ${e.message}")
+                    }
 
                     loginResponse
                 }
@@ -380,15 +403,27 @@ class ApiClient private constructor(private val context: Context) {
             when (response.status) {
                 HttpStatusCode.OK ,    HttpStatusCode.Created-> {
                     val loginResponse = response.body<LoginResponse>()
-                    Log.d(TAG, "âœ… Google login successful")
+                    Log.d(TAG, "✅ Google login successful")
 
-                    // Sauvegarder tokens et user
+                    // Save tokens to TokenManager (DataStore - primary)
                     TokenManager.saveTokens(
                         context,
                         loginResponse.accessToken,
                         loginResponse.refreshToken
                     )
                     TokenManager.saveUser(context, loginResponse.user)
+                    
+                    // Also save to TokenRepository (EncryptedSharedPreferences)
+                    try {
+                        val tokenRepository = tn.esprit.dam.data.security.TokenRepositoryImpl(context)
+                        tokenRepository.saveTokens(
+                            loginResponse.accessToken,
+                            loginResponse.refreshToken ?: ""
+                        )
+                        Log.d(TAG, "✅ Tokens saved to TokenRepository")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "⚠️ Failed to save to TokenRepository: ${e.message}")
+                    }
 
                     loginResponse
                 }
@@ -407,8 +442,8 @@ class ApiClient private constructor(private val context: Context) {
     }
 
     suspend fun logout() {
-        Log.d(TAG, "🚪 Logging out...")
-        TokenManager.clearAll(context)
+        Log.d(TAG, "🚪 Logging out via SessionManager...")
+        SessionManager.logout(context)
         Log.d(TAG, "✅ Logged out successfully")
     }
 

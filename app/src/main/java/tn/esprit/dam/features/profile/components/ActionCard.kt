@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import tn.esprit.dam.features.scan.presentation.ScanTheme
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
 
 @Composable
 fun ActionCard(
@@ -29,21 +31,21 @@ fun ActionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(ScanTheme.CornerLarge),
+        shape = RoundedCornerShape(AppCorners.large),
         colors = CardDefaults.cardColors(
-            containerColor = ScanTheme.CardBg
+            containerColor = AppColors.surface
         )
     ) {
         Row(
             modifier = Modifier
-                .padding(ScanTheme.Spacing20)
+                .padding(AppSpacing.lg)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
+                    .clip(RoundedCornerShape(AppCorners.medium))
                     .background(backgroundColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -55,7 +57,7 @@ fun ActionCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
+            Spacer(modifier = Modifier.width(AppSpacing.md))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -63,20 +65,20 @@ fun ActionCard(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = ScanTheme.TextPrimary
+                    color = AppColors.textPrimary
                 )
-                Spacer(modifier = Modifier.height(ScanTheme.Spacing4))
+                Spacer(modifier = Modifier.height(AppSpacing.xs))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = ScanTheme.TextSecondary
+                    color = AppColors.textSecondary
                 )
             }
 
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = ScanTheme.TextSecondary,
+                tint = AppColors.textSecondary,
                 modifier = Modifier.size(24.dp)
             )
         }

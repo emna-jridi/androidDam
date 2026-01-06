@@ -1,12 +1,14 @@
 package tn.esprit.dam.features.vault.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tn.esprit.dam.data.model.PasswordCategory
@@ -21,6 +24,10 @@ import tn.esprit.dam.data.model.PasswordEntry
 import tn.esprit.dam.features.vault.components.VaultSecurityDashboard
 import tn.esprit.dam.features.vault.viewmodel.PasswordListUiState
 import tn.esprit.dam.features.vault.viewmodel.PasswordViewModel
+import tn.esprit.dam.ui.components.AppSkeletonList
+import tn.esprit.dam.ui.components.AppErrorState
+import tn.esprit.dam.ui.components.AppEmptyState
+import tn.esprit.dam.utils.animateListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +43,11 @@ fun PasswordListScreen(
     
     var showSearchBar by remember { mutableStateOf(false) }
     var showCategoryFilter by remember { mutableStateOf(false) }
+    
+    // Load passwords when screen is shown
+    LaunchedEffect(Unit) {
+        passwordViewModel.loadPasswords()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -179,13 +191,15 @@ fun PasswordListScreen(
                                 )
                             }
 
-                            items(state.passwords) { entry ->
-                                PasswordCard(
-                                    entry = entry,
-                                    onClick = { onPasswordClick(entry) },
-                                    onFavoriteClick = { passwordViewModel.toggleFavorite(entry.id) },
-                                    onDelete = { passwordViewModel.deletePassword(entry.id) }
-                                )
+                            itemsIndexed(state.passwords) { index, entry ->
+                                Box(modifier = Modifier.animateListItem(index, true)) {
+                                    PasswordCard(
+                                        entry = entry,
+                                        onClick = { onPasswordClick(entry) },
+                                        onFavoriteClick = { passwordViewModel.toggleFavorite(entry.id) },
+                                        onDelete = { passwordViewModel.deletePassword(entry.id) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -251,45 +265,65 @@ fun PasswordCard(
                 onClick = onClick,
                 onLongClick = { showDeleteDialog = true }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = entry.site,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (entry.isFavorite) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorite",
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(16.dp)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = entry.site.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = entry.username,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                if (entry.strengthLevel != null) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = entry.site,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (entry.isFavorite) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Favorite",
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = entry.username,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(
                             shape = CircleShape,
                             color = when (entry.strengthLevel) {
@@ -301,7 +335,7 @@ fun PasswordCard(
                             }
                         ) {
                             Text(
-                                text = entry.strengthLevel.replace("_", " "),
+                                text = entry.strengthLevel?.replace("_", " ") ?: "",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = when (entry.strengthLevel) {
@@ -313,7 +347,7 @@ fun PasswordCard(
                                 }
                             )
                         }
-                        
+
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant
@@ -327,13 +361,22 @@ fun PasswordCard(
                     }
                 }
             }
-            
-            IconButton(onClick = onFavoriteClick) {
-                Icon(
-                    imageVector = if (entry.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                    contentDescription = if (entry.isFavorite) "Remove from favorites" else "Add to favorites",
-                    tint = if (entry.isFavorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline
-                )
+
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                IconButton(onClick = onFavoriteClick) {
+                    Icon(
+                        imageVector = if (entry.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = if (entry.isFavorite) "Remove from favorites" else "Add to favorites",
+                        tint = if (entry.isFavorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline
+                    )
+                }
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

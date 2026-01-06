@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -34,7 +35,7 @@ fun NavGraphBuilder.vaultNavGraph(
     passwordViewModel: PasswordViewModel
 ) {
     composable(Screens.Vault.route) {
-        val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+        val vaultViewModel: VaultViewModel = hiltViewModel()
 
         val uiState = vaultViewModel.uiState.collectAsState().value
         val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -78,7 +79,7 @@ fun NavGraphBuilder.vaultNavGraph(
         arguments = listOf(navArgument("intent") { type = NavType.StringType; nullable = true })
     ) { backStackEntry ->
         val intent = backStackEntry.arguments?.getString("intent")
-        val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+        val vaultViewModel: VaultViewModel = hiltViewModel()
 
         val uiState = vaultViewModel.uiState.collectAsState().value
         val createResult = vaultViewModel.createVaultState.collectAsState().value
@@ -127,7 +128,7 @@ fun NavGraphBuilder.vaultNavGraph(
 
     // Add Password
     composable(Screens.VaultAddPassword.route) {
-        val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+        val vaultViewModel: VaultViewModel = hiltViewModel()
         VaultAddPasswordScreen(
             passwordViewModel = passwordViewModel,
             vaultViewModel = vaultViewModel,

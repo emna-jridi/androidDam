@@ -30,6 +30,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.decodeFromString
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -38,6 +39,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import kotlinx.coroutines.runBlocking
 import tn.esprit.dam.R
+import tn.esprit.dam.data.SessionManager
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordScreen
 import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordViewModel
@@ -116,9 +118,13 @@ fun AppNavGraph(
         !currentRoute.startsWith(Screens.Scan.route) &&
         bottomBarRoutes.any { route -> currentRoute.startsWith(route) }
 
+    // Hide main app bar for screens that draw their own headers (DarkWeb, Alerts)
+    val hiddenTopBarRoutes = listOf("darkweb_monitoring", "breach_detail", "alerts_history")
+    val showTopBar = isLoggedIn && !hiddenTopBarRoutes.any { currentRoute.startsWith(it) }
+
     Scaffold(
         topBar = {
-            if (isLoggedIn) {
+            if (showTopBar) {
                 AppTopBar(
                     currentScreen = currentScreen,
                     onBackClick = if (currentScreen != NavigationScreen.Home) {
@@ -265,7 +271,7 @@ fun AppNavGraph(
                     },
                     onNavigateToVault = { navController.navigate(Screens.Vault.route) },
                     onLogout = {
-                        runBlocking { TokenManager.clearAll(context) }
+                        runBlocking { SessionManager.logout(context) }
                         navController.navigate(Screens.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -322,10 +328,29 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("packageName") { type = NavType.StringType })
             ) { backStackEntry ->
                 val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
-                tn.esprit.dam.features.scan.presentation.AppDetailScreen(
-                    packageName = packageName,
-                    onBackClick = { navController.popBackStack() }
-                )
+                var userId by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(Unit) {
+                    val user = TokenManager.getUser(context)
+                    val token = TokenManager.getAccessToken(context)
+                    val decodedId = token?.let { decodeUserIdFromToken(it) }
+                    userId = user?.id ?: decodedId ?: "unknown"
+                }
+
+                if (userId != null) {
+                    tn.esprit.dam.features.scan.presentation.AppDetailScreen(
+                        packageName = packageName,
+                        userId = userId!!,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
 
             composable(Screens.ScanHistory.route) {
@@ -346,7 +371,7 @@ fun AppNavGraph(
             composable(Screens.Profile.route) {
                 ProfileScreen(
                     onLogout = {
-                        runBlocking { TokenManager.clearAll(context) }
+                        runBlocking { SessionManager.logout(context) }
                         navController.navigate(Screens.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -361,7 +386,7 @@ fun AppNavGraph(
 
             // ShadowVault flow
             composable(Screens.Vault.route) {
-                val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+                val vaultViewModel: VaultViewModel = hiltViewModel()
                 // Use shared passwordViewModel
 
 
@@ -406,7 +431,7 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("intent") { type = NavType.StringType; nullable = true })
             ) { backStackEntry ->
                 val intent = backStackEntry.arguments?.getString("intent")
-                val vaultViewModel = remember { VaultViewModel(vaultRepository) }
+                val vaultViewModel: VaultViewModel = hiltViewModel()
                 // Used shared passwordViewModel
 
                 // Clear selection when entering list if needed, or keep state

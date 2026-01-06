@@ -41,10 +41,13 @@ class AppDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AppDetailUIState())
     val uiState: StateFlow<AppDetailUIState> = _uiState.asStateFlow()
 
+    private var currentUserId: String? = null
+
     /**
      * Load app details from the backend
      */
-    fun loadAppDetails(packageName: String) {
+    fun loadAppDetails(packageName: String, userId: String) {
+        currentUserId = userId
         viewModelScope.launch {
             Log.d(TAG, "Loading app details for: $packageName")
             _uiState.value = _uiState.value.copy(
@@ -52,7 +55,7 @@ class AppDetailViewModel @Inject constructor(
                 error = null
             )
 
-            when (val result = repository.getAppDetails(packageName)) {
+            when (val result = repository.getAppDetails(packageName, userId)) {
                 is ApiResult.Success -> {
                     val data = result.data
                     Log.d(TAG, "Successfully loaded app details for $packageName")
@@ -116,6 +119,10 @@ class AppDetailViewModel @Inject constructor(
      * Refresh app details
      */
     fun refresh(packageName: String) {
-        loadAppDetails(packageName)
+        if (currentUserId != null) {
+            loadAppDetails(packageName, currentUserId!!)
+        } else {
+            Log.w(TAG, "Cannot refresh: userId not set")
+        }
     }
 }

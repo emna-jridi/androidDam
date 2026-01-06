@@ -61,10 +61,16 @@ class PasswordViewModel @Inject constructor(
 
     private val _generatedPassword = MutableStateFlow("")
     val generatedPassword = _generatedPassword.asStateFlow()
+    
+    // Performance: Cache password analysis results
+    private val analysisCache = mutableMapOf<String, PasswordAnalysisMetrics>()
+    private val breachCheckCache = mutableMapOf<String, Boolean>()
 
-    init {
-        loadPasswords()
-    }
+    // Don't auto-load in init - let VaultNavGraph control when to load
+    // This prevents 401 errors when vault is locked
+    // init {
+    //     loadPasswords()
+    // }
 
     fun generateNewPassword(length: Int, useUpper: Boolean, useNums: Boolean, useSymbols: Boolean) {
         _generatedPassword.value = PasswordGenerator.generatePassword(length, useUpper, useNums, useSymbols)
@@ -73,22 +79,66 @@ class PasswordViewModel @Inject constructor(
     fun generateNewPassphrase(wordCount: Int, separator: String) {
         _generatedPassword.value = PasswordGenerator.generatePassphrase(wordCount, separator)
     }
+    
+    // Check if password has been breached (using k-anonymity)
+    fun checkPasswordBreach(password: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                // Check cache first
+                breachCheckCache[password]?.let {
+                    onResult(it)
+                    return@launch
+                }
+                
+                // Use SHA-1 hash for k-anonymity
+                val sha1Hash = password.sha1Hash()
+                val prefix = sha1Hash.take(5)
+                val suffix = sha1Hash.drop(5)
+                
+                // TODO: Call HaveIBeenPwned API with prefix only
+                // For now, return false (not breached)
+                val isBreached = false
+                breachCheckCache[password] = isBreached
+                onResult(isBreached)
+            } catch (e: Exception) {
+                onResult(false) // Fail safe
+            }
+        }
+    }
+    
+    // Clear cache when passwords are modified
+    fun clearAnalysisCache() {
+        analysisCache.clear()
+        breachCheckCache.clear()
+    }
 
     fun analyzePassword(password: String) {
         viewModelScope.launch {
-            // 1. Local Deterministic Analysis (Instant)
-            val metrics = PasswordStrengthCalculator.analyze(password)
+            // 1. Local Deterministic Analysis (Instant) with caching
+            val metrics = analysisCache.getOrPut(password) {
+                PasswordStrengthCalculator.analyze(password)
+            }
             _passwordMetrics.value = metrics
 
-            // 2. AI Analysis (Async, Privacy Safe)
+            // 2. Pattern Detection (AI-powered, Local)
+            val patterns = PasswordPatternDetector.detectPatterns(password)
+            val smartRecommendation = if (patterns.isNotEmpty()) {
+                PasswordPatternDetector.generateSmartRecommendation(password, patterns)
+            } else null
+
+            // 3. AI Analysis (Async, Privacy Safe)
             // Only call AI if password is significant
             if (password.length >= 4) {
                 try {
                     val advice = advisor.getAdvice(metrics) // Sends only metrics!
                     _aiAdvice.value = advice
                 } catch (e: Exception) {
-                    // Fallback
-                    _aiAdvice.value = OllamaAdvice("Local Analysis Only (AI unavailable)", metrics.issues.take(3), "neutral")
+                    // Fallback to smart pattern-based recommendation
+                    _aiAdvice.value = OllamaAdvice(
+                        smartRecommendation ?: "Local Analysis Only (AI unavailable)", 
+                        metrics.issues.take(3), 
+                        "neutral"
+                    )
                 }
             } else {
                 _aiAdvice.value = null
@@ -118,6 +168,8 @@ class PasswordViewModel @Inject constructor(
             result
                 .onSuccess { passwords ->
                     _listState.value = PasswordListUiState.Success(passwords)
+                    // Build smart domain index for auto-fill suggestions
+                    PasswordMatcher.buildIndex(passwords)
                 }
                 .onFailure { error ->
                     _listState.value = PasswordListUiState.Error(error.message ?: "Failed to load passwords")
@@ -152,6 +204,21 @@ class PasswordViewModel @Inject constructor(
 
     fun clearSelection() {
         _selectedPassword.value = null
+    }
+    
+    /**
+     * Find passwords for a specific website (Smart Auto-Fill)
+     * Performance: O(1) lookup using pre-built index
+     */
+    fun findPasswordsForUrl(url: String): List<PasswordEntry> {
+        return PasswordMatcher.findMatchingPasswords(url)
+    }
+    
+    /**
+     * Find similar passwords by site name (Fuzzy search)
+     */
+    fun findSimilarPasswords(siteName: String): List<PasswordEntry> {
+        return PasswordMatcher.findSimilarPasswords(siteName)
     }
 
     fun createPassword(

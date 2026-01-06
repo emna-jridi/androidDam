@@ -20,8 +20,9 @@ fun VaultSecurityDashboard(
     passwords: List<PasswordEntry>,
     modifier: Modifier = Modifier
 ) {
-    // Calculate metrics locally on the fly
-    val metrics = remember(passwords) {
+    // Calculate metrics locally on the fly (memoized by passwords reference)
+    // Performance: Only recalculates when passwords list actually changes
+    val metrics = remember(passwords.size, passwords.hashCode()) {
         calculateDashboardMetrics(passwords)
     }
 

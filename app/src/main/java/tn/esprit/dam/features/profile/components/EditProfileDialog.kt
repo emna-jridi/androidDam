@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tn.esprit.dam.data.model.User
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
 
 @Composable
 fun EditProfileDialog(
@@ -24,11 +26,11 @@ fun EditProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E2139),
+        containerColor = AppColors.surface,
         title = {
             Text(
-                "Modifier le profil",
-                color = Color.White,
+                "Edit Profile",
+                color = AppColors.textPrimary,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -39,25 +41,25 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nom", color = Color(0xFFB4B4C6)) },
+                    label = { Text("Name", color = AppColors.textSecondary) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = {
                         Icon(
                             Icons.Filled.Person,
                             null,
-                            tint = Color(0xFF9CA3AF)
+                            tint = AppColors.textTertiary
                         )
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(AppCorners.medium),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF7C3AED),
-                        unfocusedBorderColor = Color(0xFF374151),
-                        focusedContainerColor = Color(0xFF2D3250),
-                        unfocusedContainerColor = Color(0xFF2D3250),
-                        cursorColor = Color(0xFF7C3AED)
+                        focusedTextColor = AppColors.textPrimary,
+                        unfocusedTextColor = AppColors.textPrimary,
+                        focusedBorderColor = AppColors.primary,
+                        unfocusedBorderColor = AppColors.surfaceVariant,
+                        focusedContainerColor = AppColors.surfaceVariant,
+                        unfocusedContainerColor = AppColors.surfaceVariant,
+                        cursorColor = AppColors.primary
                     )
                 )
             }
@@ -69,23 +71,23 @@ fun EditProfileDialog(
                     onSave(if (name != currentName) name else null)
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7C3AED)
+                    containerColor = AppColors.primary
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(AppCorners.medium)
             ) {
-                Text("Enregistrer", color = Color.White)
+                Text("Save", color = Color.White)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFFB4B4C6)
+                    contentColor = AppColors.textSecondary
                 )
             ) {
-                Text("Annuler")
+                Text("Cancel")
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(AppCorners.xlarge)
     )
 }

@@ -280,6 +280,33 @@ data class AnalysisResultDto(
     val aiStatus: String? = "fallback"
 )
 
+// ============= ML Analysis Details (Hybrid TensorFlow + Gemini) =============
+@Serializable
+data class MLAnalysisDetailsDto(
+    @SerialName("permissionsAnalysis")
+    val permissionsAnalysis: String? = null,
+    @SerialName("trackersAnalysis")
+    val trackersAnalysis: String? = null,
+    @SerialName("behaviorAnalysis")
+    val behaviorAnalysis: String? = null
+)
+
+@Serializable
+data class MLAnalysisDto(
+    @SerialName("explanation")
+    val explanation: String? = null,
+    @SerialName("recommendations")
+    val recommendations: List<String> = emptyList(),
+    @SerialName("riskFactors")
+    val riskFactors: List<String> = emptyList(),
+    @SerialName("safetyTips")
+    val safetyTips: List<String> = emptyList(),
+    @SerialName("analysisDetails")
+    val analysisDetails: MLAnalysisDetailsDto? = null,
+    @SerialName("analysisSource")
+    val analysisSource: String? = null // "tensorflow", "gemini", or "hybrid"
+)
+
 // ============= App Details (from /scan/app/{packageName}) =============
 @Serializable
 data class AppDetailsResponse(
@@ -309,6 +336,8 @@ data class AppDetailsResponse(
     val recommendDeepAnalysis: Boolean? = null,
     @SerialName("ml")
     val ml: ScanMLResult? = null,
+    @SerialName("mlAnalysis")
+    val mlAnalysis: MLAnalysisDto? = null,
     @SerialName("trackers")
     val trackers: AppTrackersResult? = null,
     @SerialName("recommendations")
@@ -468,7 +497,15 @@ data class ScanHistoryItemDto(
     @SerialName("completedAt")
     val completedAt: String? = null,
     @SerialName("duration")
-    val duration: Long? = null
+    val duration: Long? = null,
+    @SerialName("packageName")
+    val packageName: String? = null,
+    @SerialName("appName")
+    val appName: String? = null,
+    @SerialName("globalRisk")
+    val globalRisk: String? = null,
+    @SerialName("overallScore")
+    val overallScore: Int? = null
 )
 
 // ============= Permission Details =============

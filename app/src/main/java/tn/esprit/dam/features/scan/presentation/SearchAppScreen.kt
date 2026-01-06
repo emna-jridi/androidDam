@@ -197,12 +197,12 @@ private fun EmptySearchResults(query: String) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Aucun résultat pour \"$query\"",
+                text = "No results for \"$query\"",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Essayez avec un autre terme de recherche",
+                text = "Try with another search term",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -227,12 +227,12 @@ private fun SearchPlaceholder() {
                 tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
             )
             Text(
-                text = "Recherchez une application",
+                text = "Search for an application",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Analysez le risque avant d'installer",
+                text = "Analyze risk before installing",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )

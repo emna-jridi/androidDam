@@ -87,9 +87,9 @@ class ScanRepository @Inject constructor(
      * Get detailed analysis for a specific app (includes store data, with retry)
      * Unified method replaces getAppDetails + getFullAppDetails
      */
-    suspend fun getAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
+    suspend fun getAppDetails(packageName: String, userId: String): ApiResult<AppDetailsResponse> {
         return retryWithBackoff {
-            apiService.getFullAppDetails(packageName)
+            apiService.getFullAppDetails(packageName, userId)
         }
     }
 

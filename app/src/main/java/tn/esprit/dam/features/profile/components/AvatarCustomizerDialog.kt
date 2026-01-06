@@ -27,6 +27,9 @@ import tn.esprit.dam.data.model.AvatarOptions
 import tn.esprit.dam.data.model.UpdateAvatarDto
 import tn.esprit.dam.features.profile.AvatarCustomizerViewModel
 import tn.esprit.dam.features.profile.AvatarCustomizerUiState
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
 
 @Composable
 fun AvatarCustomizerDialog(
@@ -45,7 +48,7 @@ fun AvatarCustomizerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E2139),
+        containerColor = AppColors.surface,
         title = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -53,12 +56,12 @@ fun AvatarCustomizerDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Personnaliser l'avatar",
-                    color = Color.White,
+                    "Customize Avatar",
+                    color = AppColors.textPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
-                // Bouton génération aléatoire
+                // Random generation button
                 IconButton(
                     onClick = {
                         viewModel.generateRandomAvatar(context, userHash)
@@ -66,8 +69,8 @@ fun AvatarCustomizerDialog(
                 ) {
                     Icon(
                         Icons.Filled.Refresh,
-                        contentDescription = "Aléatoire",
-                        tint = Color(0xFF7C3AED)
+                        contentDescription = "Random",
+                        tint = AppColors.primary
                     )
                 }
             }
@@ -81,7 +84,7 @@ fun AvatarCustomizerDialog(
                             .height(400.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color(0xFF7C3AED))
+                        CircularProgressIndicator(color = AppColors.primary)
                     }
                 }
 
@@ -96,13 +99,13 @@ fun AvatarCustomizerDialog(
                             Icon(
                                 Icons.Filled.Warning,
                                 contentDescription = null,
-                                tint = Color(0xFFEF4444),
+                                tint = AppColors.error,
                                 modifier = Modifier.size(48.dp)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(AppSpacing.md))
                             Text(
                                 state.message,
-                                color = Color.White,
+                                color = AppColors.textPrimary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -137,37 +140,35 @@ fun AvatarCustomizerDialog(
                         mouthType = currentConfig.mouthType
                     )
 
-                    // ✅ CORRECTION : Le callback reçoit maintenant fileName
                     viewModel.updateAvatarConfig(
                         context = context,
                         userHash = userHash,
                         updateDto = updateDto,
                         onSuccess = { fileName ->
-                            // fileName est disponible ici si besoin
-                            onSaveSuccess() // Appeler le callback parent
+                            onSaveSuccess()
                         }
                     )
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7C3AED)
+                    containerColor = AppColors.primary
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(AppCorners.medium),
                 enabled = uiState is AvatarCustomizerUiState.Success
             ) {
-                Text("Enregistrer", color = Color.White)
+                Text("Save", color = Color.White)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFFB4B4C6)
+                    contentColor = AppColors.textSecondary
                 )
             ) {
-                Text("Annuler")
+                Text("Cancel")
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(AppCorners.xlarge)
     )
 }
 @Composable
@@ -291,13 +292,13 @@ private fun AvatarCustomizationSection(
     Column {
         Text(
             text = title,
-            color = Color(0xFFB4B4C6),
+            color = AppColors.textSecondary,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = AppSpacing.sm)
         )
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             items(options) { option ->
                 OptionChip(
@@ -320,14 +321,14 @@ private fun OptionChip(
 ) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) Color(0xFF7C3AED) else Color(0xFF2D3250),
+        shape = RoundedCornerShape(AppCorners.xlarge),
+        color = if (isSelected) AppColors.primary else AppColors.surfaceVariant,
         border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF7C3AED))
+            androidx.compose.foundation.BorderStroke(2.dp, AppColors.primary)
         } else null
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isColor) {

@@ -1,4 +1,4 @@
-package tn.esprit.dam.utils
+﻿package tn.esprit.dam.utils
 
 /**
  * Centralized constants for the application
@@ -100,33 +100,33 @@ object AppConstants {
     
     object ErrorMessages {
         // Network errors
-        const val ERROR_NO_INTERNET = "Pas de connexion internet"
-        const val ERROR_NETWORK_TIMEOUT = "Délai d'expiration du réseau"
-        const val ERROR_SERVER_ERROR = "Erreur serveur"
-        const val ERROR_REQUEST_FAILED = "La requête a échoué"
+        const val ERROR_NO_INTERNET = "No internet connection"
+        const val ERROR_NETWORK_TIMEOUT = "Network timeout"
+        const val ERROR_SERVER_ERROR = "Server error"
+        const val ERROR_REQUEST_FAILED = "Request failed"
         
         // Authentication errors
-        const val ERROR_UNAUTHORIZED = "Email ou mot de passe incorrect"
-        const val ERROR_TOKEN_EXPIRED = "Votre session a expiré"
-        const val ERROR_INVALID_TOKEN = "Token invalide"
-        const val ERROR_NOT_AUTHENTICATED = "Vous devez vous connecter"
+        const val ERROR_UNAUTHORIZED = "Incorrect email or password"
+        const val ERROR_TOKEN_EXPIRED = "Your session has expired"
+        const val ERROR_INVALID_TOKEN = "Invalid token"
+        const val ERROR_NOT_AUTHENTICATED = "You must log in"
         
         // Validation errors
-        const val ERROR_EMAIL_REQUIRED = "Email requis"
-        const val ERROR_EMAIL_INVALID = "Email invalide"
-        const val ERROR_PASSWORD_REQUIRED = "Mot de passe requis"
-        const val ERROR_PASSWORD_TOO_SHORT = "Minimum ${Validation.PASSWORD_MIN_LENGTH} caractères"
-        const val ERROR_NAME_REQUIRED = "Nom requis"
-        const val ERROR_NAME_TOO_SHORT = "Minimum ${Validation.NAME_MIN_LENGTH} caractères"
+        const val ERROR_EMAIL_REQUIRED = "Email required"
+        const val ERROR_EMAIL_INVALID = "Invalid email"
+        const val ERROR_PASSWORD_REQUIRED = "Password required"
+        const val ERROR_PASSWORD_TOO_SHORT = "Minimum ${Validation.PASSWORD_MIN_LENGTH} characters"
+        const val ERROR_NAME_REQUIRED = "Name required"
+        const val ERROR_NAME_TOO_SHORT = "Minimum ${Validation.NAME_MIN_LENGTH} characters"
         
         // Scan errors
-        const val ERROR_SCAN_FAILED = "Erreur lors de l'analyse"
-        const val ERROR_NO_APPS = "Aucune application trouvée"
-        const val ERROR_ANALYSIS_FAILED = "Erreur lors de l'analyse de risque"
+        const val ERROR_SCAN_FAILED = "Analysis error"
+        const val ERROR_NO_APPS = "No applications found"
+        const val ERROR_ANALYSIS_FAILED = "Risk analysis error"
         
         // General errors
-        const val ERROR_UNKNOWN = "Une erreur inconnue s'est produite"
-        const val ERROR_OPERATION_CANCELLED = "Opération annulée"
+        const val ERROR_UNKNOWN = "An unknown error occurred"
+        const val ERROR_OPERATION_CANCELLED = "Operation cancelled"
     }
     
     // ============================================
@@ -202,3 +202,4 @@ object AppConstants {
         const val TAG_STORAGE = "StorageManager"
     }
 }
+

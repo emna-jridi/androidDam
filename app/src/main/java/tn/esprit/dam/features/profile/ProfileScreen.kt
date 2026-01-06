@@ -104,37 +104,37 @@ private fun ErrorContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(AppSpacing.lg),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(ScanTheme.CornerLarge),
+            shape = RoundedCornerShape(AppCorners.large),
             colors = CardDefaults.cardColors(
-                containerColor = ScanTheme.CardBg
+                containerColor = AppColors.surface
             )
         ) {
             Column(
-                modifier = Modifier.padding(32.dp),
+                modifier = Modifier.padding(AppSpacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
                     Icons.Filled.Warning,
                     contentDescription = null,
-                    tint = if (isSessionExpired) Color(0xFFEF4444) else Color(0xFFFB923C),
+                    tint = if (isSessionExpired) AppColors.error else AppColors.warning,
                     modifier = Modifier.size(64.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.md))
                 Text(
                     message,
-                    color = ScanTheme.TextPrimary,
+                    color = AppColors.textPrimary,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.lg))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                 ) {
                     if (!isSessionExpired) {
                         Button(
@@ -143,10 +143,10 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF6366F1)
+                                containerColor = AppColors.primary
                             )
                         ) {
-                            Text("Réessayer", color = Color.White)
+                            Text("Retry", color = Color.White)
                         }
                     }
                     if (isSessionExpired) {
@@ -156,10 +156,10 @@ private fun ErrorContent(
                                 .fillMaxWidth()
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEF4444)
+                                containerColor = AppColors.error
                             )
                         ) {
-                            Text("Se reconnecter", color = Color.White)
+                            Text("Reconnect", color = Color.White)
                         }
                     } else {
                         Button(
@@ -168,10 +168,10 @@ private fun ErrorContent(
                                 .weight(1f)
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEF4444)
+                                containerColor = AppColors.error
                             )
                         ) {
-                            Text("Quitter", color = Color.White)
+                            Text("Exit", color = Color.White)
                         }
                     }
                 }
@@ -194,20 +194,20 @@ private fun ProfileContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = ScanTheme.Spacing20)
+            .padding(top = AppSpacing.lg)
     ) {
         ProfileHeader(
             user = user
         )
 
-        Column(modifier = Modifier.padding(ScanTheme.Spacing24)) {
+        Column(modifier = Modifier.padding(AppSpacing.lg)) {
             // Profile Actions
             ProfileActionsSection(
                 onEditProfile = onEditProfile,
                 onLogout = onLogout
             )
 
-            Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+            Spacer(modifier = Modifier.height(AppSpacing.md))
 
             // Password Vault section
             VaultStatusSection(
@@ -216,33 +216,33 @@ private fun ProfileContent(
             )
 
             // Dark Web Monitoring Section
-            Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+            Spacer(modifier = Modifier.height(AppSpacing.md))
             Card(
-                colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
-                shape = RoundedCornerShape(ScanTheme.CornerLarge),
+                colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+                shape = RoundedCornerShape(AppCorners.large),
                 modifier = Modifier.fillMaxWidth().clickable { onOpenDarkWeb() }
             ) {
                 Row(
-                    modifier = Modifier.padding(ScanTheme.Spacing16),
+                    modifier = Modifier.padding(AppSpacing.md),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Security,
                         contentDescription = "Dark Web",
-                        tint = Color(0xFF6366F1)
+                        tint = AppColors.primary
                     )
-                    Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
+                    Spacer(modifier = Modifier.width(AppSpacing.md))
                     Column {
                         Text(
                             text = "Dark Web Monitoring",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = ScanTheme.TextPrimary
+                            color = AppColors.textPrimary
                         )
                         Text(
                             text = "Check for data breaches",
                             style = MaterialTheme.typography.bodySmall,
-                            color = ScanTheme.TextSecondary
+                            color = AppColors.textSecondary
                         )
                     }
                 }
@@ -270,25 +270,25 @@ private fun VaultStatusSection(
         is VaultStatusUiState.Error -> android.util.Log.e("VaultStatusUI", (status as VaultStatusUiState.Error).message)
     }
 
-    Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+    Spacer(modifier = Modifier.height(AppSpacing.md))
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
-        shape = RoundedCornerShape(ScanTheme.CornerLarge),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        shape = RoundedCornerShape(AppCorners.large),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(ScanTheme.Spacing20),
+                .padding(AppSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
-                    .background(Color(0xFF7C3AED)),
+                    .clip(RoundedCornerShape(AppCorners.medium))
+                    .background(AppColors.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -299,7 +299,7 @@ private fun VaultStatusSection(
                 )
             }
 
-            Spacer(modifier = Modifier.width(ScanTheme.Spacing16))
+            Spacer(modifier = Modifier.width(AppSpacing.md))
 
             // Content
             Column(modifier = Modifier.weight(1f)) {
@@ -308,9 +308,9 @@ private fun VaultStatusSection(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = ScanTheme.TextPrimary
+                    color = AppColors.textPrimary
                 )
-                Spacer(modifier = Modifier.height(ScanTheme.Spacing4))
+                Spacer(modifier = Modifier.height(AppSpacing.xs))
                 val statusText = when (status) {
                     is VaultStatusUiState.Loading -> "Checking status..."
                     is VaultStatusUiState.NoVault -> "Vault not configured"
@@ -320,7 +320,7 @@ private fun VaultStatusSection(
                 Text(
                     text = statusText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = ScanTheme.TextSecondary
+                    color = AppColors.textSecondary
                 )
             }
         }
@@ -332,12 +332,12 @@ private fun VaultStatusSection(
                     onClick = onCreateVault,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = ScanTheme.Spacing20)
-                        .padding(bottom = ScanTheme.Spacing20),
+                        .padding(horizontal = AppSpacing.lg)
+                        .padding(bottom = AppSpacing.lg),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7C3AED)
+                        containerColor = AppColors.primary
                     ),
-                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                    shape = RoundedCornerShape(AppCorners.medium)
                 ) {
                     Text("Create Master Password")
                 }
@@ -347,12 +347,12 @@ private fun VaultStatusSection(
                     onClick = onOpenVault,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = ScanTheme.Spacing20)
-                        .padding(bottom = ScanTheme.Spacing20),
+                        .padding(horizontal = AppSpacing.lg)
+                        .padding(bottom = AppSpacing.lg),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7C3AED)
+                        containerColor = AppColors.primary
                     ),
-                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                    shape = RoundedCornerShape(AppCorners.medium)
                 ) {
                     Text("Open Vault")
                 }
@@ -362,9 +362,9 @@ private fun VaultStatusSection(
                     onClick = { viewModel.checkStatus() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = ScanTheme.Spacing20)
-                        .padding(bottom = ScanTheme.Spacing20),
-                    shape = RoundedCornerShape(ScanTheme.CornerMedium)
+                        .padding(horizontal = AppSpacing.lg)
+                        .padding(bottom = AppSpacing.lg),
+                    shape = RoundedCornerShape(AppCorners.medium)
                 ) {
                     Text("Retry")
                 }
@@ -373,11 +373,11 @@ private fun VaultStatusSection(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(ScanTheme.Spacing20),
+                        .padding(AppSpacing.lg),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = Color(0xFF7C3AED),
+                        color = AppColors.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }

@@ -32,9 +32,12 @@ object AppColors {
     
     // Status Colors
     val success = Color(0xFF10B981)          // Green
+    val successDark = Color(0xFF059669)      // Green Dark (for gradients)
     val warning = Color(0xFFF59E0B)          // Amber
     val error = Color(0xFFEF4444)            // Red
     val info = Color(0xFF3B82F6)             // Blue
+    val infoDark = Color(0xFF2563EB)         // Blue Dark (for gradients)
+    val teal = Color(0xFF14B8A6)             // Teal (for gradients)
     
     // Risk Levels
     val riskLow = success

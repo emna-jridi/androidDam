@@ -2,6 +2,7 @@
 
 import tn.esprit.dam.data.model.Breach
 import tn.esprit.dam.data.remote.darkweb.DarkWebApi
+import tn.esprit.dam.data.remote.darkweb.ManualBreachResult
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -19,14 +20,14 @@ class DarkWebRepository @Inject constructor(
         return api.checkNow()
     }
 
-    suspend fun checkEmail(email: String): Result<List<Map<String, Any>>> {
+    suspend fun checkEmail(email: String): Result<List<ManualBreachResult>> {
         return api.checkEmail(email)
     }
 
     suspend fun checkPassword(prefix: String): Result<Int> {
         val result = api.checkPassword(prefix)
         return if (result.isSuccess) {
-            val count = result.getOrNull()?.get("count") ?: 0
+            val count = result.getOrNull()?.count ?: 0
             Result.success(count)
         } else {
             Result.failure(result.exceptionOrNull() ?: Exception("Unknown error"))

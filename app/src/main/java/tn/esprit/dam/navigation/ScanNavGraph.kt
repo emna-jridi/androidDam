@@ -78,10 +78,29 @@ fun NavGraphBuilder.scanNavGraph(navController: NavHostController) {
         arguments = listOf(navArgument("packageName") { type = NavType.StringType })
     ) { backStackEntry ->
         val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
-        AppDetailScreen(
-            packageName = packageName,
-            onBackClick = { navController.popBackStack() }
-        )
+        var userId by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(Unit) {
+            val user = TokenManager.getUser(context)
+            val token = TokenManager.getAccessToken(context)
+            val decodedId = token?.let { decodeUserIdFromToken(it) }
+            userId = user?.id ?: decodedId ?: "unknown"
+        }
+
+        if (userId != null) {
+            AppDetailScreen(
+                packageName = packageName,
+                userId = userId!!,
+                onBackClick = { navController.popBackStack() }
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
     }
 
     composable(Screens.ScanHistory.route) {

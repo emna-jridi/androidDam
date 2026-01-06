@@ -145,7 +145,7 @@ fun HomeScreen(
             item {
                 if (homeState.loading) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                        CircularProgressIndicator(color = AppColors.primary)
                     }
                 } else if (homeState.hasScan) {
                     AnimatedVisibility(
@@ -202,10 +202,10 @@ fun HomeScreen(
                 item {
                     AppEmptyState(
                         icon = Icons.Default.Search,
-                        title = "Aucun scan effectué",
-                        message = "Lancez votre premier scan pour sécuriser vos applications.",
+                        title = "No scan performed",
+                        message = "Launch your first scan to secure your applications.",
                         onAction = onNavigateToScan,
-                        actionText = "Commencer un scan"
+                        actionText = "Start a scan"
                     )
                 }
             }
@@ -219,42 +219,42 @@ private fun TopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = ScanTheme.Spacing20, vertical = ScanTheme.Spacing16),
+            .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
             Text(
                 text = "ShadowGuard",
                 style = MaterialTheme.typography.headlineMedium,
-                color = ScanTheme.TextPrimary,
+                color = AppColors.textPrimary,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Protection et confidentialité",
+                text = "Protection and privacy",
                 style = MaterialTheme.typography.bodySmall,
-                color = ScanTheme.TextSecondary
+                color = AppColors.textSecondary
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             IconButton(
                 onClick = onProfile,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
-                    .background(ScanTheme.Surface)
+                    .clip(RoundedCornerShape(AppCorners.medium))
+                    .background(AppColors.surface)
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = ScanTheme.TextPrimary)
+                Icon(Icons.Default.Person, contentDescription = null, tint = AppColors.textPrimary)
             }
             IconButton(
                 onClick = onMenu,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(ScanTheme.CornerMedium))
-                    .background(ScanTheme.Surface)
+                    .clip(RoundedCornerShape(AppCorners.medium))
+                    .background(AppColors.surface)
             ) {
-                Icon(Icons.Default.MoreVert, contentDescription = null, tint = ScanTheme.TextPrimary)
+                Icon(Icons.Default.MoreVert, contentDescription = null, tint = AppColors.textPrimary)
             }
         }
     }
@@ -268,52 +268,52 @@ private fun BottomNav(
     onProfile: () -> Unit
 ) {
     NavigationBar(
-        containerColor = ScanTheme.CardBg,
+        containerColor = AppColors.surface,
         tonalElevation = 8.dp,
-        contentColor = ScanTheme.TextPrimary
+        contentColor = AppColors.textPrimary
     ) {
         NavigationBarItem(
             selected = true,
             onClick = onHome,
             icon = { Icon(Icons.Default.Home, contentDescription = null) },
-            label = { Text("Accueil") },
+            label = { Text("Home") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6366F1),
-                selectedTextColor = ScanTheme.TextPrimary,
-                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+                selectedIconColor = AppColors.primary,
+                selectedTextColor = AppColors.textPrimary,
+                indicatorColor = AppColors.primary.copy(alpha = 0.1f)
             )
         )
         NavigationBarItem(
             selected = false,
             onClick = onScan,
             icon = { Icon(Icons.Default.Security, contentDescription = null) },
-            label = { Text("Sécurité") },
+            label = { Text("Security") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6366F1),
-                selectedTextColor = ScanTheme.TextPrimary,
-                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+                selectedIconColor = AppColors.primary,
+                selectedTextColor = AppColors.textPrimary,
+                indicatorColor = AppColors.primary.copy(alpha = 0.1f)
             )
         )
         NavigationBarItem(
             selected = false,
             onClick = onHistory,
             icon = { Icon(Icons.Default.History, contentDescription = null) },
-            label = { Text("Historique") },
+            label = { Text("History") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6366F1),
-                selectedTextColor = ScanTheme.TextPrimary,
-                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+                selectedIconColor = AppColors.primary,
+                selectedTextColor = AppColors.textPrimary,
+                indicatorColor = AppColors.primary.copy(alpha = 0.1f)
             )
         )
         NavigationBarItem(
             selected = false,
             onClick = onProfile,
             icon = { Icon(Icons.Default.Person, contentDescription = null) },
-            label = { Text("Profil") },
+            label = { Text("Profile") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6366F1),
-                selectedTextColor = ScanTheme.TextPrimary,
-                indicatorColor = Color(0xFF6366F1).copy(alpha = 0.1f)
+                selectedIconColor = AppColors.primary,
+                selectedTextColor = AppColors.textPrimary,
+                indicatorColor = AppColors.primary.copy(alpha = 0.1f)
             )
         )
     }
@@ -336,17 +336,17 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(ScanTheme.CornerXLarge),
-        colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
+        shape = RoundedCornerShape(AppCorners.xlarge),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.primary.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(ScanTheme.Spacing24),
+                .padding(AppSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing32)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xl)
         ) {
             Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
                 Box(
@@ -354,7 +354,7 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
                         .size(120.dp)
                         .background(
                             brush = Brush.radialGradient(
-                                listOf(Color(0xFF6366F1).copy(alpha = 0.3f), Color.Transparent)
+                                listOf(AppColors.primary.copy(alpha = 0.3f), Color.Transparent)
                             ),
                             shape = CircleShape
                         )
@@ -362,62 +362,62 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
                 CircularProgressIndicator(
                     progress = progress,
                     strokeWidth = 10.dp,
-                    color = Color(0xFF6366F1),
-                    trackColor = ScanTheme.SurfaceVariant,
+                    color = AppColors.primary,
+                    trackColor = AppColors.surfaceVariant,
                     modifier = Modifier.size(120.dp)
                 )
                 Text(
                     text = animatedScore.toInt().toString(),
                     style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold, fontSize = 42.sp),
-                    color = ScanTheme.TextPrimary
+                    color = AppColors.textPrimary
                 )
             }
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
             ) {
                 Text(
-                    text = "Score de sécurité",
+                    text = "Security Score",
                     style = MaterialTheme.typography.labelMedium,
-                    color = ScanTheme.TextSecondary,
+                    color = AppColors.textSecondary,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
                     text = when (clampedScore) {
-                        0 -> "Aucun scan effectuÃ©"
-                        in 1..30 -> "âš ï¸ Score faible â€“ recommandations disponibles"
-                        in 31..70 -> "ðŸŸ  Score moyen"
-                        else -> "🟢 Très bon score"
+                        0 -> "No scan performed"
+                        in 1..30 -> "âš ï¸ Low score - recommendations available"
+                        in 31..70 -> "ðŸŸ  Medium score"
+                        else -> "🟢 Excellent score"
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    color = ScanTheme.TextPrimary,
+                    color = AppColors.textPrimary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = when (clampedScore) {
-                        0 -> "Aucun scan effectuÃ©"
-                        in 1..30 -> "Plusieurs risques importants"
-                        in 31..70 -> "Quelques risques Ã  surveiller"
-                        else -> "Appareil globalement sécurisé"
+                        0 -> "No scan performed"
+                        in 1..30 -> "Several important risks"
+                        in 31..70 -> "Some risks to monitor"
+                        else -> "Device globally secured"
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = ScanTheme.TextSecondary
+                    color = AppColors.textSecondary
                 )
                 if (clampedScore > 0) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing8)) {
-                        ScoreTag("Permissions", Color(0xFFEF4444).copy(alpha = 0.18f), Color(0xFFEF4444))
-                        ScoreTag("Trackers", Color(0xFFFB923C).copy(alpha = 0.18f), Color(0xFFFB923C))
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+                        ScoreTag("Permissions", AppColors.error.copy(alpha = 0.18f), AppColors.error)
+                        ScoreTag("Trackers", AppColors.warning.copy(alpha = 0.18f), AppColors.warning)
                     }
                 }
                 Text(
-                    text = "Le score est basé sur les permissions sensibles et les trackers détectés",
+                    text = "Score based on sensitive permissions and detected trackers",
                     style = MaterialTheme.typography.labelSmall,
-                    color = ScanTheme.TextSecondary
+                    color = AppColors.textSecondary
                 )
                 TextButton(onClick = onImproveClick) {
-                    Text("Voir comment améliorer", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
+                    Text("See how to improve", color = AppColors.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -428,8 +428,8 @@ private fun ScoreSection(score: Int, onImproveClick: () -> Unit) {
 private fun ScoreTag(text: String, bgColor: Color, textColor: Color) {
     Box(
         modifier = Modifier
-            .background(bgColor, RoundedCornerShape(ScanTheme.CornerSmall))
-            .padding(horizontal = ScanTheme.Spacing8, vertical = ScanTheme.Spacing4)
+            .background(bgColor, RoundedCornerShape(AppCorners.small))
+            .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.xs)
     ) {
         Text(text = text, color = textColor, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
     }
@@ -444,58 +444,58 @@ private fun FeatureGrid(
     onShadowGuard: () -> Unit,
     onAlerts: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "Nouveau scan",
+                title = "New Scan",
                 icon = Icons.Default.Security,
-                description = "Analyser maintenant",
+                description = "Analyze now",
                 onClick = onScan,
-                gradient = listOf(Color(0xFF4F46E5), Color(0xFF7C3AED)),
+                gradient = listOf(AppColors.primaryDark, AppColors.primary),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
-                title = "Historique",
+                title = "History",
                 icon = Icons.Default.History,
-                description = "Derniers résultats",
+                description = "Latest results",
                 onClick = onHistory,
-                gradient = listOf(Color(0xFF0EA5E9), Color(0xFF2563EB)),
+                gradient = listOf(AppColors.info, AppColors.infoDark),
                 modifier = Modifier.weight(1f)
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "Scanner un APK",
+                title = "Scan an APK",
                 icon = Icons.Default.Android,
-                description = "Fichier externe",
+                description = "External file",
                 onClick = onScanApk,
-                gradient = listOf(Color(0xFF10B981), Color(0xFF059669)),
+                gradient = listOf(AppColors.success, AppColors.successDark),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
-                title = "Rechercher une application",
+                title = "Search an app",
                 icon = Icons.Default.Search,
-                description = "Vérifier un app",
+                description = "Check an app",
                 onClick = onSearch,
-                gradient = listOf(Color(0xFF14B8A6), Color(0xFF0EA5E9)),
+                gradient = listOf(AppColors.teal, AppColors.info),
                 modifier = Modifier.weight(1f)
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "Alertes de sécurité",
+                title = "Security Alerts",
                 icon = Icons.Default.Error,
-                description = "Journaux d'accès",
+                description = "Access logs",
                 onClick = onAlerts,
-                gradient = listOf(Color(0xFFEF4444), Color(0xFFF97316)),
+                gradient = listOf(AppColors.error, AppColors.warning),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
                 title = "ShadowVault",
                 icon = Icons.Default.Lock,
-                description = "Gestion des mots de passe",
+                description = "Password management",
                 onClick = onShadowGuard,
-                gradient = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5)),
+                gradient = listOf(AppColors.primary, AppColors.primaryDark),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -522,7 +522,7 @@ private fun FeatureCard(
         modifier = modifier
             .height(112.dp)
             .scale(scale)
-            .clip(RoundedCornerShape(ScanTheme.CornerLarge))
+            .clip(RoundedCornerShape(AppCorners.large))
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -533,21 +533,21 @@ private fun FeatureCard(
                     }
                 )
             },
-        colors = CardDefaults.cardColors(containerColor = ScanTheme.SurfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, ScanTheme.Border.copy(alpha = 0.5f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(AppSpacing.sm),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(brush = Brush.linearGradient(gradient), shape = RoundedCornerShape(ScanTheme.CornerMedium)),
+                    .background(brush = Brush.linearGradient(gradient), shape = RoundedCornerShape(AppCorners.medium)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -557,22 +557,22 @@ private fun FeatureCard(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.sm))
             Text(
                 title,
                 style = MaterialTheme.typography.labelSmall,
-                color = ScanTheme.TextPrimary,
+                color = AppColors.textPrimary,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 11.sp
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.xs))
             Text(
                 description,
                 style = MaterialTheme.typography.labelSmall,
-                color = ScanTheme.TextSecondary,
+                color = AppColors.textSecondary,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -587,19 +587,19 @@ private fun RecentActivitySection(
     riskyApps: List<AppResult>,
     onNavigateToAppDetails: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing12)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         Text(
-            text = "Activité récente",
+            text = "Recent activity",
             style = MaterialTheme.typography.titleMedium,
-            color = ScanTheme.TextPrimary,
+            color = AppColors.textPrimary,
             fontWeight = FontWeight.Bold
         )
 
         if (riskyApps.isEmpty()) {
             Text(
-                text = "Aucune analyse récente",
+                text = "No recent analysis",
                 style = MaterialTheme.typography.bodySmall,
-                color = ScanTheme.TextSecondary
+                color = AppColors.textSecondary
             )
         } else {
             riskyApps.take(3).forEach { app ->
@@ -614,8 +614,8 @@ private fun RecentActivitySection(
                 )
 
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = ScanTheme.CardBg),
-                    shape = RoundedCornerShape(ScanTheme.CornerLarge),
+                    colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+                    shape = RoundedCornerShape(AppCorners.large),
                     modifier = Modifier
                         .fillMaxWidth()
                         .scale(appCardScale)
@@ -635,16 +635,16 @@ private fun RecentActivitySection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(ScanTheme.Spacing16),
+                            .padding(AppSpacing.md),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(ScanTheme.Spacing4), modifier = Modifier.weight(1f)) {
-                            Text(name, style = MaterialTheme.typography.bodyMedium, color = ScanTheme.TextPrimary)
-                            Text("Score ${score.toInt()}/100", style = MaterialTheme.typography.labelSmall, color = ScanTheme.TextSecondary)
+                        Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs), modifier = Modifier.weight(1f)) {
+                            Text(name, style = MaterialTheme.typography.bodyMedium, color = AppColors.textPrimary)
+                            Text("Score ${score.toInt()}/100", style = MaterialTheme.typography.labelSmall, color = AppColors.textSecondary)
                             RiskBadge(score = score)
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = ScanTheme.TextSecondary)
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppColors.textSecondary)
                     }
                 }
             }
@@ -664,9 +664,9 @@ private fun HomeHeader(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp).copy(alpha = 0.9f)
         ),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(AppCorners.xlarge)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(AppSpacing.lg)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -694,7 +694,7 @@ private fun HomeHeader(
                     Icon(
                         imageVector = Icons.Default.Security,
                         contentDescription = stringResource(id = R.string.access_profile),
-                        tint = Color(0xFF7C3AED)
+                        tint = AppColors.primary
                     )
                 }
             }
@@ -716,18 +716,18 @@ private fun SecurityScoreCard(score: Float, totalApps: Int) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = ScanTheme.SurfaceVariant),
-        shape = RoundedCornerShape(20.dp)
+        colors = CardDefaults.cardColors(containerColor = AppColors.surfaceVariant),
+        shape = RoundedCornerShape(AppCorners.xlarge)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(AppSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             Text(
                 text = stringResource(id = R.string.security_score_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = AppColors.textPrimary
             )
 
             Row(
@@ -745,7 +745,7 @@ private fun SecurityScoreCard(score: Float, totalApps: Int) {
                     Text(
                         text = stringResource(id = R.string.security_score_helper, totalApps),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = AppColors.textSecondary
                     )
                 }
 
@@ -766,11 +766,11 @@ private fun SecurityScoreCard(score: Float, totalApps: Int) {
 private fun RiskLegend() {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
-        LegendPill(color = Color(0xFFDC2626), label = stringResource(id = R.string.level_high))
-        LegendPill(color = Color(0xFFFFA227), label = stringResource(id = R.string.level_medium))
-        LegendPill(color = Color(0xFF16A34A), label = stringResource(id = R.string.level_low))
+        LegendPill(color = AppColors.error, label = stringResource(id = R.string.level_high))
+        LegendPill(color = AppColors.warning, label = stringResource(id = R.string.level_medium))
+        LegendPill(color = AppColors.success, label = stringResource(id = R.string.level_low))
     }
 }
 
@@ -778,14 +778,14 @@ private fun RiskLegend() {
 private fun LegendPill(color: Color, label: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
         Box(
             modifier = Modifier
                 .size(10.dp)
                 .background(color = color, shape = CircleShape)
         )
-        Text(text = label, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+        Text(text = label, color = AppColors.textSecondary, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -841,33 +841,33 @@ private fun RowScope.ActionCard(
         modifier = Modifier
             .weight(1f)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E233A)),
-        shape = RoundedCornerShape(16.dp)
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        shape = RoundedCornerShape(AppCorners.large)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(AppSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
-                    .background(color = Color(0xFF7C3AED).copy(alpha = 0.15f), shape = CircleShape),
+                    .background(color = AppColors.primary.copy(alpha = 0.15f), shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Color(0xFF7C3AED)
+                    tint = AppColors.primary
                 )
             }
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                color = AppColors.textPrimary
             )
         }
     }
@@ -879,12 +879,12 @@ private fun RiskyAppsSection(
     onNavigateToAppDetails: (String) -> Unit,
     title: String
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = AppColors.textPrimary
         )
 
         apps.forEach { app ->
@@ -909,13 +909,13 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E233A)),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
         border = CardDefaults.outlinedCardBorder()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppSpacing.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -924,14 +924,14 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
                     text = appName,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = AppColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = pkgName,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = AppColors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -960,14 +960,14 @@ private fun RiskyAppCard(app: AppResult, onClick: () -> Unit) {
 @Composable
 private fun RiskBadge(score: Float) {
     val (label, color) = when {
-        score < 25f -> stringResource(id = R.string.level_critical) to Color(0xFFB91C1C)
-        score < 40f -> stringResource(id = R.string.level_high) to Color(0xFFDC2626)
-        score < 70f -> stringResource(id = R.string.level_medium) to Color(0xFFFFA227)
-        else -> stringResource(id = R.string.level_low) to Color(0xFF16A34A)
+        score < 25f -> stringResource(id = R.string.level_critical) to AppColors.riskCritical
+        score < 40f -> stringResource(id = R.string.level_high) to AppColors.riskHigh
+        score < 70f -> stringResource(id = R.string.level_medium) to AppColors.riskMedium
+        else -> stringResource(id = R.string.level_low) to AppColors.riskLow
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
         Box(
             modifier = Modifier
@@ -977,7 +977,7 @@ private fun RiskBadge(score: Float) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White
+            color = AppColors.textPrimary
         )
     }
 }
@@ -986,32 +986,32 @@ private fun RiskBadge(score: Float) {
 private fun EmptyRiskState() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E233A)),
-        shape = RoundedCornerShape(16.dp)
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        shape = RoundedCornerShape(AppCorners.large)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.7f)
+                tint = AppColors.textSecondary
             )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                 Text(
                     text = stringResource(id = R.string.no_risky_apps_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
                 Text(
                     text = stringResource(id = R.string.no_risky_apps_subtitle),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = AppColors.textSecondary
                 )
             }
         }
@@ -1022,38 +1022,38 @@ private fun EmptyRiskState() {
 private fun ErrorState(error: String, onRetry: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A1F1F)),
+        colors = CardDefaults.cardColors(containerColor = AppColors.error.copy(alpha = 0.1f)),
         border = CardDefaults.outlinedCardBorder(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(AppCorners.large)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(AppSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
                 verticalAlignment = Alignment.Top
             ) {
                 Icon(
                     imageVector = Icons.Default.Error,
                     contentDescription = null,
-                    tint = Color(0xFFDC2626),
+                    tint = AppColors.error,
                     modifier = Modifier.size(24.dp)
                 )
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                     Text(
                         text = stringResource(id = R.string.error_label),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFDC2626)
+                        color = AppColors.error
                     )
                     Text(
                         text = error,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = AppColors.textSecondary
                     )
                 }
             }
@@ -1063,9 +1063,9 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
 
 private fun riskColorForScore(score: Float): Color {
     return when {
-        score < 40f -> Color(0xFFDC2626)
-        score < 70f -> Color(0xFFFFA227)
-        else -> Color(0xFF16A34A)
+        score < 40f -> AppColors.error
+        score < 70f -> AppColors.warning
+        else -> AppColors.success
     }
 }
 
@@ -1090,3 +1090,6 @@ data class RecentScan(
     val appsScanned: Int,
     val issuesFound: Int
 )
+
+
+

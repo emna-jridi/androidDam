@@ -3,6 +3,7 @@ package tn.esprit.dam.features.darkweb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import tn.esprit.dam.data.model.Breach
+import tn.esprit.dam.data.remote.darkweb.ManualBreachResult
 import tn.esprit.dam.data.repository.DarkWebRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,7 @@ data class DarkWebUiState(
     val isLoading: Boolean = false,
     val breaches: List<Breach> = emptyList(),
     val error: String? = null,
-    val manualEmailResult: List<Map<String, Any>>? = null,
+    val manualEmailResult: List<ManualBreachResult>? = null,
     val manualPasswordCount: Int? = null,
     val passwordCheckPerformed: Boolean = false
 )

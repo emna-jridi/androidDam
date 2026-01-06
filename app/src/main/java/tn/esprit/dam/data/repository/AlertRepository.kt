@@ -4,6 +4,7 @@ import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.http.HttpStatusCode
 import tn.esprit.dam.data.Config
 import tn.esprit.dam.data.model.Alert
@@ -31,8 +32,10 @@ class AlertRepository @Inject constructor(
         return try {
             Log.d(TAG, "Fetching alert history")
             
-            val response = httpClient.get("$ENDPOINT_ALERTS/history")
-            
+            // Backend currently exposes GET /alerts (history) and POST /alerts/event for new entries
+            // Previous path /alerts/history returned 404 on device; switch to /alerts
+            val response = httpClient.get(ENDPOINT_ALERTS)
+
             return when (response.status) {
                 HttpStatusCode.OK -> {
                     val alerts = response.body<List<Alert>>()
@@ -81,10 +84,25 @@ class AlertRepository @Inject constructor(
         return try {
             Log.d(TAG, "Marking alert $alertId as read")
             
-            val response = httpClient.get("$ENDPOINT_ALERTS/$alertId/read")
+            val response = httpClient.patch("$ENDPOINT_ALERTS/$alertId/read")
             response.status == HttpStatusCode.OK
         } catch (e: Exception) {
             Log.e(TAG, "Error marking alert as read", e)
+            false
+        }
+    }
+    
+    /**
+     * Mark all alerts as read
+     */
+    suspend fun markAllAsRead(): Boolean {
+        return try {
+            Log.d(TAG, "Marking all alerts as read")
+            
+            val response = httpClient.patch("$ENDPOINT_ALERTS/read-all")
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            Log.e(TAG, "Error marking all alerts as read", e)
             false
         }
     }

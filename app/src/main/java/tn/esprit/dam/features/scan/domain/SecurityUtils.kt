@@ -43,43 +43,43 @@ object SecurityUtils {
     )
 
     enum class Category(val label: String) {
-        PRIVACY("Vie privée"),
-        DEVICE("Appareil"),
-        NETWORK("Réseau"),
-        SYSTEM("Système"),
-        OTHER("Autre")
+        PRIVACY("Privacy"),
+        DEVICE("Device"),
+        NETWORK("Network"),
+        SYSTEM("System"),
+        OTHER("Other")
     }
 
     private val DANGEROUS_PERMISSIONS = mapOf(
         "android.permission.CAMERA" to PermissionAnalysis(
-            "CAMERA", "Accès Caméra", "Peut prendre des photos/vidéos à votre insu.", Category.PRIVACY, RiskLevel.HIGH
+            "CAMERA", "Camera Access", "Can take photos/videos without your knowledge.", Category.PRIVACY, RiskLevel.HIGH
         ),
         "android.permission.RECORD_AUDIO" to PermissionAnalysis(
-            "MICROPHONE", "Accès Micro", "Peut enregistrer l'audio environnemental.", Category.PRIVACY, RiskLevel.HIGH
+            "MICROPHONE", "Microphone Access", "Can record environmental audio.", Category.PRIVACY, RiskLevel.HIGH
         ),
         "android.permission.ACCESS_FINE_LOCATION" to PermissionAnalysis(
-            "LOCATION", "Localisation Précise", "Suit vos déplacements avec précision.", Category.PRIVACY, RiskLevel.HIGH
+            "LOCATION", "Precise Location", "Tracks your movements precisely.", Category.PRIVACY, RiskLevel.HIGH
         ),
         "android.permission.ACCESS_COARSE_LOCATION" to PermissionAnalysis(
-            "LOCATION", "Localisation Approximative", "Connaît votre région générale.", Category.PRIVACY, RiskLevel.MEDIUM
+            "LOCATION", "Approximate Location", "Knows your general area.", Category.PRIVACY, RiskLevel.MEDIUM
         ),
         "android.permission.READ_CONTACTS" to PermissionAnalysis(
-            "CONTACTS", "Lecture Contacts", "Peut voler votre carnet d'adresses.", Category.PRIVACY, RiskLevel.HIGH
+            "CONTACTS", "Read Contacts", "Can steal your address book.", Category.PRIVACY, RiskLevel.HIGH
         ),
         "android.permission.READ_SMS" to PermissionAnalysis(
-            "SMS", "Lecture SMS", "Peut lire vos messages personnels et codes 2FA.", Category.PRIVACY, RiskLevel.CRITICAL
+            "SMS", "Read SMS", "Can read your personal messages and 2FA codes.", Category.PRIVACY, RiskLevel.CRITICAL
         ),
         "android.permission.SEND_SMS" to PermissionAnalysis(
-            "SMS", "Envoi SMS", "Peut envoyer des SMS surtaxés.", Category.DEVICE, RiskLevel.HIGH
+            "SMS", "Send SMS", "Can send premium SMS.", Category.DEVICE, RiskLevel.HIGH
         ),
         "android.permission.READ_CALL_LOG" to PermissionAnalysis(
-            "CALLS", "Historique Appels", "Sait qui vous appelez et quand.", Category.PRIVACY, RiskLevel.HIGH
+            "CALLS", "Call History", "Knows who you call and when.", Category.PRIVACY, RiskLevel.HIGH
         ),
         "android.permission.READ_EXTERNAL_STORAGE" to PermissionAnalysis(
-            "STORAGE", "Lire le stockage", "Accès à vos photos et fichiers.", Category.PRIVACY, RiskLevel.MEDIUM
+            "STORAGE", "Read Storage", "Access to your photos and files.", Category.PRIVACY, RiskLevel.MEDIUM
         ),
         "android.permission.WRITE_EXTERNAL_STORAGE" to PermissionAnalysis(
-            "STORAGE", "Modifier le stockage", "Peut modifier ou supprimer vos fichiers.", Category.DEVICE, RiskLevel.MEDIUM
+            "STORAGE", "Modify Storage", "Can modify or delete your files.", Category.DEVICE, RiskLevel.MEDIUM
         )
     )
 
@@ -91,27 +91,27 @@ object SecurityUtils {
         // Try suffix match logic
         return when {
             key.contains("CAMERA") -> PermissionAnalysis(
-                "CAMERA", "Caméra", "Accès potentiel à l'objectif.", Category.PRIVACY, RiskLevel.MEDIUM
+                "CAMERA", "Camera", "Potential access to the lens.", Category.PRIVACY, RiskLevel.MEDIUM
             )
             key.contains("LOCATION") -> PermissionAnalysis(
-                "LOCATION", "Localisation", "Accès aux données de position.", Category.PRIVACY, RiskLevel.MEDIUM
+                "LOCATION", "Location", "Access to location data.", Category.PRIVACY, RiskLevel.MEDIUM
             )
             key.contains("RECORD") || key.contains("AUDIO") -> PermissionAnalysis(
-                "AUDIO", "Audio", "Accès potentiel au micro.", Category.PRIVACY, RiskLevel.MEDIUM
+                "AUDIO", "Audio", "Potential microphone access.", Category.PRIVACY, RiskLevel.MEDIUM
             )
             key.contains("contacts") -> PermissionAnalysis(
-                "CONTACTS", "Contacts", "Accès aux contacts.", Category.PRIVACY, RiskLevel.MEDIUM
+                "CONTACTS", "Contacts", "Access to contacts.", Category.PRIVACY, RiskLevel.MEDIUM
             )
             key.contains("SMS") || key.contains("MMS") -> PermissionAnalysis(
-                "SMS", "Messagerie", "Accès aux messages texte.", Category.PRIVACY, RiskLevel.HIGH
+                "SMS", "Messaging", "Access to text messages.", Category.PRIVACY, RiskLevel.HIGH
             )
             key.contains("INTERNET") -> PermissionAnalysis(
-                "INTERNET", "Internet", "Communication réseau.", Category.NETWORK, RiskLevel.LOW
+                "INTERNET", "Internet", "Network communication.", Category.NETWORK, RiskLevel.LOW
             )
             else -> PermissionAnalysis(
                 permission.substringAfterLast("."), 
                 permission.substringAfterLast("."), 
-                "Permission standard Android.", 
+                "Standard Android permission.", 
                 Category.OTHER, 
                 RiskLevel.LOW
             )
@@ -127,15 +127,15 @@ object SecurityUtils {
     )
 
     private val KNOWN_TRACKERS = mapOf(
-        "Google Analytics" to TrackerAnalysis("Google Analytics", "Analytics", RiskLevel.LOW, "Collecte des données d'usage anonymisées."),
-        "Firebase Analytics" to TrackerAnalysis("Firebase", "Analytics", RiskLevel.LOW, "Analyse les performances de l'application."),
-        "Facebook SDK" to TrackerAnalysis("Facebook", "Social & Ads", RiskLevel.HIGH, "Partage des données avec Facebook pour le ciblage publicitaire."),
-        "Facebook Login" to TrackerAnalysis("Facebook Login", "Social", RiskLevel.MEDIUM, "Authentification via Facebook."),
-        "Google AdMob" to TrackerAnalysis("AdMob", "Publicité", RiskLevel.MEDIUM, "Réseau publicitaire de Google."),
-        "Unity Ads" to TrackerAnalysis("Unity Ads", "Publicité", RiskLevel.MEDIUM, "Publicités vidéo pour jeux."),
-        "AppsFlyer" to TrackerAnalysis("AppsFlyer", "Marketing", RiskLevel.HIGH, "Attribution marketing et analyse comportementale."),
-        "Adjust" to TrackerAnalysis("Adjust", "Marketing", RiskLevel.HIGH, "Analyse l'origine des installations."),
-        "Crashlytics" to TrackerAnalysis("Crashlytics", "Crash Reporting", RiskLevel.LOW, "Rapports de plantage (généralement sûr).")
+        "Google Analytics" to TrackerAnalysis("Google Analytics", "Analytics", RiskLevel.LOW, "Collects anonymized usage data."),
+        "Firebase Analytics" to TrackerAnalysis("Firebase", "Analytics", RiskLevel.LOW, "Analyzes app performance."),
+        "Facebook SDK" to TrackerAnalysis("Facebook", "Social & Ads", RiskLevel.HIGH, "Shares data with Facebook for ad targeting."),
+        "Facebook Login" to TrackerAnalysis("Facebook Login", "Social", RiskLevel.MEDIUM, "Authentication via Facebook."),
+        "Google AdMob" to TrackerAnalysis("AdMob", "Advertising", RiskLevel.MEDIUM, "Google advertising network."),
+        "Unity Ads" to TrackerAnalysis("Unity Ads", "Advertising", RiskLevel.MEDIUM, "Video ads for games."),
+        "AppsFlyer" to TrackerAnalysis("AppsFlyer", "Marketing", RiskLevel.HIGH, "Marketing attribution and behavioral analysis."),
+        "Adjust" to TrackerAnalysis("Adjust", "Marketing", RiskLevel.HIGH, "Analyzes installation sources."),
+        "Crashlytics" to TrackerAnalysis("Crashlytics", "Crash Reporting", RiskLevel.LOW, "Crash reports (generally safe).")
     )
 
     fun analyzeTracker(trackerName: String): TrackerAnalysis {
@@ -144,11 +144,11 @@ object SecurityUtils {
         }
         
         return if (trackerName.contains("ads", ignoreCase = true) || trackerName.contains("chartboost", ignoreCase = true)) {
-            TrackerAnalysis(trackerName, "Publicité", RiskLevel.MEDIUM, "Réseau publicitaire tiers.")
+            TrackerAnalysis(trackerName, "Advertising", RiskLevel.MEDIUM, "Third-party advertising network.")
         } else if (trackerName.contains("analytics", ignoreCase = true)) {
-             TrackerAnalysis(trackerName, "Analytics", RiskLevel.LOW, "Outil d'analyse d'audience.")
+             TrackerAnalysis(trackerName, "Analytics", RiskLevel.LOW, "Audience analytics tool.")
         } else {
-            TrackerAnalysis(trackerName, "Inconnu", RiskLevel.LOW, "Tracker tiers non classifié.")
+            TrackerAnalysis(trackerName, "Unknown", RiskLevel.LOW, "Unclassified third-party tracker.")
         }
     }
 
@@ -247,3 +247,12 @@ object SecurityUtils {
         )
     }
 }
+
+
+
+
+
+
+
+
+

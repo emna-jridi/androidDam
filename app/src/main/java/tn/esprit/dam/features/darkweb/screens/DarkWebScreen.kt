@@ -1,11 +1,11 @@
 package tn.esprit.dam.features.darkweb.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import tn.esprit.dam.features.darkweb.DarkWebViewModel
 
 @Composable
 fun DarkWebScreen(
@@ -18,10 +18,26 @@ fun DarkWebScreen(
     onNavigateToVault: () -> Unit = {},
     onNavigateToAlerts: () -> Unit = {}
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    val navController = rememberNavController()
+    val viewModel: DarkWebViewModel = hiltViewModel()
+
+    NavHost(
+        navController = navController,
+        startDestination = "dark_web_monitoring"
     ) {
-        Text("Dark Web Monitoring Screen")
+        composable("dark_web_monitoring") {
+            DarkWebMonitoringScreen(
+                navController = navController,
+                viewModel = viewModel
+            )
+        }
+        composable("breach_detail/{breachId}") { backStackEntry ->
+            val breachId = backStackEntry.arguments?.getString("breachId") ?: ""
+            BreachDetailScreen(
+                navController = navController,
+                breachId = breachId,
+                viewModel = viewModel
+            )
+        }
     }
 }

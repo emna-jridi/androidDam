@@ -18,13 +18,16 @@ import kotlin.math.roundToInt
 import tn.esprit.dam.R
 import tn.esprit.dam.data.api.models.ApiResult
 import tn.esprit.dam.data.api.models.AppDetailsResponse
+import tn.esprit.dam.data.api.models.AppInfoDto
 import tn.esprit.dam.data.api.models.ScanLevel
+import tn.esprit.dam.data.api.models.SimpleTrackerInfo
 import tn.esprit.dam.data.local.AppScanner
 import tn.esprit.dam.data.repository.ScanRepository
 import tn.esprit.dam.features.scan.data.LocalAppInfo
 import tn.esprit.dam.features.scan.data.ScanState
 import tn.esprit.dam.features.scan.data.toUiModel
 import tn.esprit.dam.features.scan.domain.RiskLevel
+import tn.esprit.dam.features.scan.domain.SecurityUtils
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
@@ -171,6 +174,13 @@ class ScanViewModel @Inject constructor(
                 Log.d(TAG, "🚀 startScan called with ${currentSelectedApps.size} apps")
                 Log.d(TAG, "   userId: $userId")
                 Log.d(TAG, "   deviceId: $deviceId")
+
+                // If multiple apps are selected, run a lightweight multi-app analysis without the single-app scanId flow
+                if (currentSelectedApps.size > 1) {
+                    Log.d(TAG, "⚡ Running local multi-app analysis for ${currentSelectedApps.size} apps")
+                    runLocalMultiScan(currentSelectedApps)
+                    return@launch
+                }
                 
                 _scanState.value = _scanState.value.copy(
                     status = "ANALYZING",
@@ -230,7 +240,7 @@ class ScanViewModel @Inject constructor(
                         Log.e(TAG, "❌ Network Error: ${result.exception.message}", result.exception)
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur réseau: ${result.exception.message ?: "vérifiez votre connexion"}",
+                            error = "Network error: ${result.exception.message ?: "check your connection"}",
                             selectedApps = currentSelectedApps
                         )
                     }
@@ -239,7 +249,7 @@ class ScanViewModel @Inject constructor(
                         Log.e(TAG, "   Raw response: ${result.rawResponse?.take(500)}")
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur de données: ${result.exception.message}",
+                            error = "Data error: ${result.exception.message}",
                             selectedApps = currentSelectedApps
                         )
                     }
@@ -247,7 +257,7 @@ class ScanViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "âŒ Unexpected error in startScan: ${e.message}", e)
                 val currentSelectedApps = _scanState.value.selectedApps
-                val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Erreur inconnue"}"
+                val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Unknown error"}"
                 _scanState.value = _scanState.value.copy(
                     status = "FAILED",
                     error = errorMsg,
@@ -255,6 +265,159 @@ class ScanViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Lightweight multi-app analysis that fetches details for each app and aggregates results locally.
+     */
+    private suspend fun runLocalMultiScan(selectedApps: List<LocalAppInfo>) {
+        var highRisk = 0
+        var mediumRisk = 0
+        var lowRisk = 0
+        var scoreSum = 0f
+        val aggregated = mutableListOf<LocalAppInfo>()
+        val fallbacks = mutableListOf<String>()
+
+        _scanState.value = _scanState.value.copy(
+            status = "ANALYZING",
+            error = null,
+            analysisNote = "Analyse rapide des applications sélectionnées...",
+            scannedApps = 0,
+            totalApps = selectedApps.size,
+            highRiskCount = 0,
+            mediumRiskCount = 0,
+            lowRiskCount = 0,
+            averageScore = 0f,
+            recommendDeepAnalysis = false
+        )
+
+        selectedApps.forEachIndexed { index, app ->
+            val mappedApp = when (val result = repository.getAppDetails(app.packageName, userId!!)) {
+                is ApiResult.Success -> {
+                    // Use the new mapper that preserves backend scores
+                    result.data.toLocalAppInfo(
+                        fallbackPackage = app.packageName,
+                        fallbackName = app.displayName
+                    )
+                }
+                is ApiResult.ApiError -> {
+                    fallbacks.add(app.displayName)
+                    // Use local calculation as fallback
+                    app.copy(
+                        riskResult = SecurityUtils.calculateAppRisk(
+                            permissions = app.permissions,
+                            trackers = app.trackers.map { it.name },
+                            isSystemApp = app.isSystemApp
+                        )
+                    )
+                }
+                is ApiResult.NetworkError -> {
+                    fallbacks.add(app.displayName)
+                    app.copy(
+                        riskResult = SecurityUtils.calculateAppRisk(
+                            permissions = app.permissions,
+                            trackers = app.trackers.map { it.name },
+                            isSystemApp = app.isSystemApp
+                        )
+                    )
+                }
+                is ApiResult.SerializationError -> {
+                    fallbacks.add(app.displayName)
+                    app.copy(
+                        riskResult = SecurityUtils.calculateAppRisk(
+                            permissions = app.permissions,
+                            trackers = app.trackers.map { it.name },
+                            isSystemApp = app.isSystemApp
+                        )
+                    )
+                }
+            }
+
+            aggregated.add(mappedApp)
+
+            when (mappedApp.riskResult?.riskLevel) {
+                RiskLevel.CRITICAL, RiskLevel.HIGH -> highRisk++
+                RiskLevel.MEDIUM -> mediumRisk++
+                else -> lowRisk++
+            }
+
+            scoreSum += mappedApp.riskResult?.score?.toFloat() ?: 0f
+
+            _scanState.value = _scanState.value.copy(
+                scannedApps = index + 1,
+                selectedApps = aggregated.toList(),
+                highRiskCount = highRisk,
+                mediumRiskCount = mediumRisk,
+                lowRiskCount = lowRisk,
+                averageScore = if (aggregated.isNotEmpty()) scoreSum / aggregated.size else 0f
+            )
+        }
+
+        // Aggregate ML analysis from all apps
+        val allRecommendations = aggregated.flatMap { it.mlAnalysis?.recommendations ?: emptyList() }.distinct().take(5)
+        val allRiskFactors = aggregated.flatMap { it.mlAnalysis?.riskFactors ?: emptyList() }.distinct().take(5)
+        val allSafetyTips = aggregated.flatMap { it.mlAnalysis?.safetyTips ?: emptyList() }.distinct().take(4)
+        val analysisSource = aggregated.firstOrNull()?.mlAnalysis?.analysisSource
+        
+        // Build summary explanation
+        val explanationSummary = if (highRisk > 0) {
+            "⚠️ $highRisk application(s) present high risk. Check the recommendations below."
+        } else if (mediumRisk > 0) {
+            "ℹ️ $mediumRisk application(s) present moderate risk. Check the granted permissions."
+        } else {
+            "✅ All analyzed applications present a low risk level."
+        }
+
+        val note = if (fallbacks.isNotEmpty()) {
+            "Analysis complete. ${fallbacks.size} app(s) analyzed in local mode."
+        } else {
+            "Hybrid analysis (TensorFlow + Gemini) complete on ${aggregated.size} app(s)."
+        }
+
+        // Show results with smooth transition - add a small delay before showing completion
+        _scanState.value = _scanState.value.copy(
+            status = "COMPLETED",
+            analysisNote = note,
+            recommendDeepAnalysis = highRisk > 0,
+            error = null,
+            mlExplanation = explanationSummary,
+            mlRecommendations = allRecommendations,
+            mlRiskFactors = allRiskFactors,
+            mlSafetyTips = allSafetyTips,
+            analysisSource = analysisSource ?: "hybrid",
+            scanCompleted = true
+        )
+        
+        // Brief delay for smooth visual transition from loading to results
+        delay(300)
+    }
+
+    /** Map AppDetailsResponse to a LocalAppInfo enriched with trackers/permissions. */
+    private fun AppDetailsResponse.toLocalAppInfo(
+        fallbackPackage: String,
+        fallbackName: String
+    ): LocalAppInfo {
+        val trackerList = this.trackers?.trackers?.map {
+            SimpleTrackerInfo(name = it.name, riskLevel = it.category)
+        } ?: this.app?.trackers ?: emptyList()
+
+        val permissionList = if (this.permissions.isNotEmpty()) this.permissions else this.app?.permissions ?: emptyList()
+        val base = this.app ?: AppInfoDto(
+            packageName = this.packageName ?: fallbackPackage,
+            displayName = this.appName ?: fallbackName,
+            permissions = permissionList,
+            trackers = trackerList,
+            finalScore = this.overallScore ?: this.securityScore ?: 0f
+        )
+
+        val normalized = base.copy(
+            displayName = base.displayName ?: this.appName ?: fallbackName,
+            permissions = permissionList,
+            trackers = trackerList,
+            finalScore = this.overallScore ?: this.securityScore ?: base.finalScore
+        )
+
+        return normalized.toUiModel()
     }
 
     fun scanApk(uri: Uri) {
@@ -282,7 +445,7 @@ class ScanViewModel @Inject constructor(
                         if (appData == null) {
                             _scanState.value = _scanState.value.copy(
                                 status = "FAILED",
-                                error = "Erreur serveur: aucune donnée d'application"
+                                error = "Server error: no application data"
                             )
                             return@launch
                         }
@@ -294,9 +457,9 @@ class ScanViewModel @Inject constructor(
                         val level = riskResult?.riskLevel ?: RiskLevel.LOW
                         
                         val note = if (app.scanResults?.aiStatus == "ok") {
-                            "Analyse APK complète: MobSF + IA + Heuristiques"
+                            "Complete APK analysis: MobSF + AI + Heuristics"
                         } else {
-                            "Analyse APK: MobSF + Heuristiques locales"
+                            "APK analysis: MobSF + Local heuristics"
                         }
 
                         _scanState.value = _scanState.value.copy(
@@ -308,8 +471,11 @@ class ScanViewModel @Inject constructor(
                             mediumRiskCount = if (level == RiskLevel.MEDIUM) 1 else 0,
                             lowRiskCount = if (level == RiskLevel.LOW || level == RiskLevel.SAFE) 1 else 0,
                             averageScore = score,
-                            analysisNote = note
+                            analysisNote = note,
+                            scanCompleted = true
                         )
+                        // Smooth transition delay
+                        delay(300)
                     }
                     is ApiResult.ApiError -> {
                         _scanState.value = _scanState.value.copy(
@@ -321,14 +487,14 @@ class ScanViewModel @Inject constructor(
                     is ApiResult.NetworkError -> {
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur réseau: ${result.exception.message}",
+                            error = "Network error: ${result.exception.message}",
                             analysisNote = null
                         )
                     }
                     is ApiResult.SerializationError -> {
                         _scanState.value = _scanState.value.copy(
                             status = "FAILED",
-                            error = "Erreur de données: ${result.exception.message}",
+                            error = "Data error: ${result.exception.message}",
                             analysisNote = null
                         )
                     }
@@ -336,7 +502,7 @@ class ScanViewModel @Inject constructor(
             } catch (e: Exception) {
                 _scanState.value = _scanState.value.copy(
                     status = "FAILED",
-                    error = e.message ?: "Erreur inconnue",
+                    error = e.message ?: "Unknown error",
                     analysisNote = null
                 )
             }
@@ -451,6 +617,7 @@ class ScanViewModel @Inject constructor(
                                 val med = if (riskLevel == RiskLevel.MEDIUM) 1 else 0
                                 val low = if (riskLevel == RiskLevel.LOW || riskLevel == RiskLevel.SAFE) 1 else 0
 
+                                delay(300)
                                 _scanState.value = _scanState.value.copy(
                                     status = "COMPLETED",
                                     selectedApps = listOf(uiApp),
@@ -461,15 +628,18 @@ class ScanViewModel @Inject constructor(
                                     recommendDeepAnalysis = result.recommendDeepAnalysis ?: false,
                                     highRiskCount = high,
                                     mediumRiskCount = med,
-                                    lowRiskCount = low
+                                    lowRiskCount = low,
+                                    scanCompleted = true
                                 )
                                 Log.d(TAG, "✅ Scan result displayed: $pkgName score=$score risk=$riskLevel")
                             } else {
                                 Log.e(TAG, "❌ Failed to fetch scan result: $scanResult")
                                 // Still mark as completed but without detailed results
+                                delay(300)
                                 _scanState.value = _scanState.value.copy(
                                     status = "COMPLETED",
-                                    analysisNote = "Analyse terminée. Détails non disponibles."
+                                    analysisNote = "Analyse terminée. Détails non disponibles.",
+                                    scanCompleted = true
                                 )
                             }
                             return@launch
@@ -525,7 +695,12 @@ class ScanViewModel @Inject constructor(
             try {
                 _selectedAppDetails.value = AppDetailsUIState.Loading
 
-                when (val result = repository.getAppDetails(packageName)) {
+                if (userId == null) {
+                    _selectedAppDetails.value = AppDetailsUIState.Error("userId not available")
+                    return@launch
+                }
+
+                when (val result = repository.getAppDetails(packageName, userId!!)) {
                     is ApiResult.Success -> {
                         _selectedAppDetails.value = AppDetailsUIState.Success(result.data)
                     }
@@ -534,18 +709,18 @@ class ScanViewModel @Inject constructor(
                     }
                     is ApiResult.NetworkError -> {
                         _selectedAppDetails.value = AppDetailsUIState.Error(
-                            "Erreur réseau: vérifiez votre connexion"
+                            "Network error: check your connection"
                         )
                     }
                     is ApiResult.SerializationError -> {
                         _selectedAppDetails.value = AppDetailsUIState.Error(
-                            "Erreur de données: ${result.exception.message ?: "format invalide"}"
+                            "Data error: ${result.exception.message ?: "invalid format"}"
                         )
                     }
                 }
             } catch (e: Exception) {
                 _selectedAppDetails.value = AppDetailsUIState.Error(
-                    e.message ?: "Erreur lors du chargement des détails"
+                    e.message ?: "Error loading details"
                 )
             }
         }
@@ -568,3 +743,4 @@ sealed class AppDetailsUIState {
     data class Success(val data: AppDetailsResponse) : AppDetailsUIState()
     data class Error(val message: String) : AppDetailsUIState()
 }
+

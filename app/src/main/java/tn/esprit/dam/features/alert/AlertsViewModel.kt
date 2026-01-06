@@ -33,4 +33,24 @@ class AlertsViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
+    
+    fun markAsRead(alertId: String) {
+        viewModelScope.launch {
+            if (repository.markAsRead(alertId)) {
+                // Update local state to reflect read status
+                _alerts.value = _alerts.value.map { alert ->
+                    if (alert.id == alertId) alert.copy(read = true) else alert
+                }
+            }
+        }
+    }
+    
+    fun markAllAsRead() {
+        viewModelScope.launch {
+            if (repository.markAllAsRead()) {
+                // Update local state to reflect all as read
+                _alerts.value = _alerts.value.map { it.copy(read = true) }
+            }
+        }
+    }
 }

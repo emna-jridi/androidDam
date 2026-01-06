@@ -47,6 +47,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
+        )
     }
     buildFeatures {
         compose = true

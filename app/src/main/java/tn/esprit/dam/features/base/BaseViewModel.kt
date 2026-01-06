@@ -76,7 +76,7 @@ abstract class BaseViewModel : ViewModel() {
                     e.message ?: "Une erreur est survenue",
                     e,
                 )
-                _events.emit(UiEvent.ShowError(e.message ?: "Erreur inconnue"))
+                _events.emit(UiEvent.ShowError(e.message ?: "Unknown error"))
             }
         }
     }
@@ -253,3 +253,4 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 }
+

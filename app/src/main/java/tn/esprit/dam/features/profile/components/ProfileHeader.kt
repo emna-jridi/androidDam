@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tn.esprit.dam.data.model.User
-import tn.esprit.dam.features.scan.presentation.ScanTheme
+import tn.esprit.dam.ui.theme.AppColors
+import tn.esprit.dam.ui.theme.AppCorners
+import tn.esprit.dam.ui.theme.AppSpacing
 
 @Composable
 fun ProfileHeader(
@@ -24,16 +26,16 @@ fun ProfileHeader(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = ScanTheme.Spacing24),
-        shape = RoundedCornerShape(ScanTheme.CornerLarge),
+            .padding(horizontal = AppSpacing.lg),
+        shape = RoundedCornerShape(AppCorners.large),
         colors = CardDefaults.cardColors(
-            containerColor = ScanTheme.CardBg
+            containerColor = AppColors.surface
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(ScanTheme.Spacing24),
+                .padding(AppSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Avatar
@@ -41,18 +43,18 @@ fun ProfileHeader(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(ScanTheme.SurfaceVariant),
+                    .background(AppColors.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Person,
                     contentDescription = "Profile",
-                    tint = Color(0xFF6366F1),
+                    tint = AppColors.primary,
                     modifier = Modifier.size(40.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(ScanTheme.Spacing16))
+            Spacer(modifier = Modifier.height(AppSpacing.md))
 
             // Name
             Text(
@@ -60,16 +62,16 @@ fun ProfileHeader(
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = ScanTheme.TextPrimary
+                color = AppColors.textPrimary
             )
 
-            Spacer(modifier = Modifier.height(ScanTheme.Spacing4))
+            Spacer(modifier = Modifier.height(AppSpacing.xs))
 
             // Email
             Text(
                 text = user.email,
                 style = MaterialTheme.typography.bodyMedium,
-                color = ScanTheme.TextSecondary
+                color = AppColors.textSecondary
             )
         }
     }

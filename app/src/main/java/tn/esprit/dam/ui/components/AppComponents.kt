@@ -1,5 +1,7 @@
 package tn.esprit.dam.ui.components
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -9,16 +11,18 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import tn.esprit.dam.ui.theme.*
-import tn.esprit.dam.utils.rememberHapticFeedback
-import tn.esprit.dam.utils.rememberShimmerAnimation
+import tn.esprit.dam.utils.*
 
 /**
  * STANDARD COMPONENTS - Use these throughout the app
@@ -169,13 +173,15 @@ fun AppCard(
 // ============================================
 
 /**
- * Standard Loading State
+ * Standard Loading State with pulsing animation
  * Use for all loading screens
  */
 @Composable
 fun AppLoadingState(
-    message: String = "Chargement..."
+    message: String = "Loading..."
 ) {
+    val pulseAlpha = rememberPulseAnimation()
+    
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -187,7 +193,9 @@ fun AppLoadingState(
             CircularProgressIndicator(
                 color = AppColors.primary,
                 strokeWidth = 3.dp,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier
+                    .size(48.dp)
+                    .alpha(pulseAlpha)
             )
             Text(
                 text = message,
@@ -203,7 +211,7 @@ fun AppLoadingState(
 // ============================================
 
 /**
- * Standard Error State
+ * Standard Error State with shake animation
  * Use for all error screens
  */
 @Composable
@@ -211,42 +219,54 @@ fun AppErrorState(
     message: String,
     icon: ImageVector = Icons.Default.Error,
     onRetry: (() -> Unit)? = null,
-    retryText: String = "Réessayer"
+    retryText: String = "Retry"
 ) {
+    var visible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.background),
         contentAlignment = Alignment.Center
     ) {
-        AppCard(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .wrapContentHeight()
+        AnimatedVisibility(
+            visible = visible,
+            enter = scaleInAnimation() + fadeInAnimation(),
+            exit = scaleOutAnimation() + fadeOutAnimation()
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
-                modifier = Modifier.fillMaxWidth()
+            AppCard(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .wrapContentHeight()
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = AppColors.error,
-                    modifier = Modifier.size(64.dp)
-                )
-                Text(
-                    text = message,
-                    style = AppTypography.bodyLarge,
-                    color = AppColors.textPrimary,
-                    textAlign = TextAlign.Center
-                )
-                if (onRetry != null) {
-                    AppPrimaryButton(
-                        text = retryText,
-                        onClick = onRetry,
-                        modifier = Modifier.padding(top = AppSpacing.sm)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = AppColors.error,
+                        modifier = Modifier.size(64.dp)
                     )
+                    Text(
+                        text = message,
+                        style = AppTypography.bodyLarge,
+                        color = AppColors.textPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    if (onRetry != null) {
+                        AppPrimaryButton(
+                            text = retryText,
+                            onClick = onRetry,
+                            modifier = Modifier.padding(top = AppSpacing.sm)
+                        )
+                    }
                 }
             }
         }
@@ -464,7 +484,7 @@ fun AppSkeletonCard(
 fun AppSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    placeholder: String = "Rechercher...",
+    placeholder: String = "Search...",
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
@@ -513,4 +533,229 @@ fun AppSearchBar(
             cursorColor = AppColors.primary
         )
     )
+}
+
+// ============================================
+// ANIMATED CARD
+// ============================================
+
+/**
+ * Animated Card - Card with enter animation
+ * Use for list items that should animate in
+ */
+@Composable
+fun AppAnimatedCard(
+    modifier: Modifier = Modifier,
+    index: Int = 0,
+    visible: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier.animateListItem(index, visible),
+        shape = RoundedCornerShape(AppCorners.large),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.medium),
+        onClick = { onClick?.invoke() }
+    ) {
+        Column(
+            modifier = Modifier.padding(AppSpacing.md),
+            content = content
+        )
+    }
+}
+
+// ============================================
+// DISMISSIBLE ERROR BANNER
+// ============================================
+
+/**
+ * Dismissible Error Banner - Shows at top of screen
+ * Auto-animates in/out, can be dismissed
+ */
+@Composable
+fun AppErrorBanner(
+    message: String,
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+    ) {
+        Surface(
+            color = AppColors.error,
+            shape = RoundedCornerShape(bottomStart = AppCorners.large, bottomEnd = AppCorners.large),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppSpacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null,
+                        tint = AppColors.textPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = message,
+                        style = AppTypography.bodyMedium,
+                        color = AppColors.textPrimary
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Dismiss",
+                        tint = AppColors.textPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// SUCCESS BANNER
+// ============================================
+
+/**
+ * Success Banner - Shows confirmation messages
+ */
+@Composable
+fun AppSuccessBanner(
+    message: String,
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+    ) {
+        Surface(
+            color = AppColors.success,
+            shape = RoundedCornerShape(bottomStart = AppCorners.large, bottomEnd = AppCorners.large),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppSpacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = AppColors.textPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = message,
+                        style = AppTypography.bodyMedium,
+                        color = AppColors.textPrimary
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Dismiss",
+                        tint = AppColors.textPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// LOADING OVERLAY
+// ============================================
+
+/**
+ * Loading Overlay - Semi-transparent overlay with spinner
+ * Use for blocking operations
+ */
+@Composable
+fun AppLoadingOverlay(
+    visible: Boolean,
+    message: String = "Please wait..."
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(AppAnimations.FAST)),
+        exit = fadeOut(animationSpec = tween(AppAnimations.FAST))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppColors.background.copy(alpha = 0.8f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(AppCorners.large),
+                colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.high)
+            ) {
+                Column(
+                    modifier = Modifier.padding(AppSpacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                ) {
+                    CircularProgressIndicator(
+                        color = AppColors.primary,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = message,
+                        style = AppTypography.bodyMedium,
+                        color = AppColors.textSecondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// SKELETON LIST
+// ============================================
+
+/**
+ * Skeleton List - Shows multiple skeleton cards for loading lists
+ */
+@Composable
+fun AppSkeletonList(
+    itemCount: Int = 5,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+    ) {
+        repeat(itemCount) {
+            AppSkeletonCard()
+        }
+    }
 }

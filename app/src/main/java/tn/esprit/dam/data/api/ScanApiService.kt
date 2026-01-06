@@ -227,9 +227,11 @@ class ScanApiService(
     /**
      * Get detailed analysis for a specific app
      */
-    suspend fun getAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
+    suspend fun getAppDetails(packageName: String, userId: String): ApiResult<AppDetailsResponse> {
         return safeApiCall("/scan/app/$packageName", expectApiWrapper = false) {
-            client.get("/scan/app/$packageName")
+            client.get("/scan/app/$packageName") {
+                headers.append("x-user-id", userId)
+            }
         }
     }
 
@@ -257,19 +259,23 @@ class ScanApiService(
      * Get scan history for a user
      */
     suspend fun getScanHistory(userId: String, limit: Int = 10, offset: Int = 0): ApiResult<ScanHistoryResponse> {
-        Log.d(TAG, "[/api/scan/history] Fetching history (limit=$limit, offset=$offset)")
+        Log.d(TAG, "[/scan/history/list] Fetching history for user=$userId (limit=$limit, offset=$offset)")
 
-        return safeApiCall("/api/scan/history") {
-            client.get("/api/scan/history?userId=$userId&limit=$limit&offset=$offset")
+        return safeApiCall("/scan/history/list", expectApiWrapper = false) {
+            client.get("/scan/history/list?userId=$userId&limit=$limit&skip=$offset") {
+                headers.append("x-user-id", userId)
+            }
         }
     }
 
     /**
      * Get full app details from scan endpoint (includes store data and analysis)
      */
-    suspend fun getFullAppDetails(packageName: String): ApiResult<AppDetailsResponse> {
+    suspend fun getFullAppDetails(packageName: String, userId: String): ApiResult<AppDetailsResponse> {
         return safeApiCall("/scan/app/$packageName", expectApiWrapper = false) {
-            client.get("/scan/app/$packageName")
+            client.get("/scan/app/$packageName") {
+                headers.append("x-user-id", userId)
+            }
         }
     }
 

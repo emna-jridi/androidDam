@@ -1,202 +1,373 @@
 package tn.esprit.dam.features.vault.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import tn.esprit.dam.features.vault.viewmodel.PasswordDetailData
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun PasswordDetailScreen(
     data: PasswordDetailData,
     onBack: () -> Unit,
-    onEdit: () -> Unit = {}, // Future placeholder
+    onEdit: () -> Unit = {},
     onDelete: () -> Unit
 ) {
     var showPassword by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var copiedField by remember { mutableStateOf<String?>(null) }
+    
     val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
     val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(24.dp)
-    ) {
-        // --- Header ---
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, "Back")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(data.entry.site, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+    
+    // Copy feedback reset
+    LaunchedEffect(copiedField) {
+        if (copiedField != null) {
+            delay(2000)
+            copiedField = null
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // --- Credentials Card ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                LabelValueRow(
-                    label = "Username / Email",
-                    value = data.entry.username,
-                    onCopy = { clipboardManager.setText(AnnotatedString(data.entry.username)) }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        text = data.entry.site,
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(
+                            Icons.Outlined.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                
-                // Password Row
-                Column {
-                    Text("Password", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(4.dp))
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(16.dp)
+        ) {
+            // Credentials Card with gradient header
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+            ) {
+                // Header with gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.tertiaryContainer
+                                )
+                            )
+                        )
+                        .padding(16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = data.decryptedPassword,
-                            onValueChange = {},
-                            readOnly = true,
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                Row {
-                                    IconButton(onClick = { showPassword = !showPassword }) {
-                                        Icon(if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff, "Toggle")
-                                    }
-                                    IconButton(onClick = { clipboardManager.setText(AnnotatedString(data.decryptedPassword)) }) {
-                                        Icon(Icons.Default.ContentCopy, "Copy")
-                                    }
-                                }
-                            }
+                        Icon(
+                            imageVector = Icons.Outlined.Key,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Credentials",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
                 
-                if (data.entry.url != null) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    LabelValueRow(label = "URL", value = data.entry.url)
-                }
-                
-                if (data.decryptedNotes != null) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    LabelValueRow(label = "Notes", value = data.decryptedNotes)
-                }
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                LabelValueRow(label = "Category", value = data.entry.category.capitalize())
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // --- Security Analysis Card ---
-        // Only show if we have metrics
-        if (data.entry.strengthScore != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Security, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Security Analysis", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+                Column(modifier = Modifier.padding(20.dp)) {
+                    // Username with copy
+                    DetailRow(
+                        icon = Icons.Outlined.Person,
+                        label = "Username",
+                        value = data.entry.username,
+                        onCopy = {
+                            clipboardManager.setText(AnnotatedString(data.entry.username))
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            copiedField = "username"
+                        },
+                        copied = copiedField == "username"
+                    )
                     
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Score: ${data.entry.strengthScore}/100", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        data.entry.estimatedCrackTime?.let {
-                            Text("Crack Time: ~$it")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Password with reveal and copy
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Outlined.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Password",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (showPassword) data.decryptedPassword else "••••••••••••",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    fontFamily = if (showPassword) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                                )
+                            }
                         }
-                    }
-                    
-                    // Issues
-                    data.entry.strengthIssues?.let { issues ->
-                        if (issues.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            issues.forEach { issue ->
-                                Row(verticalAlignment = Alignment.Top) {
-                                    Icon(Icons.Default.Warning, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(issue, style = MaterialTheme.typography.bodySmall)
+                        Row {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = if (showPassword) "Hide" else "Show",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(data.decryptedPassword))
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    copiedField = "password"
+                                }
+                            ) {
+                                AnimatedContent(
+                                    targetState = copiedField == "password",
+                                    transitionSpec = { fadeIn() with fadeOut() },
+                                    label = "Copy animation"
+                                ) { copied ->
+                                    Icon(
+                                        imageVector = if (copied) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
+                                        contentDescription = "Copy",
+                                        tint = if (copied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
                     }
                     
-                    // AI Recommendations (if stored, but currently model doesn't strictly persist AI text, 
-                    // only metrics for AI to re-analyze or just issues list. 
-                    // We added aiRecommendations list to PasswordEntry in Step 378? YES.)
-                    data.entry.aiRecommendations?.let { recommendations ->
-                         if (recommendations.isNotEmpty()) {
-                             Spacer(modifier = Modifier.height(8.dp))
-                             HorizontalDivider()
-                             Spacer(modifier = Modifier.height(8.dp))
-                             Text("Suggestions:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                             Spacer(modifier = Modifier.height(4.dp))
-                             recommendations.forEach { rec ->
-                                 Text("• $rec", style = MaterialTheme.typography.bodySmall)
-                             }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // URL if present
+                    data.entry.url?.let { url ->
+                        DetailRow(
+                            icon = Icons.Outlined.Language,
+                            label = "Website",
+                            value = url,
+                            onCopy = {
+                                clipboardManager.setText(AnnotatedString(url))
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                copiedField = "url"
+                            },
+                            copied = copiedField == "url"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    
+                    // Category
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Category,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Category",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.secondaryContainer
+                            ) {
+                                Text(
+                                    text = data.entry.category.replaceFirstChar { it.uppercase() },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Notes if present
+                    data.decryptedNotes?.let { notes ->
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(verticalAlignment = Alignment.Top) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notes,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Notes",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = notes,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // --- Actions ---
-        Button(
-            onClick = onDelete,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Delete, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Delete Entry")
-        }
+    }
+    
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Delete Password?") },
+            text = { Text("This action cannot be undone. Are you sure you want to delete this password entry for ${data.entry.site}?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun LabelValueRow(label: String, value: String, onCopy: (() -> Unit)? = null) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                value, 
-                style = MaterialTheme.typography.bodyLarge, 
-                modifier = Modifier.weight(1f)
+private fun DetailRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    onCopy: () -> Unit,
+    copied: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
             )
-            if (onCopy != null) {
-                IconButton(onClick = onCopy) {
-                    Icon(Icons.Default.ContentCopy, "Copy", modifier = Modifier.size(20.dp))
-                }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+        IconButton(onClick = onCopy) {
+            AnimatedContent(
+                targetState = copied,
+                transitionSpec = { fadeIn() with fadeOut() },
+                label = "Copy icon animation"
+            ) { isCopied ->
+                Icon(
+                    imageVector = if (isCopied) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
+                    contentDescription = "Copy",
+                    tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
 }
-
-private fun String.capitalize() = replaceFirstChar { it.uppercase() }

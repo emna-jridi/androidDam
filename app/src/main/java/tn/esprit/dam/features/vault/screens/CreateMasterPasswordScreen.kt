@@ -1,20 +1,31 @@
 package tn.esprit.dam.features.vault.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -29,10 +40,29 @@ fun CreateMasterPasswordScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var showConfirm by remember { mutableStateOf(false) }
-    
+    val focusManager = LocalFocusManager.current
+
     // Business logic preserved
     val passwordsMatch = masterPassword == confirmPassword && masterPassword.isNotBlank()
     val passwordLongEnough = masterPassword.length >= 8
+    val canSubmit = passwordsMatch && passwordLongEnough && !isLoading
+    
+    // Password strength calculation
+    val strength = remember(masterPassword) {
+        calculatePasswordStrength(masterPassword)
+    }
+
+    // Animated progress
+    val strengthProgress by animateFloatAsState(
+        targetValue = strength.score / 100f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+    )
+
+    // Icon scale animation
+    val iconScale by animateFloatAsState(
+        targetValue = if (canSubmit) 1f else 0.95f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)
+    )
 
     Column(
         modifier = Modifier
@@ -43,34 +73,54 @@ fun CreateMasterPasswordScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Professional Icon (Shield or Lock)
-        Icon(
-            imageVector = Icons.Default.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        
+        // Animated Security Icon with gradient background
+        Surface(
+            modifier = Modifier
+                .size(100.dp)
+                .scale(iconScale),
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 8.dp
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    )
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Shield,
+                    contentDescription = null,
+                    modifier = Modifier.size(50.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = "Secure Your Vault",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = "Set a master password to encrypt your personal data.\nThis password is the only key to your vault.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Master password field
         OutlinedTextField(
             value = masterPassword,
@@ -99,9 +149,9 @@ fun CreateMasterPasswordScreen(
                 }
             }
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Confirm password field
         OutlinedTextField(
             value = confirmPassword,
@@ -126,9 +176,9 @@ fun CreateMasterPasswordScreen(
                 }
             }
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Create button
         Button(
             onClick = { onCreateVault(masterPassword, confirmPassword) },
@@ -150,7 +200,7 @@ fun CreateMasterPasswordScreen(
                 Text("Encrypt & Create Vault", style = MaterialTheme.typography.titleMedium)
             }
         }
-        
+
         // Error message
         if (error != null) {
             Spacer(modifier = Modifier.height(24.dp))
@@ -173,9 +223,9 @@ fun CreateMasterPasswordScreen(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Professional Warning (Minimalist)
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -190,8 +240,68 @@ fun CreateMasterPasswordScreen(
                 text = "We do not store your master password.\nIf you lose it, your data cannot be recovered.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
     }
+}
+
+// Helper Composables
+@Composable
+private fun PasswordRequirement(text: String, met: Boolean) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (met) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+            contentDescription = null,
+            tint = if (met) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (met) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// Password strength data class
+private data class PasswordStrength(
+    val score: Int,
+    val label: String,
+    val color: Color
+)
+
+private fun calculatePasswordStrength(password: String): PasswordStrength {
+    if (password.isEmpty()) {
+        return PasswordStrength(0, "None", Color.Gray)
+    }
+    
+    var score = 0
+    
+    // Length scoring
+    when {
+        password.length >= 16 -> score += 40
+        password.length >= 12 -> score += 30
+        password.length >= 8 -> score += 20
+        else -> score += 10
+    }
+    
+    // Character variety
+    if (password.any { it.isLowerCase() }) score += 10
+    if (password.any { it.isUpperCase() }) score += 10
+    if (password.any { it.isDigit() }) score += 15
+    if (password.any { !it.isLetterOrDigit() }) score += 25
+    
+    val (label, color) = when {
+        score >= 80 -> "Very Strong" to Color(0xFF00C853)
+        score >= 60 -> "Strong" to Color(0xFF4CAF50)
+        score >= 40 -> "Moderate" to Color(0xFFFFC107)
+        else -> "Weak" to Color(0xFFF44336)
+    }
+    
+    return PasswordStrength(score.coerceIn(0, 100), label, color)
 }

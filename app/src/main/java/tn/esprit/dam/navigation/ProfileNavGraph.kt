@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import kotlinx.coroutines.runBlocking
+import tn.esprit.dam.data.SessionManager
 import tn.esprit.dam.data.TokenManager
 import tn.esprit.dam.features.alert.AlertsScreen
 import tn.esprit.dam.features.darkweb.screens.DarkWebScreen
@@ -28,7 +29,7 @@ fun NavGraphBuilder.profileNavGraph(
             onNavigateToAppDetails = { /* Handle app details */ },
             onNavigateToVault = { navController.navigate(Screens.Vault.route) },
             onLogout = {
-                runBlocking { TokenManager.clearAll(context) }
+                runBlocking { SessionManager.logout(context) }
                 navController.navigate(Screens.Login.route) {
                     popUpTo(0) { inclusive = true }
                 }
@@ -40,7 +41,7 @@ fun NavGraphBuilder.profileNavGraph(
     composable(Screens.Profile.route) {
         ProfileScreen(
             onLogout = {
-                runBlocking { TokenManager.clearAll(context) }
+                runBlocking { SessionManager.logout(context) }
                 navController.navigate(Screens.Login.route) {
                     popUpTo(0) { inclusive = true }
                 }
