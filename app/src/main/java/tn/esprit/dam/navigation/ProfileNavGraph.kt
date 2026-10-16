@@ -1,7 +1,9 @@
 package tn.esprit.dam.navigation
 
 import android.content.Context
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -11,7 +13,8 @@ import kotlinx.coroutines.launch
 import tn.esprit.dam.core.session.rememberTokenRepository
 import tn.esprit.dam.features.alert.presentation.AlertsScreen
 import tn.esprit.dam.features.darkweb.presentation.BreachDetailScreen
-import tn.esprit.dam.features.darkweb.presentation.DarkWebScreen
+import tn.esprit.dam.features.darkweb.presentation.DarkWebMonitoringScreen
+import tn.esprit.dam.features.darkweb.presentation.DarkWebViewModel
 import tn.esprit.dam.features.profile.presentation.ProfileScreen
 import tn.esprit.dam.features.scan.presentation.home.HomeScreen
 
@@ -66,9 +69,8 @@ fun NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screens.DarkWebMonitoring.route) {
-        DarkWebScreen(
-            onNavigateToScanHistory = { navController.navigate(Screens.ScanHistory.route) },
-            onNavigateToSearch = { navController.navigate(Screens.AppSearch.route) }
+        DarkWebMonitoringScreen(
+            onBreachClick = { breachId -> navController.navigate(Screens.BreachDetail.createRoute(breachId)) }
         )
     }
 
@@ -77,9 +79,14 @@ fun NavGraphBuilder.profileNavGraph(
         arguments = listOf(navArgument("breachId") { type = NavType.StringType })
     ) { backStackEntry ->
         val breachId = backStackEntry.arguments?.getString("breachId") ?: ""
+        // Share the list screen's ViewModel: the detail reads the breach from its already-loaded list
+        val listEntry = remember(backStackEntry) {
+            navController.getBackStackEntry(Screens.DarkWebMonitoring.route)
+        }
         BreachDetailScreen(
-            navController = navController,
-            breachId = breachId
+            breachId = breachId,
+            onBackClick = { navController.popBackStack() },
+            viewModel = hiltViewModel<DarkWebViewModel>(listEntry)
         )
     }
 }

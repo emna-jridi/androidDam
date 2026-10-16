@@ -1,5 +1,6 @@
 ﻿package tn.esprit.dam.features.profile.presentation
 
+import tn.esprit.dam.core.ui.UiText
 import tn.esprit.dam.core.model.User
 
 sealed class ProfileUiState {
@@ -10,5 +11,5 @@ sealed class ProfileUiState {
         val localAvatarPath: String? = null
     ) : ProfileUiState()
 
-    data class Error(val message: String) : ProfileUiState()
+    data class Error(val message: UiText) : ProfileUiState()
 }

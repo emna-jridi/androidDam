@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.auth.presentation.forgotpassword
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -64,7 +67,7 @@ fun ForgotPasswordScreen(
                 AuthTextField(
                     value = uiState.email,
                     onValueChange = { viewModel.onEmailChange(it) },
-                    placeholder = "votre@email.com",
+                    placeholder = stringResource(R.string.votre_email_com),
                     leadingIcon = Icons.Filled.Email,
                     enabled = !uiState.isLoading,
                     error = uiState.emailError,
@@ -72,12 +75,12 @@ fun ForgotPasswordScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 AuthPrimaryButton(
-                    text = "Envoyer le code",
+                    text = stringResource(R.string.envoyer_le_code),
                     onClick = { viewModel.requestPasswordReset() },
                     enabled = !uiState.isLoading,
                     isLoading = uiState.isLoading
                 )
-                uiState.errorMessage?.let { AuthStatusMessage(it, isError = true) }
+                uiState.errorMessage?.let { AuthStatusMessage(it.asString(), isError = true) }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

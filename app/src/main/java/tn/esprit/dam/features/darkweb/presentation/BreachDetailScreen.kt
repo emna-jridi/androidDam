@@ -1,4 +1,6 @@
 package tn.esprit.dam.features.darkweb.presentation
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
@@ -29,7 +30,7 @@ import tn.esprit.dam.core.ui.theme.AppTypography
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BreachDetailScreen(
-    navController: NavController,
+    onBackClick: () -> Unit,
     breachId: String,
     viewModel: DarkWebViewModel = hiltViewModel()
 ) {
@@ -48,10 +49,10 @@ fun BreachDetailScreen(
                 .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = onBackClick) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = AppColors.textPrimary
                 )
             }
@@ -70,7 +71,7 @@ fun BreachDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Breach not found",
+                    stringResource(R.string.breach_not_found),
                     style = AppTypography.bodyMedium,
                     color = AppColors.textSecondary
                 )
@@ -202,7 +203,7 @@ fun BreachDetailScreen(
                             }
                             Spacer(modifier = Modifier.width(AppSpacing.sm))
                             Text(
-                                "AI Security Insight",
+                                stringResource(R.string.ai_security_insight),
                                 style = AppTypography.titleMedium,
                                 color = AppColors.primary,
                                 fontWeight = FontWeight.SemiBold
@@ -218,7 +219,7 @@ fun BreachDetailScreen(
 
                         Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                             Text(
-                                "Recommended Actions:",
+                                stringResource(R.string.recommended_actions),
                                 style = AppTypography.labelMedium,
                                 color = AppColors.textPrimary,
                                 fontWeight = FontWeight.SemiBold
@@ -251,7 +252,7 @@ fun BreachDetailScreen(
                         Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.textPrimary)
                         Spacer(modifier = Modifier.width(AppSpacing.sm))
                         Text(
-                            "Mark as Resolved",
+                            stringResource(R.string.mark_as_resolved),
                             style = AppTypography.labelLarge,
                             color = AppColors.textPrimary,
                             fontWeight = FontWeight.SemiBold

@@ -1,5 +1,6 @@
 package tn.esprit.dam.features.scan.presentation.search
 
+import tn.esprit.dam.core.ui.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,7 +44,7 @@ fun SearchAppScreen(
             }
             uiState.error != null -> {
                 ScanErrorState(
-                    error = uiState.error!!,
+                    error = uiState.error!!.asString(),
                     onRetry = { viewModel.search() }
                 )
             }

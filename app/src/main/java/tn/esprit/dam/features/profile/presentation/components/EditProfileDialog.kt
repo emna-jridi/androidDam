@@ -1,4 +1,6 @@
 ﻿package tn.esprit.dam.features.profile.presentation.components
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +31,7 @@ fun EditProfileDialog(
         containerColor = AppColors.surface,
         title = {
             Text(
-                "Edit Profile",
+                stringResource(R.string.edit_profile),
                 color = AppColors.textPrimary,
                 fontWeight = FontWeight.Bold
             )
@@ -41,7 +43,7 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name", color = AppColors.textSecondary) },
+                    label = { Text(stringResource(R.string.name), color = AppColors.textSecondary) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = {
                         Icon(
@@ -75,7 +77,7 @@ fun EditProfileDialog(
                 ),
                 shape = RoundedCornerShape(AppCorners.medium)
             ) {
-                Text("Save", color = Color.White)
+                Text(stringResource(R.string.save), color = Color.White)
             }
         },
         dismissButton = {
@@ -85,7 +87,7 @@ fun EditProfileDialog(
                     contentColor = AppColors.textSecondary
                 )
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
         shape = RoundedCornerShape(AppCorners.xlarge)

@@ -1,4 +1,9 @@
 package tn.esprit.dam.features.vault.presentation.access
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
+import tn.esprit.dam.features.vault.domain.password.PasswordStrengthCalculator
+import tn.esprit.dam.features.vault.domain.password.PasswordRiskLevel
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -99,7 +104,7 @@ fun CreateMasterPasswordScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Secure Your Vault",
+            text = stringResource(R.string.secure_your_vault),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -108,7 +113,7 @@ fun CreateMasterPasswordScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Set a master password to encrypt your personal data.\nThis password is the only key to your vault.",
+            text = stringResource(R.string.set_a_master_password_to_encrypt_your_pe),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -119,7 +124,7 @@ fun CreateMasterPasswordScreen(
         OutlinedTextField(
             value = masterPassword,
             onValueChange = { masterPassword = it },
-            label = { Text("Master Password") },
+            label = { Text(stringResource(R.string.master_password)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -139,7 +144,7 @@ fun CreateMasterPasswordScreen(
             ),
             supportingText = {
                 if (masterPassword.isNotBlank() && !passwordLongEnough) {
-                    Text("Must be at least 8 characters", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.must_be_at_least_8_characters), color = MaterialTheme.colorScheme.error)
                 }
             }
         )
@@ -149,7 +154,7 @@ fun CreateMasterPasswordScreen(
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password") },
+            label = { Text(stringResource(R.string.confirm_password)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
@@ -165,7 +170,7 @@ fun CreateMasterPasswordScreen(
             isError = confirmPassword.isNotBlank() && !passwordsMatch,
             supportingText = {
                 if (confirmPassword.isNotBlank() && !passwordsMatch) {
-                    Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.passwords_do_not_match), color = MaterialTheme.colorScheme.error)
                 }
             }
         )
@@ -189,7 +194,7 @@ fun CreateMasterPasswordScreen(
             } else {
                 Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Encrypt & Create Vault", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.encrypt_create_vault), style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -219,7 +224,7 @@ fun CreateMasterPasswordScreen(
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "NO RECOVERY OPTION",
+                text = stringResource(R.string.no_recovery_option),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -227,7 +232,7 @@ fun CreateMasterPasswordScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "We do not store your master password.\nIf you lose it, your data cannot be recovered.",
+                text = stringResource(R.string.we_do_not_store_your_master_password_if),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -243,30 +248,14 @@ private data class PasswordStrength(
 )
 
 private fun calculatePasswordStrength(password: String): PasswordStrength {
-    if (password.isEmpty()) {
-        return PasswordStrength(0, "None", Color.Gray)
+    if (password.isEmpty()) return PasswordStrength(0, "None", Color.Gray)
+
+    val metrics = PasswordStrengthCalculator.analyze(password)
+    val (label, color) = when (metrics.riskLevel) {
+        PasswordRiskLevel.VERY_STRONG -> "Very Strong" to AppColors.success
+        PasswordRiskLevel.STRONG -> "Strong" to AppColors.success
+        PasswordRiskLevel.MEDIUM -> "Moderate" to AppColors.warning
+        PasswordRiskLevel.WEAK -> "Weak" to AppColors.error
     }
-
-    var score = 0
-
-    when {
-        password.length >= 16 -> score += 40
-        password.length >= 12 -> score += 30
-        password.length >= 8 -> score += 20
-        else -> score += 10
-    }
-
-    if (password.any { it.isLowerCase() }) score += 10
-    if (password.any { it.isUpperCase() }) score += 10
-    if (password.any { it.isDigit() }) score += 15
-    if (password.any { !it.isLetterOrDigit() }) score += 25
-
-    val (label, color) = when {
-        score >= 80 -> "Very Strong" to Color(0xFF00C853)
-        score >= 60 -> "Strong" to Color(0xFF4CAF50)
-        score >= 40 -> "Moderate" to Color(0xFFFFC107)
-        else -> "Weak" to Color(0xFFF44336)
-    }
-
-    return PasswordStrength(score.coerceIn(0, 100), label, color)
+    return PasswordStrength(metrics.score, label, color)
 }

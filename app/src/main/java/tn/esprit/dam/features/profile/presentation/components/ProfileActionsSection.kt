@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.profile.presentation.components
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -7,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import tn.esprit.dam.core.ui.theme.ScanTheme
+import tn.esprit.dam.core.ui.theme.AppSpacing
 
 @Composable
 fun ProfileActionsSection(
@@ -17,20 +20,20 @@ fun ProfileActionsSection(
     Column {
         ActionCard(
             icon = Icons.Filled.Edit,
-            title = "Modifier le profil",
-            description = "Mettre à jour vos informations",
+            title = stringResource(R.string.modifier_le_profil),
+            description = stringResource(R.string.mettre_a_jour_vos_informations),
             onClick = onEditProfile,
-            backgroundColor = Color(0xFF6366F1)
+            backgroundColor = AppColors.primary
         )
 
-        Spacer(modifier = Modifier.height(ScanTheme.Spacing12))
+        Spacer(modifier = Modifier.height(AppSpacing.sm + AppSpacing.xs))
 
         ActionCard(
             icon = Icons.Filled.ExitToApp,
-            title = "Déconnexion",
-            description = "Se déconnecter de votre compte",
+            title = stringResource(R.string.deconnexion),
+            description = stringResource(R.string.se_deconnecter_de_votre_compte),
             onClick = onLogout,
-            backgroundColor = Color(0xFFEF4444)
+            backgroundColor = AppColors.error
         )
     }
 }

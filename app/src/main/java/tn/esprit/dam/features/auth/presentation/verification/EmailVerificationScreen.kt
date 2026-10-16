@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.auth.presentation.verification
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,8 +36,8 @@ fun EmailVerificationScreen(
 
     OtpVerificationLayout(
         icon = Icons.Filled.MarkEmailRead,
-        title = "Vérification Email",
-        subtitle = "Nous avons envoyé un code à 6 chiffres à",
+        title = stringResource(R.string.verification_email),
+        subtitle = stringResource(R.string.nous_avons_envoye_un_code_a_6_chiffres_a),
         email = email,
         otp = uiState.otp,
         onOtpChange = { viewModel.onOtpChange(it) },
@@ -44,8 +47,8 @@ fun EmailVerificationScreen(
         canResend = uiState.canResend,
         resendCountdown = uiState.resendCountdown,
         onResend = { viewModel.resendOTP(email) },
-        successMessage = uiState.resendMessage,
-        errorMessage = uiState.errorMessage,
+        successMessage = uiState.resendMessage?.asString(),
+        errorMessage = uiState.errorMessage?.asString(),
         infoText = "Vérifiez vos spams si vous ne voyez pas l'email",
         backLabel = "Retour à la connexion",
         onBack = onBackToLogin,

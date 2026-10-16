@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.auth.presentation.login
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -32,13 +35,9 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: LoginViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    LaunchedEffect(Unit) {
-        viewModel.initialize(context)
-    }
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
@@ -77,13 +76,13 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(AppSpacing.lg))
 
             Text(
-                text = "ShadowGuard",
+                text = stringResource(R.string.shadowguard_title),
                 style = AppTypography.displayLarge,
                 color = AppColors.textPrimary
             )
 
             Text(
-                text = "Protégez votre vie privée",
+                text = stringResource(R.string.protegez_votre_vie_privee),
                 style = AppTypography.bodyLarge,
                 color = AppColors.textSecondary
             )
@@ -102,7 +101,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Connexion",
+                        text = stringResource(R.string.connexion),
                         style = AppTypography.titleLarge,
                         color = AppColors.textPrimary
                     )
@@ -110,7 +109,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(AppSpacing.lg))
 
                     Text(
-                        text = "Email",
+                        text = stringResource(R.string.email),
                         style = AppTypography.bodyMedium,
                         color = AppColors.textPrimary,
                         modifier = Modifier.padding(bottom = AppSpacing.sm)
@@ -119,7 +118,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = uiState.email,
                         onValueChange = { viewModel.onEmailChange(it) },
-                        placeholder = { Text("votre@email.com", color = AppColors.textTertiary) },
+                        placeholder = { Text(stringResource(R.string.votre_email_com), color = AppColors.textTertiary) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         enabled = !uiState.isLoading,
@@ -142,7 +141,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(AppSpacing.md))
 
                     Text(
-                        text = "Mot de passe",
+                        text = stringResource(R.string.mot_de_passe),
                         style = AppTypography.bodyMedium,
                         color = AppColors.textPrimary,
                         modifier = Modifier.padding(bottom = AppSpacing.sm)
@@ -198,7 +197,7 @@ fun LoginScreen(
                         enabled = !uiState.isLoading
                     ) {
                         Text(
-                            "Mot de passe oublié ?",
+                            stringResource(R.string.mot_de_passe_oublie),
                             color = AppColors.primary,
                         )
                     }
@@ -206,7 +205,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(AppSpacing.lg))
 
                     AppPrimaryButton(
-                        text = "Se connecter",
+                        text = stringResource(R.string.se_connecter),
                         onClick = { viewModel.login() },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isLoading,
@@ -216,7 +215,7 @@ fun LoginScreen(
                     uiState.errorMessage?.let { error ->
                         Spacer(modifier = Modifier.height(AppSpacing.md))
                         AppErrorAlert(
-                            message = error,
+                            message = error.asString(),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -226,7 +225,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(AppSpacing.lg))
 
             Text(
-                text = "ou continuer avec",
+                text = stringResource(R.string.ou_continuer_avec),
                 color = AppColors.textSecondary,
                 style = AppTypography.labelMedium
             )
@@ -237,7 +236,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Pas encore de compte ? ",
+                    text = stringResource(R.string.pas_encore_de_compte),
                     color = AppColors.textSecondary,
                     style = AppTypography.bodyMedium
                 )
@@ -246,7 +245,7 @@ fun LoginScreen(
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        "Créer un compte",
+                        stringResource(R.string.creer_un_compte),
                         color = AppColors.primary,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -267,7 +266,7 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.width(AppSpacing.xs))
                 Text(
-                    text = "Connexion sécurisée et chiffrée",
+                    text = stringResource(R.string.connexion_securisee_et_chiffree),
                     color = AppColors.textTertiary,
                     style = AppTypography.labelMedium
                 )

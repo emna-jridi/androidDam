@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.vault.presentation.passwords
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -55,17 +58,17 @@ fun PasswordListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Search passwords...") },
+                    placeholder = { Text(stringResource(R.string.search_passwords)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         Row {
                             if (searchQuery.isNotBlank()) {
                                 IconButton(onClick = { passwordViewModel.search("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
                                 }
                             }
                             IconButton(onClick = { showSearchBar = false }) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Hide search")
+                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.hide_search))
                             }
                         }
                     },
@@ -84,7 +87,7 @@ fun PasswordListScreen(
                     ) {
                         Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Search")
+                        Text(stringResource(R.string.search))
                     }
                     OutlinedButton(
                         onClick = { showCategoryFilter = !showCategoryFilter },
@@ -92,7 +95,7 @@ fun PasswordListScreen(
                     ) {
                         Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Filter")
+                        Text(stringResource(R.string.filter))
                     }
                     OutlinedButton(
                         onClick = onLockClick,
@@ -100,7 +103,7 @@ fun PasswordListScreen(
                     ) {
                         Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Lock")
+                        Text(stringResource(R.string.lock))
                     }
                 }
             }
@@ -116,7 +119,7 @@ fun PasswordListScreen(
                         FilterChip(
                             selected = selectedCategory == null,
                             onClick = { passwordViewModel.filterByCategory(null) },
-                            label = { Text("All") }
+                            label = { Text(stringResource(R.string.all)) }
                         )
                     }
                     items(PasswordCategory.ALL.size) { index ->
@@ -158,13 +161,13 @@ fun PasswordListScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "No passwords yet",
+                                    text = stringResource(R.string.no_passwords_yet),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Tap + to add your first password",
+                                    text = stringResource(R.string.tap_to_add_your_first_password),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline
                                 )
@@ -213,13 +216,13 @@ fun PasswordListScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = state.message,
+                                text = state.message.asString(),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { passwordViewModel.loadPasswords() }) {
-                                Text("Retry")
+                                Text(stringResource(R.string.retry))
                             }
                         }
                     }
@@ -234,7 +237,7 @@ fun PasswordListScreen(
                 .padding(16.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Password")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_password))
         }
     }
 }
@@ -301,7 +304,7 @@ fun PasswordCard(
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "Favorite",
+                                contentDescription = stringResource(R.string.favorite),
                                 tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -364,7 +367,7 @@ fun PasswordCard(
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.delete),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -375,7 +378,7 @@ fun PasswordCard(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Password") },
+            title = { Text(stringResource(R.string.delete_password_2)) },
             text = { Text("Are you sure you want to delete this password for ${entry.site}?") },
             confirmButton = {
                 Button(
@@ -387,12 +390,12 @@ fun PasswordCard(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

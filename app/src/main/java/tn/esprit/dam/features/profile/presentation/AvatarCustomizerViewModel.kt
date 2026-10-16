@@ -1,5 +1,10 @@
 ﻿package tn.esprit.dam.features.profile.presentation
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import timber.log.Timber
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -13,7 +18,7 @@ import tn.esprit.dam.features.profile.data.repository.AvatarRepository
 sealed class AvatarCustomizerUiState {
     object Loading : AvatarCustomizerUiState()
     data class Success(val avatar: Avatar) : AvatarCustomizerUiState()
-    data class Error(val message: String) : AvatarCustomizerUiState()
+    data class Error(val message: UiText) : AvatarCustomizerUiState()
 }
 
 @HiltViewModel
@@ -38,6 +43,7 @@ class AvatarCustomizerViewModel @Inject constructor(
                 _currentConfig.value = avatar.config
                 _uiState.value = AvatarCustomizerUiState.Success(avatar)
             } catch (e: Exception) {
+                Timber.w(e, "AvatarCustomizerViewModel.loadAvatar failed")
                 generateConsistentAvatar(userHash)
             }
         }
@@ -58,7 +64,7 @@ class AvatarCustomizerViewModel @Inject constructor(
                 onSuccess(response.avatar.fileName)
             } catch (e: Exception) {
                 _uiState.value = AvatarCustomizerUiState.Error(
-                    e.message ?: "Erreur de mise à jour"
+                    e.message.toUiTextOr(R.string.profile_error_update)
                 )
             }
         }
@@ -80,7 +86,7 @@ class AvatarCustomizerViewModel @Inject constructor(
                 onSuccess(response.avatar.fileName)
             } catch (e: Exception) {
                 _uiState.value = AvatarCustomizerUiState.Error(
-                    e.message ?: "Erreur de génération"
+                    e.message.toUiTextOr(R.string.avatar_error_generate)
                 )
             }
         }
@@ -102,37 +108,37 @@ class AvatarCustomizerViewModel @Inject constructor(
                 onSuccess(response.avatar.fileName)
             } catch (e: Exception) {
                 _uiState.value = AvatarCustomizerUiState.Error(
-                    e.message ?: "Erreur de génération"
+                    e.message.toUiTextOr(R.string.avatar_error_generate)
                 )
             }
         }
     }
 
     fun updateHairColor(color: String) {
-        _currentConfig.value = _currentConfig.value.copy(hairColor = color)
+        _currentConfig.update { it.copy(hairColor = color) }
     }
 
     fun updateTopType(type: String) {
-        _currentConfig.value = _currentConfig.value.copy(topType = type)
+        _currentConfig.update { it.copy(topType = type) }
     }
 
     fun updateClotheType(type: String) {
-        _currentConfig.value = _currentConfig.value.copy(clotheType = type)
+        _currentConfig.update { it.copy(clotheType = type) }
     }
 
     fun updateClotheColor(color: String) {
-        _currentConfig.value = _currentConfig.value.copy(clotheColor = color)
+        _currentConfig.update { it.copy(clotheColor = color) }
     }
 
     fun updateSkinColor(color: String) {
-        _currentConfig.value = _currentConfig.value.copy(skinColor = color)
+        _currentConfig.update { it.copy(skinColor = color) }
     }
 
     fun updateEyeType(type: String) {
-        _currentConfig.value = _currentConfig.value.copy(eyeType = type)
+        _currentConfig.update { it.copy(eyeType = type) }
     }
 
     fun updateMouthType(type: String) {
-        _currentConfig.value = _currentConfig.value.copy(mouthType = type)
+        _currentConfig.update { it.copy(mouthType = type) }
     }
 }

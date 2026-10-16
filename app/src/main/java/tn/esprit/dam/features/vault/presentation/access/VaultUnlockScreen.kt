@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.vault.presentation.access
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -107,13 +110,13 @@ fun VaultUnlockScreen(
         when (biometricOperationState) {
             is BiometricOperationState.Success -> {
                 snackbarHostState.showSnackbar(
-                    (biometricOperationState as BiometricOperationState.Success).message
+                    (biometricOperationState as BiometricOperationState.Success).message.asString(context)
                 )
                 vaultViewModel.clearBiometricOperationState()
             }
             is BiometricOperationState.Error -> {
                 snackbarHostState.showSnackbar(
-                    (biometricOperationState as BiometricOperationState.Error).message
+                    (biometricOperationState as BiometricOperationState.Error).message.asString(context)
                 )
                 vaultViewModel.clearBiometricOperationState()
             }
@@ -132,10 +135,10 @@ fun VaultUnlockScreen(
                     tint = MaterialTheme.colorScheme.primary
                 )
             },
-            title = { Text("Enable Biometric Login") },
+            title = { Text(stringResource(R.string.enable_biometric_login)) },
             text = {
                 Text(
-                    "Would you like to enable fingerprint or face unlock? " +
+                    stringResource(R.string.would_you_like_to_enable_fingerprint_or) +
                     "This creates a secure cryptographic key on your device for quick access."
                 )
             },
@@ -146,12 +149,12 @@ fun VaultUnlockScreen(
                         vaultViewModel.registerBiometricDevice(activity)
                     }
                 ) {
-                    Text("Enable")
+                    Text(stringResource(R.string.enable))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBiometricSetupDialog = false }) {
-                    Text("Not Now")
+                    Text(stringResource(R.string.not_now))
                 }
             }
         )
@@ -190,7 +193,7 @@ fun VaultUnlockScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Unlock Your Vault",
+            text = stringResource(R.string.unlock_your_vault),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -199,7 +202,7 @@ fun VaultUnlockScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Enter your master password to decrypt and access your passwords.",
+            text = stringResource(R.string.enter_your_master_password_to_decrypt_an),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -318,7 +321,7 @@ fun VaultUnlockScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
-                                contentDescription = "Fingerprint Settings",
+                                contentDescription = stringResource(R.string.fingerprint_settings),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -337,7 +340,7 @@ fun VaultUnlockScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Open Settings to Add Fingerprint")
+                        Text(stringResource(R.string.open_settings_to_add_fingerprint))
                     }
                 }
 
@@ -354,7 +357,7 @@ fun VaultUnlockScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Enable Secure Biometric Login")
+                        Text(stringResource(R.string.enable_secure_biometric_login))
                     }
                 }
             }
@@ -417,7 +420,7 @@ fun VaultUnlockScreen(
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f))
                 Text(
-                    text = "OR",
+                    text = stringResource(R.string.or),
                     modifier = Modifier.padding(horizontal = 16.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -434,8 +437,8 @@ fun VaultUnlockScreen(
                 masterPassword = it
                 attemptFailed = false
             },
-            label = { Text("Master Password") },
-            placeholder = { Text("Enter your master password") },
+            label = { Text(stringResource(R.string.master_password)) },
+            placeholder = { Text(stringResource(R.string.enter_your_master_password)) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -507,13 +510,13 @@ fun VaultUnlockScreen(
                             strokeWidth = 2.5.dp
                         )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("Unlocking...", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.unlocking), style = MaterialTheme.typography.titleMedium)
                     }
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.LockOpen, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("Unlock Vault", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.unlock_vault), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -544,7 +547,7 @@ fun VaultUnlockScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = (uiState as? VaultUiState.Error)?.message ?: "Authentication failed",
+                            text = (uiState as? VaultUiState.Error)?.message?.asString() ?: "Authentication failed",
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
@@ -574,7 +577,7 @@ fun VaultUnlockScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Your passwords are encrypted with zero-knowledge architecture. We never store your master password.",
+                    text = stringResource(R.string.your_passwords_are_encrypted_with_zero_k),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

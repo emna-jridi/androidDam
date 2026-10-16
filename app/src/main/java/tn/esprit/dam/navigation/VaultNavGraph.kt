@@ -18,7 +18,7 @@ import tn.esprit.dam.features.vault.presentation.access.CreateMasterPasswordScre
 import tn.esprit.dam.features.vault.presentation.access.VaultUnlockScreen
 import tn.esprit.dam.features.vault.presentation.passwords.PasswordListScreen
 import tn.esprit.dam.features.vault.presentation.passwords.PasswordDetailScreen
-import tn.esprit.dam.features.vault.presentation.access.VaultAddPasswordScreen
+import tn.esprit.dam.features.vault.presentation.passwords.VaultAddPasswordScreen
 
 fun NavGraphBuilder.vaultNavGraph(
     navController: NavHostController,

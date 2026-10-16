@@ -10,6 +10,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.encodeToString
+import tn.esprit.dam.features.vault.data.repository.VaultRepository
+import javax.inject.Inject
 
 @Serializable
 data class OllamaAdvice(
@@ -18,8 +20,8 @@ data class OllamaAdvice(
     val tone: String
 )
 
-class OllamaPasswordAdvisor(
-    private val repository: tn.esprit.dam.features.vault.data.repository.VaultRepository
+class OllamaPasswordAdvisor @Inject constructor(
+    private val repository: VaultRepository
 ) {
     suspend fun getAdvice(metrics: PasswordAnalysisMetrics): OllamaAdvice {
         return repository.analyzeWithAi(metrics)

@@ -1,12 +1,11 @@
 ﻿package tn.esprit.dam.features.scan.presentation.model
 
 import android.graphics.drawable.Drawable
+import tn.esprit.dam.core.ui.UiText
 import tn.esprit.dam.features.scan.domain.SecurityUtils
-import tn.esprit.dam.features.scan.data.remote.dto.ScanLevel
+import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.domain.ScanRiskResult
-import tn.esprit.dam.features.scan.data.remote.dto.SimpleTrackerInfo
 import tn.esprit.dam.features.scan.data.remote.dto.AppResult
-import tn.esprit.dam.features.scan.data.remote.dto.MLAnalysisDto
 import tn.esprit.dam.features.scan.domain.RiskLevel
 import tn.esprit.dam.features.scan.domain.ConfidenceLevel
 
@@ -21,13 +20,19 @@ data class MLAnalysisInfo(
     val analysisSource: String? = null
 )
 
+/** A tracker found in an app, as shown on the scan and detail screens. */
+data class TrackerUi(
+    val name: String,
+    val riskLevel: String?
+)
+
 data class LocalAppInfo(
     val packageName: String,
     val displayName: String,
     val category: String? = null,
     val isSystemApp: Boolean = false,
     val permissions: List<String> = emptyList(),
-    val trackers: List<SimpleTrackerInfo> = emptyList(),
+    val trackers: List<TrackerUi> = emptyList(),
     val isSelected: Boolean = false,
     val riskResult: ScanRiskResult? = null,
     val mlAnalysis: MLAnalysisInfo? = null,
@@ -74,7 +79,7 @@ fun AppResult.toUiModel(isSelected: Boolean = false): LocalAppInfo {
 }
 
 fun tn.esprit.dam.features.scan.data.remote.dto.AppInfoDto.toUiModel(isSelected: Boolean = false): LocalAppInfo {
-    val simpleTrackers = this.trackers
+    val simpleTrackers = this.trackers.map { TrackerUi(name = it.name, riskLevel = it.riskLevel) }
 
     val risk = SecurityUtils.calculateAppRisk(
         permissions = this.permissions,
@@ -99,7 +104,7 @@ fun tn.esprit.dam.features.scan.data.remote.dto.AppDetailsResponse.toLocalAppInf
     fallbackName: String
 ): LocalAppInfo {
     val simpleTrackers = this.trackers?.trackers?.map {
-        tn.esprit.dam.features.scan.data.remote.dto.SimpleTrackerInfo(
+        TrackerUi(
             name = it.name,
             riskLevel = it.category
         )
@@ -162,9 +167,18 @@ fun tn.esprit.dam.features.scan.data.remote.dto.AppDetailsResponse.toLocalAppInf
     )
 }
 
+/** Lifecycle of a scan on the Scan screen. */
+sealed interface ScanStatus {
+    data object Idle : ScanStatus
+    data object Loading : ScanStatus
+    data object Analyzing : ScanStatus
+    data object Completed : ScanStatus
+    data object Failed : ScanStatus
+}
+
 data class ScanState(
     val scanId: String? = null,
-    val status: String = "IDLE",
+    val status: ScanStatus = ScanStatus.Idle,
     val selectedApps: List<LocalAppInfo> = emptyList(),
     val scanLevel: ScanLevel = ScanLevel.SMART,
     val totalApps: Int = 0,
@@ -175,9 +189,9 @@ data class ScanState(
     val averageScore: Float = 0f,
     val confidenceScore: Int? = null,
     val recommendDeepAnalysis: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val showSystemApps: Boolean = false,
-    val analysisNote: String? = null,
+    val analysisNote: UiText? = null,
     val mlExplanation: String? = null,
     val mlRecommendations: List<String> = emptyList(),
     val mlRiskFactors: List<String> = emptyList(),

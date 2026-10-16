@@ -1,4 +1,5 @@
 package tn.esprit.dam.core.session
+import timber.log.Timber
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -12,9 +13,11 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tn.esprit.dam.core.model.User
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
-class TokenRepositoryImpl(
-    private val context: Context
+class TokenRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context
 ) : TokenRepository {
     companion object {
         private const val PREFS_NAME = "encrypted_auth_prefs"
@@ -48,6 +51,7 @@ class TokenRepositoryImpl(
         try {
             encryptedSharedPreferences.getString(KEY_USER_DATA, null)?.let { json.decodeFromString<User>(it) }
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.block failed")
             null
         }
     )
@@ -81,6 +85,7 @@ class TokenRepositoryImpl(
             }
             token
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.getAccessToken failed")
             null
         }
     }
@@ -89,6 +94,7 @@ class TokenRepositoryImpl(
         try {
             encryptedSharedPreferences.getString(KEY_REFRESH_TOKEN, null)
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.getRefreshToken failed")
             null
         }
     }
@@ -116,6 +122,7 @@ class TokenRepositoryImpl(
             val refreshToken = encryptedSharedPreferences.getString(KEY_REFRESH_TOKEN, null)
             !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.hasTokens failed")
             false
         }
     }
@@ -137,7 +144,9 @@ class TokenRepositoryImpl(
                 .apply()
             try {
                 _userFlow.value = json.decodeFromString<User>(userData)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Timber.w(e, "TokenRepositoryImpl.saveUserData failed")
+            }
         } catch (e: Exception) {
             throw e
         }
@@ -152,6 +161,7 @@ class TokenRepositoryImpl(
             }
             user
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.getUser failed")
             null
         }
     }
@@ -160,6 +170,7 @@ class TokenRepositoryImpl(
         try {
             encryptedSharedPreferences.getString(KEY_USER_DATA, null)
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.getUserData failed")
             null
         }
     }
@@ -179,6 +190,7 @@ class TokenRepositoryImpl(
         try {
             encryptedSharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
         } catch (e: Exception) {
+            Timber.w(e, "TokenRepositoryImpl.isLoggedIn failed")
             false
         }
     }

@@ -1,6 +1,7 @@
 package tn.esprit.dam.features.alert.presentation
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +37,8 @@ class AlertsViewModel @Inject constructor(
     fun markAsRead(alertId: String) {
         viewModelScope.launch {
             if (repository.markAsRead(alertId)) {
-                _alerts.value = _alerts.value.map { alert ->
-                    if (alert.id == alertId) alert.copy(read = true) else alert
+                _alerts.update { alerts ->
+                    alerts.map { alert -> if (alert.id == alertId) alert.copy(read = true) else alert }
                 }
             }
         }
@@ -46,7 +47,7 @@ class AlertsViewModel @Inject constructor(
     fun markAllAsRead() {
         viewModelScope.launch {
             if (repository.markAllAsRead()) {
-                _alerts.value = _alerts.value.map { it.copy(read = true) }
+                _alerts.update { alerts -> alerts.map { it.copy(read = true) } }
             }
         }
     }

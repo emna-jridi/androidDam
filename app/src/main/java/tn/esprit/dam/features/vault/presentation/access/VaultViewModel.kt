@@ -1,13 +1,16 @@
 package tn.esprit.dam.features.vault.presentation.access
 
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import tn.esprit.dam.features.vault.data.model.Vault
 import tn.esprit.dam.features.vault.data.repository.VaultRepository
-import tn.esprit.dam.features.vault.data.biometric.BiometricAuthRepository
-import tn.esprit.dam.features.vault.data.biometric.BiometricDeviceInfo
+import tn.esprit.dam.features.vault.data.repository.BiometricAuthRepository
+import tn.esprit.dam.features.vault.data.model.BiometricDeviceInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,14 +23,14 @@ sealed class VaultUiState {
     object NoVault : VaultUiState()
     object Locked : VaultUiState()
     data class Unlocked(val vault: Vault) : VaultUiState()
-    data class Error(val message: String) : VaultUiState()
+    data class Error(val message: UiText) : VaultUiState()
 }
 
 sealed class BiometricOperationState {
     object Idle : BiometricOperationState()
     object Loading : BiometricOperationState()
-    data class Success(val message: String) : BiometricOperationState()
-    data class Error(val message: String) : BiometricOperationState()
+    data class Success(val message: UiText) : BiometricOperationState()
+    data class Error(val message: UiText) : BiometricOperationState()
 }
 
 @HiltViewModel
@@ -90,7 +93,7 @@ class VaultViewModel @Inject constructor(
                     }
                 }
                 .onFailure { error ->
-                    val errorMsg = error.message ?: "Unknown error"
+                    val errorMsg = error.message.orEmpty()
 
                     when {
                         errorMsg.contains("not found", ignoreCase = true) -> {
@@ -102,7 +105,7 @@ class VaultViewModel @Inject constructor(
                             _uiState.value = VaultUiState.Locked
                         }
                         else -> {
-                            _uiState.value = VaultUiState.Error(errorMsg)
+                            _uiState.value = VaultUiState.Error(errorMsg.toUiTextOr(R.string.error_unknown_en))
                         }
                     }
                 }
@@ -130,7 +133,7 @@ class VaultViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     _createVaultState.value = Result.failure(error)
-                    _uiState.value = VaultUiState.Error(error.message ?: "Failed to create vault")
+                    _uiState.value = VaultUiState.Error(error.message.toUiTextOr(R.string.vault_error_create_failed))
                 }
         }
     }
@@ -146,11 +149,11 @@ class VaultViewModel @Inject constructor(
                         _biometricEnabled.value = true
                         checkVaultStatus()
                     } else {
-                        _uiState.value = VaultUiState.Error(response.message ?: "Failed to unlock vault")
+                        _uiState.value = VaultUiState.Error(response.message.toUiTextOr(R.string.vault_error_unlock_failed))
                     }
                 }
                 .onFailure { error ->
-                    _uiState.value = VaultUiState.Error(error.message ?: "Failed to unlock vault")
+                    _uiState.value = VaultUiState.Error(error.message.toUiTextOr(R.string.vault_error_unlock_failed))
                 }
         }
     }
@@ -159,7 +162,7 @@ class VaultViewModel @Inject constructor(
         cachedMasterPassword?.let { password ->
             unlockVault(password)
         } ?: run {
-            _uiState.value = VaultUiState.Error("Please unlock with master password first")
+            _uiState.value = VaultUiState.Error(UiText.Res(R.string.vault_error_unlock_first))
         }
     }
 
@@ -174,21 +177,21 @@ class VaultViewModel @Inject constructor(
 
             when (result) {
                 is BiometricAuthRepository.RegistrationResult.Success -> {
-                    _biometricOperationState.value = BiometricOperationState.Success(result.message)
+                    _biometricOperationState.value = BiometricOperationState.Success(UiText.Raw(result.message))
                     _biometricRegistered.value = true
                     checkBiometricRegistration()
                 }
                 is BiometricAuthRepository.RegistrationResult.Error -> {
-                    _biometricOperationState.value = BiometricOperationState.Error(result.message)
+                    _biometricOperationState.value = BiometricOperationState.Error(UiText.Raw(result.message))
                 }
                 BiometricAuthRepository.RegistrationResult.BiometricNotAvailable -> {
                     _biometricOperationState.value = BiometricOperationState.Error(
-                        "Biometric authentication not available on this device"
+                        UiText.Res(R.string.biometric_not_available_device)
                     )
                 }
                 BiometricAuthRepository.RegistrationResult.Cancelled -> {
                     _biometricOperationState.value = BiometricOperationState.Error(
-                        "Biometric setup cancelled"
+                        UiText.Res(R.string.biometric_setup_cancelled)
                     )
                 }
             }
@@ -205,12 +208,12 @@ class VaultViewModel @Inject constructor(
             when (result) {
                 is BiometricAuthRepository.BiometricAuthResult.Success -> {
                     _biometricOperationState.value = BiometricOperationState.Success(
-                        "Authenticated as ${result.userEmail}"
+                        UiText.Res(R.string.biometric_authenticated_as, result.userEmail.orEmpty())
                     )
                     checkVaultStatus()
                 }
                 is BiometricAuthRepository.BiometricAuthResult.Error -> {
-                    _biometricOperationState.value = BiometricOperationState.Error(result.message)
+                    _biometricOperationState.value = BiometricOperationState.Error(UiText.Raw(result.message))
                     _uiState.value = VaultUiState.Locked
                 }
                 BiometricAuthRepository.BiometricAuthResult.Cancelled -> {
@@ -219,13 +222,13 @@ class VaultViewModel @Inject constructor(
                 }
                 BiometricAuthRepository.BiometricAuthResult.NotRegistered -> {
                     _biometricOperationState.value = BiometricOperationState.Error(
-                        "Biometric not set up. Please unlock with password first and enable biometric."
+                        UiText.Res(R.string.biometric_not_set_up)
                     )
                     _uiState.value = VaultUiState.Locked
                 }
                 BiometricAuthRepository.BiometricAuthResult.BiometricNotAvailable -> {
                     _biometricOperationState.value = BiometricOperationState.Error(
-                        "Biometric authentication not available"
+                        UiText.Res(R.string.biometric_not_available)
                     )
                     _uiState.value = VaultUiState.Locked
                 }
@@ -241,13 +244,13 @@ class VaultViewModel @Inject constructor(
 
             if (success) {
                 _biometricOperationState.value = BiometricOperationState.Success(
-                    "Biometric authentication disabled"
+                    UiText.Res(R.string.biometric_disabled)
                 )
                 _biometricRegistered.value = false
                 _registeredDevices.value = emptyList()
             } else {
                 _biometricOperationState.value = BiometricOperationState.Error(
-                    "Failed to remove biometric authentication"
+                    UiText.Res(R.string.biometric_remove_failed)
                 )
             }
         }
@@ -297,7 +300,7 @@ class VaultViewModel @Inject constructor(
                     checkVaultStatus()
                 }
                 .onFailure { error ->
-                    _uiState.value = VaultUiState.Error(error.message ?: "Failed to update settings")
+                    _uiState.value = VaultUiState.Error(error.message.toUiTextOr(R.string.vault_error_update_settings))
                 }
         }
     }

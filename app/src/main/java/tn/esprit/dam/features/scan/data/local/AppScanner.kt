@@ -1,4 +1,5 @@
 ﻿package tn.esprit.dam.features.scan.data.local
+import timber.log.Timber
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -24,6 +25,7 @@ class AppScanner @Inject constructor(
                 val appIcon: Drawable? = try {
                     pm.getApplicationIcon(app)
                 } catch (e: Exception) {
+                    Timber.w(e, "AppScanner.getInstalledApps failed")
                     null
                 }
 
@@ -38,6 +40,7 @@ class AppScanner @Inject constructor(
                     icon = appIcon
                 )
             } catch (e: Exception) {
+                Timber.w(e, "AppScanner.getInstalledApps failed")
                 null
             }
         }

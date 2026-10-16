@@ -1,5 +1,9 @@
 ﻿package tn.esprit.dam.features.auth.presentation.forgotpassword
-import android.util.Patterns
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import tn.esprit.dam.features.auth.domain.validation.AuthValidator
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,8 +36,8 @@ data class ForgotPasswordUiState(
     val confirmPasswordError: String? = null,
 
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val successMessage: String? = null,
+    val errorMessage: UiText? = null,
+    val successMessage: UiText? = null,
 
     val canResend: Boolean = false,
     val resendCountdown: Int = 60,
@@ -47,7 +51,6 @@ class ForgotPasswordViewModel @Inject constructor(
     private val repository: AuthRepository
 ) : ViewModel() {
     companion object {
-        private const val OTP_LENGTH = 6
         private const val COUNTDOWN_SECONDS = 60
     }
 
@@ -55,27 +58,23 @@ class ForgotPasswordViewModel @Inject constructor(
     val uiState: StateFlow<ForgotPasswordUiState> = _uiState.asStateFlow()
 
     private val countdown = ResendCountdown(viewModelScope, COUNTDOWN_SECONDS) { remaining, canResend ->
-        _uiState.value = _uiState.value.copy(resendCountdown = remaining, canResend = canResend)
+        _uiState.update { it.copy(resendCountdown = remaining, canResend = canResend) }
     }
 
     fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             email = email,
             emailError = null,
             errorMessage = null
-        )
+        ) }
     }
 
     private fun validateEmail(): Boolean {
         val email = _uiState.value.email.trim()
 
-        val error = when {
-            email.isEmpty() -> "Email requis"
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email invalide"
-            else -> null
-        }
+        val error = AuthValidator.validateEmail(email)
 
-        _uiState.value = _uiState.value.copy(emailError = error)
+        _uiState.update { it.copy(emailError = error) }
         return error == null
     }
 
@@ -86,67 +85,68 @@ class ForgotPasswordViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null
-                )
+                ) }
 
                 val result = repository.requestPasswordReset(_uiState.value.email.trim())
 
                 result.onSuccess { response ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         currentStep = ResetPasswordStep.VERIFY_OTP,
-                        successMessage = response.message
-                    )
+                        successMessage = UiText.Raw(response.message)
+                    ) }
 
                     countdown.start()
                 }.onFailure { error ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         currentStep = ResetPasswordStep.VERIFY_OTP,
-                        successMessage = "Si cet email existe, un code a été envoyé."
-                    )
+                        successMessage = UiText.Res(R.string.auth_reset_code_sent_if_exists)
+                    ) }
 
                     countdown.start()
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
-                    errorMessage = "Erreur: ${e.message}"
-                )
+                    errorMessage = UiText.Res(R.string.error_with_message, e.message.orEmpty())
+                ) }
             }
         }
     }
 
     fun onOtpChange(otp: String) {
-        if (otp.length <= OTP_LENGTH && otp.all { it.isDigit() }) {
-            _uiState.value = _uiState.value.copy(
+        if (AuthValidator.isOtpInput(otp)) {
+            _uiState.update { it.copy(
                 otp = otp,
                 otpError = null,
                 errorMessage = null
-            )
+            ) }
         }
     }
 
     fun verifyResetOTP() {
         val otp = _uiState.value.otp
 
-        if (otp.length != OTP_LENGTH) {
-            _uiState.value = _uiState.value.copy(
-                otpError = "Code à 6 chiffres requis"
-            )
+        val otpError = AuthValidator.validateOtp(otp)
+        if (otpError != null) {
+            _uiState.update { it.copy(
+                otpError = otpError
+            ) }
             return
         }
 
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null
-                )
+                ) }
 
                 val result = repository.verifyPasswordResetOTP(
                     email = _uiState.value.email,
@@ -155,26 +155,26 @@ class ForgotPasswordViewModel @Inject constructor(
 
                 result.onSuccess { response ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         currentStep = ResetPasswordStep.NEW_PASSWORD,
-                    )
+                    ) }
 
                     countdown.cancel()
                 }.onFailure { error ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Code invalide",
+                        errorMessage = error.message.toUiTextOr(R.string.auth_error_invalid_code),
                         otp = ""
-                    )
+                    ) }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
-                    errorMessage = "Erreur: ${e.message}",
+                    errorMessage = UiText.Res(R.string.error_with_message, e.message.orEmpty()),
                     otp = ""
-                )
+                ) }
             }
         }
     }
@@ -182,64 +182,64 @@ class ForgotPasswordViewModel @Inject constructor(
     fun resendResetOTP() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null
-                )
+                ) }
 
                 val result = repository.requestPasswordReset(_uiState.value.email)
 
                 result.onSuccess {
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         otp = "",
-                        successMessage = "Code renvoyé avec succès",
+                        successMessage = UiText.Res(R.string.auth_code_resent),
                         canResend = false,
                         resendCountdown = COUNTDOWN_SECONDS
-                    )
+                    ) }
 
                     countdown.start()
                 }.onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Échec de renvoi"
-                    )
+                        errorMessage = error.message.toUiTextOr(R.string.auth_error_resend_failed)
+                    ) }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
-                    errorMessage = "Erreur: ${e.message}"
-                )
+                    errorMessage = UiText.Res(R.string.error_with_message, e.message.orEmpty())
+                ) }
             }
         }
     }
 
     fun onNewPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             newPassword = password,
             passwordError = null,
             errorMessage = null
-        )
+        ) }
     }
 
     fun onConfirmPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             confirmPassword = password,
             confirmPasswordError = null,
             errorMessage = null
-        )
+        ) }
     }
 
     fun togglePasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            passwordVisible = !_uiState.value.passwordVisible
-        )
+        _uiState.update { it.copy(
+            passwordVisible = !it.passwordVisible
+        ) }
     }
 
     fun toggleConfirmPasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            confirmPasswordVisible = !_uiState.value.confirmPasswordVisible
-        )
+        _uiState.update { it.copy(
+            confirmPasswordVisible = !it.confirmPasswordVisible
+        ) }
     }
 
     private fun validateNewPassword(): Boolean {
@@ -248,27 +248,17 @@ class ForgotPasswordViewModel @Inject constructor(
 
         var isValid = true
 
-        val passwordError = when {
-            password.isEmpty() -> "Mot de passe requis"
-            password.length < 6 -> "Minimum 6 caractères"
-            !password.any { it.isDigit() } -> "Doit contenir au moins un chiffre"
-            !password.any { it.isLetter() } -> "Doit contenir au moins une lettre"
-            else -> null
-        }
+        val passwordError = AuthValidator.validateNewPassword(password)
 
         if (passwordError != null) {
-            _uiState.value = _uiState.value.copy(passwordError = passwordError)
+            _uiState.update { it.copy(passwordError = passwordError) }
             isValid = false
         }
 
-        val confirmError = when {
-            confirmPassword.isEmpty() -> "Confirmation requise"
-            password != confirmPassword -> "Les mots de passe ne correspondent pas"
-            else -> null
-        }
+        val confirmError = AuthValidator.validatePasswordConfirmation(password, confirmPassword)
 
         if (confirmError != null) {
-            _uiState.value = _uiState.value.copy(confirmPasswordError = confirmError)
+            _uiState.update { it.copy(confirmPasswordError = confirmError) }
             isValid = false
         }
 
@@ -282,10 +272,10 @@ class ForgotPasswordViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null
-                )
+                ) }
 
                 val result = repository.resetPassword(
                     email = _uiState.value.email,
@@ -295,42 +285,42 @@ class ForgotPasswordViewModel @Inject constructor(
 
                 result.onSuccess { response ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         currentStep = ResetPasswordStep.SUCCESS,
-                        successMessage = response.message
-                    )
+                        successMessage = UiText.Raw(response.message)
+                    ) }
                 }.onFailure { error ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Échec de réinitialisation"
-                    )
+                        errorMessage = error.message.toUiTextOr(R.string.auth_error_reset_failed)
+                    ) }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
-                    errorMessage = "Erreur: ${e.message}"
-                )
+                    errorMessage = UiText.Res(R.string.error_with_message, e.message.orEmpty())
+                ) }
             }
         }
     }
 
     fun goBackToEmailStep() {
         countdown.cancel()
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             currentStep = ResetPasswordStep.ENTER_EMAIL,
             otp = "",
             resetToken = null,
             errorMessage = null
-        )
+        ) }
     }
 
     fun clearMessages() {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             errorMessage = null,
             successMessage = null
-        )
+        ) }
     }
 
     fun resetState() {

@@ -45,6 +45,15 @@ data class UpdateVaultSettingsRequest(
     val twoFactorEnabled: Boolean? = null
 )
 
+/** PUT /vault/settings returns only the updated settings, not the whole vault. */
+@Serializable
+data class VaultSettingsResponse(
+    val message: String? = null,
+    val autoLockTimeout: Long = 300000L,
+    val paranoidMode: Boolean = false,
+    val twoFactorEnabled: Boolean = false
+)
+
 @Serializable
 data class VaultCheckLockResponse(
     val shouldLock: Boolean,

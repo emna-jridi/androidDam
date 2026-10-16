@@ -1,4 +1,5 @@
 ﻿package tn.esprit.dam.core.util
+import timber.log.Timber
 
 import android.content.Context
 import io.ktor.client.*
@@ -40,6 +41,7 @@ object FileDownloader {
 
             localFile
         } catch (e: Exception) {
+            Timber.w(e, "FileDownloader.downloadFile failed")
             null
         }
     }
@@ -53,6 +55,7 @@ object FileDownloader {
                 false
             }
         } catch (e: Exception) {
+            Timber.w(e, "FileDownloader.deleteFile failed")
             false
         }
     }

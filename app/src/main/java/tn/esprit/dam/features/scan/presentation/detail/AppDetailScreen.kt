@@ -1,5 +1,6 @@
 package tn.esprit.dam.features.scan.presentation.detail
 
+import tn.esprit.dam.core.ui.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,9 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import tn.esprit.dam.features.scan.data.remote.dto.AppInfoDto
-import tn.esprit.dam.features.scan.data.remote.dto.AppScanHistoryDto
-import tn.esprit.dam.features.scan.data.remote.dto.SimpleTrackerInfo
 import tn.esprit.dam.features.scan.domain.RiskLevel
 import tn.esprit.dam.features.scan.domain.SecurityUtils
 import tn.esprit.dam.features.scan.presentation.ScanErrorState
@@ -36,14 +34,13 @@ import tn.esprit.dam.features.scan.presentation.ScanLoadingState
 @Composable
 fun AppDetailScreen(
     packageName: String,
-    userId: String,
     viewModel: AppDetailViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(packageName) {
-        viewModel.loadAppDetails(packageName, userId)
+        viewModel.loadAppDetails(packageName)
     }
 
     when {
@@ -52,35 +49,14 @@ fun AppDetailScreen(
         }
         uiState.error != null -> {
             ScanErrorState(
-                error = uiState.error!!,
+                error = uiState.error!!.asString(),
                 onRetry = { viewModel.refresh(packageName) },
                 textAlign = TextAlign.Center
             )
         }
-        uiState.details != null -> {
-            val details = uiState.details!!
-            val app = details.app ?: AppInfoDto(
-                packageName = details.packageName ?: packageName,
-                displayName = details.appName ?: packageName,
-                permissions = details.permissions,
-                trackers = details.trackers?.trackers?.map {
-                    SimpleTrackerInfo(
-                        name = it.name,
-                        riskLevel = it.category
-                    )
-                } ?: emptyList(),
-                finalScore = details.overallScore ?: details.securityScore ?: 0f,
-                scanResults = tn.esprit.dam.features.scan.data.remote.dto.AnalysisResultDto(
-                    aiRiskScore = (100f - (details.securityScore ?: 0f)),
-                    aiRiskLevel = details.globalRisk ?: "LOW",
-                    aiSummary = "Security Score: ${details.securityScore?.toInt() ?: 0}/100, Privacy Score: ${details.privacyScore?.toInt() ?: 0}/100",
-                    aiRecommendations = details.recommendations,
-                    permissionsScore = details.privacyScore,
-                    trackersScore = details.trackers?.privacyScore?.toFloat()
-                )
-            )
+        uiState.app != null -> {
             AppDetailContent(
-                app = app,
+                app = uiState.app!!,
                 history = uiState.history,
                 onBackClick = onBackClick
             )
@@ -90,8 +66,8 @@ fun AppDetailScreen(
 
 @Composable
 private fun AppDetailContent(
-    app: AppInfoDto,
-    history: List<AppScanHistoryDto>,
+    app: AppDetailUi,
+    history: List<AppScanHistoryUi>,
     onBackClick: () -> Unit
 ) {
     val riskResult = remember(app) {

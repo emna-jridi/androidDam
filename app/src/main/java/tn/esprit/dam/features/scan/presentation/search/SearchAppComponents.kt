@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.scan.presentation.search
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,7 +47,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import tn.esprit.dam.features.scan.data.remote.dto.SearchResultDto
 
 @Composable
 fun AppSearchBar(
@@ -59,11 +61,11 @@ fun AppSearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        placeholder = { Text("Search for an application...") },
+        placeholder = { Text(stringResource(R.string.search_for_an_application)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search",
+                contentDescription = stringResource(R.string.search),
                 tint = MaterialTheme.colorScheme.primary
             )
         },
@@ -72,7 +74,7 @@ fun AppSearchBar(
                 IconButton(onClick = onClear) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear"
+                        contentDescription = stringResource(R.string.clear)
                     )
                 }
             }
@@ -110,7 +112,7 @@ fun EmptySearchResults(query: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Try with another search term",
+                text = stringResource(R.string.try_with_another_search_term),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -135,12 +137,12 @@ fun SearchPlaceholder() {
                 tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
             )
             Text(
-                text = "Search for an application",
+                text = stringResource(R.string.search_for_an_application_2),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Analyze risk before installing",
+                text = stringResource(R.string.analyze_risk_before_installing),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -150,7 +152,7 @@ fun SearchPlaceholder() {
 
 @Composable
 fun SearchResults(
-    results: List<SearchResultDto>,
+    results: List<SearchAppUi>,
     onAppClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -169,7 +171,7 @@ fun SearchResults(
 
 @Composable
 fun SearchResultCard(
-    result: SearchResultDto,
+    result: SearchAppUi,
     onClick: () -> Unit
 ) {
     Card(
@@ -188,7 +190,7 @@ fun SearchResultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = result.icon,
+                model = result.iconUrl,
                 contentDescription = result.appName,
                 modifier = Modifier
                     .size(56.dp)
@@ -221,7 +223,7 @@ fun SearchResultCard(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = Color(0xFFFFB300)
+                            tint = AppColors.warning
                         )
                         Text(
                             text = String.format("%.1f", result.rating),
@@ -251,8 +253,8 @@ fun SearchResultCard(
             }
 
             RiskScoreIndicator(
-                score = result.predictedRiskScore,
-                level = result.predictedRiskLevel
+                score = result.riskScore,
+                level = result.riskLevel
             )
         }
     }
@@ -264,18 +266,18 @@ fun RiskScoreIndicator(
     level: String
 ) {
     val backgroundColor = when (level.lowercase()) {
-        "low" -> Color(0xFF4CAF50).copy(alpha = 0.15f)
-        "medium" -> Color(0xFFFF9800).copy(alpha = 0.15f)
-        "high" -> Color(0xFFF44336).copy(alpha = 0.15f)
-        "critical" -> Color(0xFF9C27B0).copy(alpha = 0.15f)
+        "low" -> AppColors.success.copy(alpha = 0.15f)
+        "medium" -> AppColors.orange.copy(alpha = 0.15f)
+        "high" -> AppColors.error.copy(alpha = 0.15f)
+        "critical" -> AppColors.accentViolet.copy(alpha = 0.15f)
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     val textColor = when (level.lowercase()) {
-        "low" -> Color(0xFF4CAF50)
-        "medium" -> Color(0xFFFF9800)
-        "high" -> Color(0xFFF44336)
-        "critical" -> Color(0xFF9C27B0)
+        "low" -> AppColors.success
+        "medium" -> AppColors.orange
+        "high" -> AppColors.error
+        "critical" -> AppColors.accentViolet
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 

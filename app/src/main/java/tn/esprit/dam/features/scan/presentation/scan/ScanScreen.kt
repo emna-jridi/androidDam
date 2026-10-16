@@ -1,6 +1,8 @@
 package tn.esprit.dam.features.scan.presentation.scan
 
 import androidx.compose.foundation.background
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.features.scan.presentation.model.ScanStatus
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -13,7 +15,6 @@ import tn.esprit.dam.core.ui.theme.AppColors
 
 @Composable
 fun ScanScreen(
-    userId: String,
     deviceId: String,
     onNavigateToHome: () -> Unit,
     onNavigateToAppDetails: (String) -> Unit,
@@ -23,10 +24,10 @@ fun ScanScreen(
     val availableApps by viewModel.availableApps.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.initialize(userId, deviceId)
+        viewModel.initialize(deviceId)
     }
 
-    if ((scanState.status == "LOADING" || (scanState.status == "IDLE" && availableApps.isEmpty())) &&
+    if ((scanState.status == ScanStatus.Loading || (scanState.status == ScanStatus.Idle && availableApps.isEmpty())) &&
         !scanState.scanCompleted) {
         InitialLoadingScreen()
         return
@@ -38,16 +39,16 @@ fun ScanScreen(
             .background(AppColors.background)
     ) {
         when (scanState.status) {
-            "ANALYZING" -> AnimatedLoadingState(
+            ScanStatus.Analyzing -> AnimatedLoadingState(
                 totalApps = scanState.totalApps.coerceAtLeast(scanState.selectedApps.size.coerceAtLeast(1)),
                 scannedApps = scanState.scannedApps,
-                analysisNote = scanState.analysisNote,
+                analysisNote = scanState.analysisNote?.asString(),
                 modifier = Modifier.weight(1f)
             )
 
-            "COMPLETED" -> ResultsContent(
+            ScanStatus.Completed -> ResultsContent(
                 scanState = scanState,
-                analysisNote = scanState.analysisNote,
+                analysisNote = scanState.analysisNote?.asString(),
                 onViewDetails = onNavigateToAppDetails,
                 onNewScan = { viewModel.resetScan() },
                 onImportApk = {  },
@@ -57,7 +58,7 @@ fun ScanScreen(
             else -> SelectionContent(
                 availableApps = availableApps,
                 selectedCount = scanState.selectedApps.size,
-                error = scanState.error,
+                error = scanState.error?.asString(),
                 scanLevel = scanState.scanLevel,
                 onToggleApp = { viewModel.toggleAppSelection(it) },
                 onSelectAll = { viewModel.selectAllApps() },
@@ -68,7 +69,7 @@ fun ScanScreen(
             )
         }
 
-        if (scanState.status == "IDLE") {
+        if (scanState.status == ScanStatus.Idle) {
             ScanBottomBar(
                 selectedCount = scanState.selectedApps.size,
                 onStartScan = { viewModel.startScan() }

@@ -31,6 +31,24 @@ object AppColors {
     val riskMedium = warning
     val riskHigh = Color(0xFFFF6B6B)
     val riskCritical = error
+
+    // Text & lines
+    val textMuted = Color(0xFF64748B)
+    val border = Color(0xFF475569)
+
+    // Status shades: *Dark for pressed/strong, *Container for dark badge backgrounds, *Light for text on them
+    val errorDark = Color(0xFFDC2626)
+    val errorContainer = Color(0xFF7F1D1D)
+    val errorLight = Color(0xFFFCA5A5)
+    val successContainer = Color(0xFF166534)
+    val successLight = Color(0xFF86EFAC)
+    val orange = Color(0xFFF97316)
+    val orangeContainer = Color(0xFF9A3412)
+
+    // Categorical accents (charts, permission groups) — never for status
+    val accentSky = Color(0xFF0EA5E9)
+    val accentViolet = Color(0xFF8B5CF6)
+    val accentPink = Color(0xFFEC4899)
 }
 
 object AppTypography {

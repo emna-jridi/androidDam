@@ -1,4 +1,8 @@
 package tn.esprit.dam.features.vault.presentation.passwords
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import timber.log.Timber
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,7 +21,7 @@ import javax.inject.Inject
 sealed class PasswordListUiState {
     object Loading : PasswordListUiState()
     data class Success(val passwords: List<PasswordEntry>) : PasswordListUiState()
-    data class Error(val message: String) : PasswordListUiState()
+    data class Error(val message: UiText) : PasswordListUiState()
 }
 
 data class PasswordDetailData(
@@ -85,6 +89,7 @@ class PasswordViewModel @Inject constructor(
                 breachCheckCache[password] = isBreached
                 onResult(isBreached)
             } catch (e: Exception) {
+                Timber.w(e, "PasswordViewModel.checkPasswordBreach failed")
                 onResult(false)
             }
         }
@@ -149,7 +154,7 @@ class PasswordViewModel @Inject constructor(
                     PasswordMatcher.buildIndex(passwords)
                 }
                 .onFailure { error ->
-                    _listState.value = PasswordListUiState.Error(error.message ?: "Failed to load passwords")
+                    _listState.value = PasswordListUiState.Error(error.message.toUiTextOr(R.string.passwords_error_load))
                 }
         }
     }
@@ -225,7 +230,7 @@ class PasswordViewModel @Inject constructor(
                     _isPasswordSaving.value = false
                 }
                 .onFailure { error ->
-                    _listState.value = PasswordListUiState.Error(error.message ?: "Failed to create password")
+                    _listState.value = PasswordListUiState.Error(error.message.toUiTextOr(R.string.passwords_error_create))
                     _saveState.value = Result.failure(error)
                     _isPasswordSaving.value = false
                 }

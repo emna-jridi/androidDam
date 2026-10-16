@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.darkweb.presentation
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -53,9 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import tn.esprit.dam.features.darkweb.data.model.Breach
-import tn.esprit.dam.features.darkweb.data.remote.ManualBreachResult
+import tn.esprit.dam.features.darkweb.data.model.ManualBreachResult
 import tn.esprit.dam.core.ui.components.AppEmptyState
 import tn.esprit.dam.core.ui.components.AppLoadingState
 import tn.esprit.dam.core.ui.theme.AppColors
@@ -66,7 +68,7 @@ import tn.esprit.dam.core.ui.theme.AppTypography
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DarkWebMonitoringScreen(
-    navController: NavController,
+    onBreachClick: (String) -> Unit,
     viewModel: DarkWebViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -87,13 +89,13 @@ fun DarkWebMonitoringScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                "Dark Web Monitoring",
+                stringResource(R.string.dark_web_monitoring),
                 style = AppTypography.titleMedium,
                 color = AppColors.textPrimary,
                 fontWeight = FontWeight.Bold
             )
             IconButton(onClick = { viewModel.checkNow() }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Scan Now", tint = AppColors.primary)
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.scan_now), tint = AppColors.primary)
             }
         }
 
@@ -130,8 +132,8 @@ fun DarkWebMonitoringScreen(
                     uiState.isLoading -> AppLoadingState()
                     uiState.breaches.isEmpty() -> AppEmptyState(
                         icon = Icons.Default.CheckCircle,
-                        title = "No breaches detected",
-                        message = "Your monitored accounts are safe"
+                        title = stringResource(R.string.no_breaches_detected),
+                        message = stringResource(R.string.your_monitored_accounts_are_safe)
                     )
                     else -> {
                         LazyColumn(
@@ -140,7 +142,7 @@ fun DarkWebMonitoringScreen(
                         ) {
                             items(uiState.breaches) { breach ->
                                 BreachCard(breach = breach, onClick = {
-                                    navController.navigate("breach_detail/${breach._id}")
+                                    onBreachClick(breach._id)
                                 })
                             }
                         }
@@ -179,17 +181,17 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(AppSpacing.lg), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
-                Text("Check Email Address", style = AppTypography.titleMedium, color = AppColors.textPrimary, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.check_email_address), style = AppTypography.titleMedium, color = AppColors.textPrimary, fontWeight = FontWeight.Bold)
                 Text(
-                    "Check if your email has been exposed in known data breaches.",
+                    stringResource(R.string.check_if_your_email_has_been_exposed_in),
                     style = AppTypography.bodyMedium,
                     color = AppColors.textSecondary
                 )
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Enter Email") },
-                    placeholder = { Text("example@email.com", color = AppColors.textTertiary) },
+                    label = { Text(stringResource(R.string.enter_email)) },
+                    placeholder = { Text(stringResource(R.string.example_email_com), color = AppColors.textTertiary) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -216,7 +218,7 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AppColors.textPrimary, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(AppSpacing.sm))
                     }
-                    Text("Check Email", color = AppColors.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.check_email), color = AppColors.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -275,7 +277,7 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
 
                     if (uiState.manualEmailResult!!.isEmpty()) {
                         Text(
-                            "Good news! This email address was not found in any known data breaches.",
+                            stringResource(R.string.good_news_this_email_address_was_not_fou),
                             style = AppTypography.bodyMedium,
                             color = AppColors.textSecondary
                         )
@@ -308,7 +310,7 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
                 ) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = AppColors.error)
                     Spacer(modifier = Modifier.width(AppSpacing.sm))
-                    Text("Error: ${uiState.error}", color = AppColors.error, style = AppTypography.bodyMedium)
+                    Text("Error: ${uiState.error?.asString()}", color = AppColors.error, style = AppTypography.bodyMedium)
                 }
             }
         }
@@ -320,17 +322,17 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(AppSpacing.lg), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
-                Text("Check Password Safety", style = AppTypography.titleMedium, color = AppColors.textPrimary, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.check_password_safety), style = AppTypography.titleMedium, color = AppColors.textPrimary, fontWeight = FontWeight.Bold)
                 Text(
-                    "We check securely using k-anonymity. Only the first 5 characters of the SHA-1 hash are sent - your password never leaves your device.",
+                    stringResource(R.string.we_check_securely_using_k_anonymity_only),
                     style = AppTypography.bodyMedium,
                     color = AppColors.textSecondary
                 )
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Enter Password") },
-                    placeholder = { Text("Enter password to check", color = AppColors.textTertiary) },
+                    label = { Text(stringResource(R.string.enter_password)) },
+                    placeholder = { Text(stringResource(R.string.enter_password_to_check), color = AppColors.textTertiary) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -351,7 +353,7 @@ fun ManualCheckContent(viewModel: DarkWebViewModel, uiState: DarkWebUiState) {
                     shape = RoundedCornerShape(AppCorners.medium),
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.primary)
                 ) {
-                    Text("Check Password", color = AppColors.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.check_password), color = AppColors.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
 
                 if (uiState.passwordCheckPerformed) {

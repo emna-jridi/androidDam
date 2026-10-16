@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.scan.presentation.history
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryItemDto
 import tn.esprit.dam.core.ui.components.AppEmptyState
 import tn.esprit.dam.core.ui.components.AppErrorState
 import tn.esprit.dam.core.ui.components.AppLoadingState
@@ -32,10 +34,10 @@ import tn.esprit.dam.core.ui.theme.AppColors
 fun ScanHistoryScreen(
     viewModel: ScanHistoryViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
-    onScanClick: (ScanHistoryItemDto) -> Unit = {}
+    onScanClick: (ScanHistoryItemUi) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedScan by remember { mutableStateOf<ScanHistoryItemDto?>(null) }
+    var selectedScan by remember { mutableStateOf<ScanHistoryItemUi?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadHistory()
@@ -48,19 +50,19 @@ fun ScanHistoryScreen(
     ) {
         when {
             uiState.isLoading && uiState.scans.isEmpty() -> {
-                AppLoadingState(message = "Loading history...")
+                AppLoadingState(message = stringResource(R.string.loading_history))
             }
             uiState.error != null && uiState.scans.isEmpty() -> {
                 AppErrorState(
-                    message = uiState.error!!,
+                    message = uiState.error!!.asString(),
                     onRetry = { viewModel.refresh() }
                 )
             }
             uiState.scans.isEmpty() -> {
                 AppEmptyState(
                     icon = Icons.Default.History,
-                    title = "No scans",
-                    message = "Start a scan to see history"
+                    title = stringResource(R.string.no_scans),
+                    message = stringResource(R.string.start_a_scan_to_see_history)
                 )
             }
             else -> {
@@ -91,11 +93,11 @@ fun ScanHistoryScreen(
                     .padding(16.dp),
                 action = {
                     TextButton(onClick = { viewModel.clearError() }) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 }
             ) {
-                Text(error)
+                Text(error.asString())
             }
         }
     }

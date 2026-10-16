@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.vault.presentation.components
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -34,7 +37,7 @@ fun VaultSecurityDashboard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Security, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Vault Health", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.vault_health), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = "${metrics.avgScore}/100",
@@ -48,19 +51,19 @@ fun VaultSecurityDashboard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 MetricItem(
-                    label = "Weak",
+                    label = stringResource(R.string.weak),
                     value = "${metrics.weakCount}",
                     color = if (metrics.weakCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     icon = if (metrics.weakCount > 0) Icons.Default.Warning else Icons.Outlined.CheckCircle
                 )
                 MetricItem(
-                    label = "Reused",
+                    label = stringResource(R.string.reused),
                     value = "${metrics.reusedCount}",
                     color = if (metrics.reusedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     icon = if (metrics.reusedCount > 0) Icons.Default.Warning else Icons.Outlined.CheckCircle
                 )
                 MetricItem(
-                    label = "Strong",
+                    label = stringResource(R.string.strong),
                     value = "${metrics.strongCount}",
                     color = MaterialTheme.colorScheme.primary,
                     icon = Icons.Outlined.CheckCircle
@@ -123,8 +126,8 @@ private fun calculateDashboardMetrics(entries: List<PasswordEntry>): DashboardMe
 
 private fun strengthScoreColor(score: Int): Color {
     return when {
-        score < 50 -> Color(0xFFEF4444)
-        score < 80 -> Color(0xFFF59E0B)
-        else -> Color(0xFF10B981)
+        score < 50 -> AppColors.error
+        score < 80 -> AppColors.warning
+        else -> AppColors.success
     }
 }

@@ -1,4 +1,8 @@
 ﻿package tn.esprit.dam.features.auth.presentation.forgotpassword
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +36,6 @@ import tn.esprit.dam.features.auth.presentation.components.AuthBackButton
 import tn.esprit.dam.features.auth.presentation.components.AuthBackground
 import tn.esprit.dam.features.auth.presentation.components.AuthCard
 import tn.esprit.dam.features.auth.presentation.components.AuthCardTitle
-import tn.esprit.dam.features.auth.presentation.components.AuthColors
 import tn.esprit.dam.features.auth.presentation.components.AuthFieldLabel
 import tn.esprit.dam.features.auth.presentation.components.AuthIconBadge
 import tn.esprit.dam.features.auth.presentation.components.AuthPasswordField
@@ -95,28 +98,28 @@ fun NewPasswordScreen(
 
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = AuthColors.Primary.copy(alpha = 0.1f)
+                        containerColor = AppColors.primary.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Votre mot de passe doit contenir :",
-                            color = AuthColors.TextSecondary,
+                            text = stringResource(R.string.votre_mot_de_passe_doit_contenir),
+                            color = AppColors.textSecondary,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         PasswordRequirement(
-                            text = "Au moins 6 caractéres",
+                            text = stringResource(R.string.au_moins_6_caracteres),
                             met = uiState.newPassword.length >= 6
                         )
                         PasswordRequirement(
-                            text = "Au moins un chiffre",
+                            text = stringResource(R.string.au_moins_un_chiffre),
                             met = uiState.newPassword.any { it.isDigit() }
                         )
                         PasswordRequirement(
-                            text = "Au moins une lettre",
+                            text = stringResource(R.string.au_moins_une_lettre),
                             met = uiState.newPassword.any { it.isLetter() }
                         )
                     }
@@ -124,12 +127,12 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
                 AuthPrimaryButton(
-                    text = "Réinitialiser le mot de passe",
+                    text = stringResource(R.string.reinitialiser_le_mot_de_passe),
                     onClick = { viewModel.resetPassword() },
                     enabled = !uiState.isLoading,
                     isLoading = uiState.isLoading
                 )
-                uiState.errorMessage?.let { AuthStatusMessage(it, isError = true) }
+                uiState.errorMessage?.let { AuthStatusMessage(it.asString(), isError = true) }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -147,13 +150,13 @@ fun PasswordRequirement(text: String, met: Boolean) {
         Icon(
             imageVector = if (met) Icons.Default.CheckCircle else Icons.Default.Circle,
             contentDescription = null,
-            tint = if (met) AuthColors.Success else AuthColors.Placeholder,
+            tint = if (met) AppColors.success else AppColors.textMuted,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            color = if (met) AuthColors.Success else AuthColors.TextSecondary,
+            color = if (met) AppColors.success else AppColors.textSecondary,
             style = MaterialTheme.typography.bodySmall
         )
     }

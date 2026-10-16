@@ -1,6 +1,7 @@
 ﻿package tn.esprit.dam.features.profile.data.model
 
 import kotlinx.serialization.Serializable
+import tn.esprit.dam.core.network.Config
 
 @Serializable
 data class AvatarConfig(
@@ -22,11 +23,13 @@ data class AvatarConfig(
 data class Avatar(
     val userHash: String,
     val config: AvatarConfig,
-    val url: String,
     val fileName: String,
     val createdAt: String? = null,
     val updatedAt: String? = null
-)
+) {
+    /** The backend only sends the file name; the image is served under /uploads/avatars. */
+    val url: String get() = Config.Endpoints.avatarUploadUrl(fileName)
+}
 
 @Serializable
 data class UpdateAvatarDto(

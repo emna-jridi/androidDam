@@ -1,40 +1,19 @@
 ﻿package tn.esprit.dam.features.darkweb.data.repository
 
-import tn.esprit.dam.core.network.map
-import tn.esprit.dam.core.network.toResult
 import tn.esprit.dam.features.darkweb.data.model.Breach
-import tn.esprit.dam.features.darkweb.data.remote.DarkWebApi
-import tn.esprit.dam.features.darkweb.data.remote.ManualBreachResult
-import javax.inject.Inject
-import javax.inject.Singleton
+import tn.esprit.dam.features.darkweb.data.model.ManualBreachResult
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 
-@Singleton
-class DarkWebRepository @Inject constructor(
-    private val api: DarkWebApi
-) {
-    suspend fun getBreaches(): Result<List<Breach>> {
-        return api.getBreaches().toResult()
-    }
+interface DarkWebRepository {
+    suspend fun getBreaches(): Result<List<Breach>>
 
-    suspend fun checkNow(): Result<Unit> {
-        return api.checkNow().toResult()
-    }
+    suspend fun checkNow(): Result<Unit>
 
-    suspend fun checkEmail(email: String): Result<List<ManualBreachResult>> {
-        return api.checkEmail(email).toResult()
-    }
+    suspend fun checkEmail(email: String): Result<List<ManualBreachResult>>
 
-    suspend fun checkPassword(prefix: String): Result<Int> {
-        return api.checkPassword(prefix).map { it.count }.toResult()
-    }
+    suspend fun checkPassword(prefix: String): Result<Int>
 
-    suspend fun resolveBreach(breachId: String): Result<Unit> {
-        return api.resolveBreach(breachId).toResult()
-    }
+    suspend fun resolveBreach(breachId: String): Result<Unit>
 
-    fun monitorBreaches(): Flow<List<Breach>> = flow {
-        emit(getBreaches().getOrDefault(emptyList()))
-    }
+    fun monitorBreaches(): Flow<List<Breach>>
 }

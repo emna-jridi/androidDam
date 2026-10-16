@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.auth.presentation.forgotpassword
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,8 +34,8 @@ fun ResetPasswordOTPScreen(
 
     OtpVerificationLayout(
         icon = Icons.Filled.VpnKey,
-        title = "Code de Vérification",
-        subtitle = "Nous avons envoyé un code à 6 chiffres ",
+        title = stringResource(R.string.code_de_verification),
+        subtitle = stringResource(R.string.nous_avons_envoye_un_code_a_6_chiffres),
         email = email,
         otp = uiState.otp,
         onOtpChange = { viewModel.onOtpChange(it) },
@@ -42,8 +45,8 @@ fun ResetPasswordOTPScreen(
         canResend = uiState.canResend,
         resendCountdown = uiState.resendCountdown,
         onResend = { viewModel.resendResetOTP() },
-        successMessage = uiState.successMessage,
-        errorMessage = uiState.errorMessage,
+        successMessage = uiState.successMessage?.asString(),
+        errorMessage = uiState.errorMessage?.asString(),
         infoText = "Le code expire dans 10 minutes",
         backLabel = "Retour",
         onBack = onNavigateBack,

@@ -111,6 +111,15 @@
         </activity>
 
         <!-- Privacy Monitor Service (monitors camera/mic access) -->
+        <!-- Receives new FCM tokens and registers them with the backend -->
+        <service
+            android:name=".features.alert.push.ShadowGuardMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".features.alert.service.PrivacyMonitorService"
             android:enabled="true"

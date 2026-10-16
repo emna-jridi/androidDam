@@ -1,4 +1,7 @@
 ﻿package tn.esprit.dam.features.auth.presentation.verification
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,7 +32,6 @@ import kotlinx.coroutines.delay
 import tn.esprit.dam.features.auth.presentation.components.AuthAutoRedirectNotice
 import tn.esprit.dam.features.auth.presentation.components.AuthBackground
 import tn.esprit.dam.features.auth.presentation.components.AuthCard
-import tn.esprit.dam.features.auth.presentation.components.AuthColors
 import tn.esprit.dam.features.auth.presentation.components.AuthPrimaryButton
 import tn.esprit.dam.features.auth.presentation.components.AuthSuccessBadge
 import tn.esprit.dam.features.auth.presentation.components.AuthTitle
@@ -67,21 +69,21 @@ fun VerificationSuccessScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Votre compte a été créé avec succès et votre email est maintenant vérifié.",
+                    text = stringResource(R.string.votre_compte_a_ete_cree_avec_succes_et_v),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = AuthColors.TextSecondary,
+                    color = AppColors.textSecondary,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                FeatureItem(icon = Icons.Default.Security, text = "Protection avancée activée")
+                FeatureItem(icon = Icons.Default.Security, text = stringResource(R.string.protection_avancee_activee))
                 Spacer(modifier = Modifier.height(12.dp))
-                FeatureItem(icon = Icons.Default.Shield, text = "Analyse d'applications disponible")
+                FeatureItem(icon = Icons.Default.Shield, text = stringResource(R.string.analyse_d_applications_disponible))
                 Spacer(modifier = Modifier.height(12.dp))
-                FeatureItem(icon = Icons.Default.Verified, text = "Compte 100% sécurisé")
+                FeatureItem(icon = Icons.Default.Verified, text = stringResource(R.string.compte_100_securise))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            AuthPrimaryButton(text = "Commencer", onClick = onContinue)
+            AuthPrimaryButton(text = stringResource(R.string.commencer), onClick = onContinue)
             Spacer(modifier = Modifier.height(16.dp))
             AuthAutoRedirectNotice()
         }
@@ -97,7 +99,7 @@ fun FeatureItem(icon: ImageVector, text: String) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AuthColors.Success,
+            tint = AppColors.success,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))

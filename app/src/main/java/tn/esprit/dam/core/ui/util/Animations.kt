@@ -1,4 +1,6 @@
 package tn.esprit.dam.core.ui.util
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -100,7 +102,7 @@ fun rememberShimmerAnimation(): Float {
             ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "shimmer_alpha"
+        label = stringResource(R.string.shimmer_alpha)
     )
     return alpha.value
 }
@@ -118,7 +120,7 @@ fun Modifier.animateListItem(
             delayMillis = delayMillis,
             easing = FastOutSlowInEasing
         ),
-        label = "list_item_alpha"
+        label = stringResource(R.string.list_item_alpha)
     )
 
     val animatedOffset by animateFloatAsState(
@@ -128,7 +130,7 @@ fun Modifier.animateListItem(
             delayMillis = delayMillis,
             easing = FastOutSlowInEasing
         ),
-        label = "list_item_offset"
+        label = stringResource(R.string.list_item_offset)
     )
 
     this
@@ -151,7 +153,7 @@ fun rememberPulseAnimation(): Float {
             ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulse_alpha"
+        label = stringResource(R.string.pulse_alpha)
     )
     return alpha.value
 }

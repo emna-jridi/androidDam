@@ -1,4 +1,6 @@
 package tn.esprit.dam.features.vault.presentation.passwords
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -68,7 +70,7 @@ fun PasswordDetailScreen(
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             Icons.Outlined.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -114,7 +116,7 @@ fun PasswordDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Credentials",
+                            text = stringResource(R.string.credentials),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -125,7 +127,7 @@ fun PasswordDetailScreen(
                 Column(modifier = Modifier.padding(20.dp)) {
                     CopyableDetailRow(
                         icon = Icons.Outlined.Person,
-                        label = "Username",
+                        label = stringResource(R.string.username),
                         value = data.entry.username,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(data.entry.username))
@@ -154,7 +156,7 @@ fun PasswordDetailScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Password",
+                                    text = stringResource(R.string.password),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -185,11 +187,11 @@ fun PasswordDetailScreen(
                                 AnimatedContent(
                                     targetState = copiedField == "password",
                                     transitionSpec = { fadeIn() with fadeOut() },
-                                    label = "Copy animation"
+                                    label = stringResource(R.string.copy_animation)
                                 ) { copied ->
                                     Icon(
                                         imageVector = if (copied) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
-                                        contentDescription = "Copy",
+                                        contentDescription = stringResource(R.string.copy),
                                         tint = if (copied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -204,7 +206,7 @@ fun PasswordDetailScreen(
                     data.entry.url?.let { url ->
                         CopyableDetailRow(
                             icon = Icons.Outlined.Language,
-                            label = "Website",
+                            label = stringResource(R.string.website),
                             value = url,
                             onCopy = {
                                 clipboardManager.setText(AnnotatedString(url))
@@ -231,7 +233,7 @@ fun PasswordDetailScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Category",
+                                text = stringResource(R.string.category),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -265,7 +267,7 @@ fun PasswordDetailScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Notes",
+                                    text = stringResource(R.string.notes),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -287,7 +289,7 @@ fun PasswordDetailScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Password?") },
+            title = { Text(stringResource(R.string.delete_password)) },
             text = { Text("This action cannot be undone. Are you sure you want to delete this password entry for ${data.entry.site}?") },
             confirmButton = {
                 Button(
@@ -299,12 +301,12 @@ fun PasswordDetailScreen(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -350,11 +352,11 @@ private fun CopyableDetailRow(
             AnimatedContent(
                 targetState = copied,
                 transitionSpec = { fadeIn() with fadeOut() },
-                label = "Copy icon animation"
+                label = stringResource(R.string.copy_icon_animation)
             ) { isCopied ->
                 Icon(
                     imageVector = if (isCopied) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
-                    contentDescription = "Copy",
+                    contentDescription = stringResource(R.string.copy),
                     tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
                 )
             }

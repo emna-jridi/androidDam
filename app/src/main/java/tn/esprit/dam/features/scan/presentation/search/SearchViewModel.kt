@@ -1,6 +1,9 @@
 ﻿package tn.esprit.dam.features.scan.presentation.search
 
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -11,14 +14,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tn.esprit.dam.core.network.ApiResult
-import tn.esprit.dam.features.scan.data.remote.dto.SearchResultDto
 import tn.esprit.dam.features.scan.data.repository.ScanRepository
 
 data class SearchUIState(
     val query: String = "",
-    val results: List<SearchResultDto> = emptyList(),
+    val results: List<SearchAppUi> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val hasSearched: Boolean = false
 )
 
@@ -32,16 +34,16 @@ class SearchViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     fun updateQuery(query: String) {
-        _uiState.value = _uiState.value.copy(query = query)
+        _uiState.update { it.copy(query = query) }
 
         searchJob?.cancel()
 
         if (query.length < 2) {
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 results = emptyList(),
                 hasSearched = false,
                 error = null
-            )
+            ) }
             return
         }
 
@@ -62,40 +64,40 @@ class SearchViewModel @Inject constructor(
     }
 
     private suspend fun performSearch(query: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             isLoading = true,
             error = null
-        )
+        ) }
 
         when (val result = repository.searchApps(query, "android", 15)) {
             is ApiResult.Success -> {
-                _uiState.value = _uiState.value.copy(
-                    results = result.data.results,
+                _uiState.update { it.copy(
+                    results = result.data.results.map { it.toUi() },
                     isLoading = false,
                     hasSearched = true,
                     error = null
-                )
+                ) }
             }
             is ApiResult.ApiError -> {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     hasSearched = true,
-                    error = result.message
-                )
+                    error = UiText.Raw(result.message)
+                ) }
             }
             is ApiResult.NetworkError -> {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     hasSearched = true,
-                    error = "Erreur réseau: vérifiez votre connexion"
-                )
+                    error = UiText.Res(R.string.error_network_check_connection)
+                ) }
             }
             is ApiResult.SerializationError -> {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     hasSearched = true,
-                    error = "Erreur de données"
-                )
+                    error = UiText.Res(R.string.error_data_generic)
+                ) }
             }
         }
     }
@@ -106,6 +108,6 @@ class SearchViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+        _uiState.update { it.copy(error = null) }
     }
 }

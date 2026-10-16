@@ -1,6 +1,10 @@
 package tn.esprit.dam.features.auth.presentation.login
 
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,7 +27,7 @@ data class LoginUiState(
     val passwordError: String? = null,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: UiText? = null
 )
 
 sealed class AuthEvent {
@@ -31,14 +35,11 @@ sealed class AuthEvent {
 }
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(
+class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val authRepository: AuthRepository,
     private val tokenRepository: TokenRepository
 ) : ViewModel() {
-    fun initialize(context: android.content.Context) {
-    }
-
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -46,23 +47,23 @@ class AuthViewModel @Inject constructor(
     val events: SharedFlow<AuthEvent> = _events.asSharedFlow()
 
     fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             email = email,
             emailError = null
-        )
+        ) }
     }
 
     fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             password = password,
             passwordError = null
-        )
+        ) }
     }
 
     fun togglePasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            passwordVisible = !_uiState.value.passwordVisible
-        )
+        _uiState.update { it.copy(
+            passwordVisible = !it.passwordVisible
+        ) }
     }
 
     private fun validateForm(): Boolean {
@@ -72,10 +73,10 @@ class AuthViewModel @Inject constructor(
         val emailError = loginUseCase.validateEmail(email)
         val passwordError = loginUseCase.validatePassword(password)
 
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             emailError = emailError,
             passwordError = passwordError
-        )
+        ) }
 
         return emailError == null && passwordError == null
     }
@@ -87,34 +88,34 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null
-                )
+                ) }
 
                 val result = loginUseCase.executeLogin(
                     email = _uiState.value.email,
                     password = _uiState.value.password
                 )
 
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     isSuccess = true,
                     errorMessage = null
-                )
+                ) }
                 _events.emit(AuthEvent.LoginSuccess)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     isSuccess = false,
-                    errorMessage = e.message ?: "Login failed"
-                )
+                    errorMessage = e.message.toUiTextOr(R.string.auth_error_login_failed)
+                ) }
             }
         }
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     fun resetState() {

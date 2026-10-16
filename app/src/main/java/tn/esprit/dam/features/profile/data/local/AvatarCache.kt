@@ -1,6 +1,10 @@
 package tn.esprit.dam.features.profile.data.local
+import timber.log.Timber
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -34,6 +38,7 @@ object AvatarCache {
                 null
             }
         } catch (e: Exception) {
+            Timber.w(e, "AvatarCache.cacheAvatar failed")
             null
         }
     }
@@ -86,4 +91,15 @@ object AvatarCache {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
             .getString(KEY_AVATAR_FILE + userId, null)
     }
+}
+
+/** Injectable entry point to [AvatarCache], so ViewModels don't need a Context. */
+@Singleton
+class AvatarStorage @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    suspend fun cacheAvatar(userId: String, avatarFileName: String): String? =
+        AvatarCache.cacheAvatar(context, userId, avatarFileName)
+
+    fun clearAll() = AvatarCache.clearAllCache(context)
 }

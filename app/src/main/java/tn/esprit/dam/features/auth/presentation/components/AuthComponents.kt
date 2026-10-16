@@ -1,4 +1,7 @@
 package tn.esprit.dam.features.auth.presentation.components
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,20 +57,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-object AuthColors {
-    val BackgroundGradient = listOf(Color(0xFF0A0E27), Color(0xFF1A1F3A))
-    val Primary = Color(0xFF7C3AED)
-    val PrimaryDisabled = Color(0xFF5B21B6)
-    val Card = Color(0xFF1E2139)
-    val Field = Color(0xFF2D3250)
-    val FieldBorder = Color(0xFF374151)
-    val TextSecondary = Color(0xFFB4B4C6)
-    val Placeholder = Color(0xFF6B7280)
-    val Icon = Color(0xFF9CA3AF)
-    val Success = Color(0xFF10B981)
-    val Error = Color(0xFFEF4444)
-}
-
 @Composable
 fun AuthBackground(
     modifier: Modifier = Modifier,
@@ -76,7 +65,7 @@ fun AuthBackground(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = AuthColors.BackgroundGradient))
+            .background(Brush.verticalGradient(colors = listOf(AppColors.background, AppColors.surface)))
             .then(modifier),
         contentAlignment = Alignment.Center,
         content = content
@@ -88,7 +77,7 @@ fun AuthIconBadge(icon: ImageVector) {
     Surface(
         modifier = Modifier.size(80.dp),
         shape = RoundedCornerShape(20.dp),
-        color = AuthColors.Primary
+        color = AppColors.primary
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
@@ -106,14 +95,14 @@ fun AuthSuccessBadge() {
     Surface(
         modifier = Modifier.size(120.dp),
         shape = RoundedCornerShape(60.dp),
-        color = AuthColors.Success.copy(alpha = 0.2f)
+        color = AppColors.success.copy(alpha = 0.2f)
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Success",
+                contentDescription = stringResource(R.string.success),
                 modifier = Modifier.size(70.dp),
-                tint = AuthColors.Success
+                tint = AppColors.success
             )
         }
     }
@@ -141,7 +130,7 @@ fun AuthSubtitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = AuthColors.TextSecondary,
+        color = AppColors.textSecondary,
         textAlign = TextAlign.Center
     )
 }
@@ -155,7 +144,7 @@ fun AuthCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = AuthColors.Card)
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface)
     ) {
         Column(
             modifier = Modifier.padding(contentPadding),
@@ -199,9 +188,9 @@ fun AuthTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = AuthColors.Placeholder) },
+        placeholder = { Text(placeholder, color = AppColors.textMuted) },
         leadingIcon = {
-            Icon(leadingIcon, contentDescription = null, tint = AuthColors.Icon)
+            Icon(leadingIcon, contentDescription = null, tint = AppColors.textTertiary)
         },
         trailingIcon = trailingIcon,
         modifier = Modifier.fillMaxWidth(),
@@ -209,29 +198,29 @@ fun AuthTextField(
         visualTransformation = visualTransformation,
         singleLine = true,
         isError = error != null,
-        supportingText = error?.let { { Text(it, color = AuthColors.Error) } },
+        supportingText = error?.let { { Text(it, color = AppColors.error) } },
         shape = RoundedCornerShape(12.dp),
         colors = if (styleDisabledState) {
             OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
-                disabledTextColor = AuthColors.Icon,
-                focusedBorderColor = AuthColors.Primary,
-                unfocusedBorderColor = AuthColors.FieldBorder,
-                focusedContainerColor = AuthColors.Field,
-                unfocusedContainerColor = AuthColors.Field,
-                disabledContainerColor = AuthColors.Field,
-                cursorColor = AuthColors.Primary
+                disabledTextColor = AppColors.textTertiary,
+                focusedBorderColor = AppColors.primary,
+                unfocusedBorderColor = AppColors.border,
+                focusedContainerColor = AppColors.surfaceVariant,
+                unfocusedContainerColor = AppColors.surfaceVariant,
+                disabledContainerColor = AppColors.surfaceVariant,
+                cursorColor = AppColors.primary
             )
         } else {
             OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
-                focusedBorderColor = AuthColors.Primary,
-                unfocusedBorderColor = AuthColors.FieldBorder,
-                focusedContainerColor = AuthColors.Field,
-                unfocusedContainerColor = AuthColors.Field,
-                cursorColor = AuthColors.Primary
+                focusedBorderColor = AppColors.primary,
+                unfocusedBorderColor = AppColors.border,
+                focusedContainerColor = AppColors.surfaceVariant,
+                unfocusedContainerColor = AppColors.surfaceVariant,
+                cursorColor = AppColors.primary
             )
         }
     )
@@ -258,7 +247,7 @@ fun AuthPasswordField(
                 Icon(
                     imageVector = if (visible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                     contentDescription = null,
-                    tint = AuthColors.Icon
+                    tint = AppColors.textTertiary
                 )
             }
         },
@@ -281,8 +270,8 @@ fun AuthPrimaryButton(
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = AuthColors.Primary,
-            disabledContainerColor = AuthColors.PrimaryDisabled
+            containerColor = AppColors.primary,
+            disabledContainerColor = AppColors.primaryDark
         )
     ) {
         if (isLoading) {
@@ -306,7 +295,7 @@ fun AuthStatusMessage(
     isError: Boolean,
     compact: Boolean = false
 ) {
-    val color = if (isError) AuthColors.Error else AuthColors.Success
+    val color = if (isError) AppColors.error else AppColors.success
     Spacer(modifier = Modifier.height(16.dp))
     Card(
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
@@ -347,13 +336,13 @@ fun AuthResendCode(
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
-                    tint = AuthColors.Primary,
+                    tint = AppColors.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Renvoyer le code",
-                    color = AuthColors.Primary,
+                    stringResource(R.string.renvoyer_le_code),
+                    color = AppColors.primary,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -366,13 +355,13 @@ fun AuthResendCode(
             Icon(
                 imageVector = Icons.Default.AccessTime,
                 contentDescription = null,
-                tint = AuthColors.Icon,
+                tint = AppColors.textTertiary,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 "Renvoyer dans ${countdownSeconds}s",
-                color = AuthColors.Icon,
+                color = AppColors.textTertiary,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -384,7 +373,7 @@ fun AuthInfoCard(text: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AuthColors.Card.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -393,13 +382,13 @@ fun AuthInfoCard(text: String) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = AuthColors.Primary,
+                tint = AppColors.primary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = text,
-                color = AuthColors.TextSecondary,
+                color = AppColors.textSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -412,12 +401,12 @@ fun AuthBackButton(text: String, onClick: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = AuthColors.Primary,
+                contentDescription = stringResource(R.string.back),
+                tint = AppColors.primary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text, color = AuthColors.Primary, fontWeight = FontWeight.SemiBold)
+            Text(text, color = AppColors.primary, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -428,13 +417,13 @@ fun AuthAutoRedirectNotice() {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
             contentDescription = null,
-            tint = AuthColors.Primary,
+            tint = AppColors.primary,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Redirection automatique dans 3 secondes...",
-            color = AuthColors.Icon,
+            text = stringResource(R.string.redirection_automatique_dans_3_secondes),
+            color = AppColors.textTertiary,
             style = MaterialTheme.typography.bodySmall
         )
     }
@@ -475,7 +464,7 @@ fun OtpVerificationLayout(
             Text(
                 text = email,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = AuthColors.Primary,
+                color = AppColors.primary,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(48.dp))

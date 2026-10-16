@@ -1,11 +1,12 @@
 ﻿package tn.esprit.dam.features.scan.presentation.home
 
-import android.content.Context
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import kotlinx.coroutines.flow.update
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import java.time.Instant
 import java.time.ZoneId
@@ -15,15 +16,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import tn.esprit.dam.core.session.TokenRepository
 import tn.esprit.dam.core.network.ApiResult
 import tn.esprit.dam.features.scan.data.repository.ScanRepository
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: ScanRepository,
-    private val tokenRepository: TokenRepository,
-    @ApplicationContext private val context: Context
+    private val repository: ScanRepository
 ) : ViewModel() {
     private val _homeState = MutableStateFlow(HomeState())
     val homeState: StateFlow<HomeState> = _homeState.asStateFlow()
@@ -31,27 +29,15 @@ class HomeViewModel @Inject constructor(
     fun loadDashboard() {
         viewModelScope.launch {
             try {
-                _homeState.value = _homeState.value.copy(loading = true, error = null)
+                _homeState.update { it.copy(loading = true, error = null) }
 
-                val user = tokenRepository.getUser()
-                val userId = user?.id
-
-                if (userId == null) {
-                    _homeState.value = _homeState.value.copy(
-                        loading = false,
-                        error = "Utilisateur non connecté",
-                        riskyApps = emptyList()
-                    )
-                    return@launch
-                }
-
-                val historyResult = repository.getScanHistory(userId, limit = 1, offset = 0)
+                val historyResult = repository.getScanHistory(limit = 1, offset = 0)
 
                 val hasHistory = historyResult is ApiResult.Success && historyResult.data.scans.isNotEmpty()
                 val lastHistoryDate = if (hasHistory) historyResult.data.scans.first().createdAt else null
 
                 if (!hasHistory) {
-                    _homeState.value = _homeState.value.copy(
+                    _homeState.update { it.copy(
                         lastScanDate = null,
                         overallScore = 0f,
                         highRiskCount = 0,
@@ -62,18 +48,18 @@ class HomeViewModel @Inject constructor(
                         loading = false,
                         error = null,
                         totalApps = 0
-                    )
+                    ) }
                     return@launch
                 }
 
-                when (val result = repository.getLatestScan(userId)) {
+                when (val result = repository.getLatestScan()) {
                     is ApiResult.Success -> {
                         val response = result.data
-                        val apps = response.apps
+                        val apps = response.results
 
                         if (apps.isEmpty()) {
-                            _homeState.value = _homeState.value.copy(
-                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.createdAt),
+                            _homeState.update { it.copy(
+                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.scanDate),
                                 overallScore = 0f,
                                 highRiskCount = 0,
                                 mediumRiskCount = 0,
@@ -83,7 +69,7 @@ class HomeViewModel @Inject constructor(
                                 loading = false,
                                 error = null,
                                 totalApps = 0
-                            )
+                            ) }
                         } else {
                             val riskScores = apps.map { it.aiRiskScore ?: it.finalScore ?: 0f }
                             val averageScore = if (riskScores.isNotEmpty()) riskScores.average().toFloat() else 0f
@@ -94,48 +80,48 @@ class HomeViewModel @Inject constructor(
                             val mediumRiskCount = riskScores.count { it in 40.0..69.99 }
                             val lowRiskCount = riskScores.count { it >= 70 }
 
-                            _homeState.value = _homeState.value.copy(
-                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.createdAt),
+                            _homeState.update { it.copy(
+                                lastScanDate = formatTimestamp(lastHistoryDate ?: response.scanDate),
                                 overallScore = averageScore,
                                 highRiskCount = highRiskCount,
                                 mediumRiskCount = mediumRiskCount,
                                 lowRiskCount = lowRiskCount,
-                                riskyApps = sortedByRisk,
+                                riskyApps = sortedByRisk.map { it.toRiskyAppUi() },
                                 recentScans = emptyList(),
                                 loading = false,
                                 error = null,
                                 totalApps = apps.size
-                            )
+                            ) }
                         }
                     }
                     is ApiResult.ApiError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = result.message,
+                            error = UiText.Raw(result.message),
                             riskyApps = emptyList()
-                        )
+                        ) }
                     }
                     is ApiResult.NetworkError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = "Erreur réseau: vérifiez votre connexion",
+                            error = UiText.Res(R.string.error_network_check_connection),
                             riskyApps = emptyList()
-                        )
+                        ) }
                     }
                     is ApiResult.SerializationError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = "Erreur de données: ${result.exception.message}",
+                            error = UiText.Res(R.string.error_data, result.exception.message.orEmpty()),
                             riskyApps = emptyList()
-                        )
+                        ) }
                     }
                 }
             } catch (e: Exception) {
-                _homeState.value = _homeState.value.copy(
+                _homeState.update { it.copy(
                     loading = false,
-                    error = e.message ?: "Impossible de charger le tableau de bord",
+                    error = e.message?.let { UiText.Raw(it) } ?: UiText.Res(R.string.error_dashboard_load),
                     riskyApps = emptyList()
-                )
+                ) }
             }
         }
     }
@@ -145,53 +131,42 @@ class HomeViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _homeState.value = _homeState.value.copy(error = null)
+        _homeState.update { it.copy(error = null) }
     }
 
     fun scanApk(uri: Uri) {
         viewModelScope.launch {
             try {
-                _homeState.value = _homeState.value.copy(loading = true, error = null)
+                _homeState.update { it.copy(loading = true, error = null) }
 
-                val user = tokenRepository.getUser()
-                val userId = user?.id
-
-                if (userId == null) {
-                    _homeState.value = _homeState.value.copy(
-                        loading = false,
-                        error = "Utilisateur non connecté"
-                    )
-                    return@launch
-                }
-
-                when (val result = repository.scanApk(uri, userId, null)) {
+                when (val result = repository.scanApk(uri, null)) {
                     is ApiResult.Success -> {
                         loadDashboard()
                     }
                     is ApiResult.ApiError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = "Erreur: ${result.message}"
-                        )
+                            error = UiText.Res(R.string.error_with_message, result.message)
+                        ) }
                     }
                     is ApiResult.NetworkError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = "Erreur réseau: ${result.exception.message}"
-                        )
+                            error = UiText.Res(R.string.error_network_with_message, result.exception.message.orEmpty())
+                        ) }
                     }
                     is ApiResult.SerializationError -> {
-                        _homeState.value = _homeState.value.copy(
+                        _homeState.update { it.copy(
                             loading = false,
-                            error = "Erreur de données: ${result.exception.message}"
-                        )
+                            error = UiText.Res(R.string.error_data, result.exception.message.orEmpty())
+                        ) }
                     }
                 }
             } catch (e: Exception) {
-                _homeState.value = _homeState.value.copy(
+                _homeState.update { it.copy(
                     loading = false,
-                    error = e.message ?: "Erreur lors de l'analyse APK"
-                )
+                    error = e.message?.let { UiText.Raw(it) } ?: UiText.Res(R.string.error_apk_scan)
+                ) }
             }
         }
     }

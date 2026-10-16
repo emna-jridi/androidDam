@@ -1,7 +1,8 @@
 package tn.esprit.dam.features.vault.domain.password
 
-import kotlin.random.Random
+import java.security.SecureRandom
 
+/** The app's only password/passphrase generator. Uses [SecureRandom]: these are real secrets. */
 object PasswordGenerator {
     private const val LOWERCASE = "abcdefghijklmnopqrstuvwxyz"
     private const val UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -16,21 +17,26 @@ object PasswordGenerator {
         "opal", "pearl", "ruby", "sand", "teal", "urban", "vault", "wind", "zinc", "bolt"
     )
 
+    private val random = SecureRandom()
+
+    /** Always contains at least one character from every enabled group. */
     fun generatePassword(
         length: Int = 16,
         useUppercase: Boolean = true,
         useNumbers: Boolean = true,
         useSymbols: Boolean = true
     ): String {
-        val charPool = StringBuilder(LOWERCASE)
-        if (useUppercase) charPool.append(UPPERCASE)
-        if (useNumbers) charPool.append(NUMBERS)
-        if (useSymbols) charPool.append(SYMBOLS)
+        val groups = buildList {
+            add(LOWERCASE)
+            if (useUppercase) add(UPPERCASE)
+            if (useNumbers) add(NUMBERS)
+            if (useSymbols) add(SYMBOLS)
+        }
+        val pool = groups.joinToString("")
+        val size = length.coerceAtLeast(groups.size)
 
-        return (1..length)
-            .map { Random.nextInt(0, charPool.length) }
-            .map(charPool::get)
-            .joinToString("")
+        val chars = groups.map { it.randomChar() } + List(size - groups.size) { pool.randomChar() }
+        return chars.shuffled(random).joinToString("")
     }
 
     fun generatePassphrase(
@@ -38,9 +44,10 @@ object PasswordGenerator {
         separator: String = "-",
         capitalize: Boolean = true
     ): String {
-        return (1..wordCount)
-            .map { WORD_LIST.random() }
+        return List(wordCount) { WORD_LIST[random.nextInt(WORD_LIST.size)] }
             .map { if (capitalize) it.replaceFirstChar { c -> c.uppercase() } else it }
             .joinToString(separator)
     }
+
+    private fun String.randomChar(): Char = this[random.nextInt(length)]
 }

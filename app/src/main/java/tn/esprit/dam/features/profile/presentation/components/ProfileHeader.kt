@@ -1,4 +1,6 @@
 ﻿package tn.esprit.dam.features.profile.presentation.components
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -47,7 +49,7 @@ fun ProfileHeader(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Person,
-                    contentDescription = "Profile",
+                    contentDescription = stringResource(R.string.profile),
                     tint = AppColors.primary,
                     modifier = Modifier.size(40.dp)
                 )

@@ -18,6 +18,7 @@ import tn.esprit.dam.features.vault.data.model.UpdatePasswordEntryRequest
 import tn.esprit.dam.features.vault.data.model.UpdateVaultSettingsRequest
 import tn.esprit.dam.features.vault.data.model.Vault
 import tn.esprit.dam.features.vault.data.model.VaultCheckLockResponse
+import tn.esprit.dam.features.vault.data.model.VaultSettingsResponse
 import tn.esprit.dam.features.vault.data.model.VaultUnlockResponse
 import tn.esprit.dam.features.vault.domain.password.PasswordAnalysisMetrics
 import javax.inject.Inject
@@ -50,7 +51,7 @@ class VaultApi @Inject constructor(private val client: KtorHttpClient) {
         }
     }
 
-    suspend fun updateVaultSettings(request: UpdateVaultSettingsRequest): ApiResult<Vault> {
+    suspend fun updateVaultSettings(request: UpdateVaultSettingsRequest): ApiResult<VaultSettingsResponse> {
         return client.put("$VAULT_URL/settings", request)
     }
 

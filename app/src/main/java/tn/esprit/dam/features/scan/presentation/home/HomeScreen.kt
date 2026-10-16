@@ -1,4 +1,8 @@
 package tn.esprit.dam.features.scan.presentation.home
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
+import timber.log.Timber
 
 import android.content.Intent
 import android.net.Uri
@@ -27,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
-import tn.esprit.dam.features.scan.data.remote.dto.AppResult
 import tn.esprit.dam.core.ui.components.AppEmptyState
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppSpacing
@@ -57,7 +60,8 @@ fun HomeScreen(
                         it,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
-                } catch (_: SecurityException) {
+                } catch (e: SecurityException) {
+                    Timber.w(e, "HomeScreen.HomeScreen failed")
                 }
                 viewModel.scanApk(it)
             }
@@ -104,7 +108,7 @@ fun HomeScreen(
 
         item {
             Text(
-                text = "Actions rapides",
+                text = stringResource(R.string.actions_rapides),
                 style = AppTypography.titleMedium,
                 color = AppColors.textPrimary
             )
@@ -144,10 +148,10 @@ fun HomeScreen(
             item {
                 AppEmptyState(
                     icon = Icons.Default.Search,
-                    title = "No scan performed",
-                    message = "Launch your first scan to secure your applications.",
+                    title = stringResource(R.string.no_scan_performed),
+                    message = stringResource(R.string.launch_your_first_scan_to_secure_your_ap),
                     onAction = onNavigateToScan,
-                    actionText = "Start a scan"
+                    actionText = stringResource(R.string.start_a_scan)
                 )
             }
         }
@@ -161,10 +165,10 @@ data class HomeState(
     val mediumRiskCount: Int = 0,
     val lowRiskCount: Int = 0,
     val totalApps: Int = 0,
-    val riskyApps: List<AppResult> = emptyList(),
+    val riskyApps: List<RiskyAppUi> = emptyList(),
     val recentScans: List<RecentScan> = emptyList(),
     val loading: Boolean = false,
-    val error: String? = null
+    val error: UiText? = null
 ) {
     val hasScan: Boolean
         get() = totalApps > 0

@@ -1,4 +1,6 @@
 package tn.esprit.dam.features.alert.presentation
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
@@ -81,12 +83,12 @@ fun AlertsScreen(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier.background(AppColors.textPrimary.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.textPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppColors.textPrimary)
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Security Logs",
+                        text = stringResource(R.string.security_logs),
                         color = AppColors.textPrimary,
                         style = AppTypography.titleMedium
                     )
@@ -117,14 +119,14 @@ fun AlertsScreen(
                             onClick = { viewModel.markAllAsRead() },
                             modifier = Modifier.background(AppColors.primary.copy(alpha = 0.1f), CircleShape)
                         ) {
-                            Icon(Icons.Default.DoneAll, contentDescription = "Mark all as read", tint = AppColors.primary)
+                            Icon(Icons.Default.DoneAll, contentDescription = stringResource(R.string.mark_all_as_read), tint = AppColors.primary)
                         }
                     }
                     IconButton(
                         onClick = { viewModel.loadAlerts() },
                         modifier = Modifier.background(AppColors.textPrimary.copy(alpha = 0.1f), CircleShape)
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = AppColors.primary)
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh), tint = AppColors.primary)
                     }
                 }
             }
@@ -134,8 +136,8 @@ fun AlertsScreen(
             } else if (alerts.isEmpty()) {
                 AppEmptyState(
                     icon = Icons.Default.Security,
-                    title = "No threats detected",
-                    message = "All your applications are secure"
+                    title = stringResource(R.string.no_threats_detected),
+                    message = stringResource(R.string.all_your_applications_are_secure)
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -397,28 +399,28 @@ private fun SeveritySummaryBadge(critical: Int, high: Int, medium: Int, info: In
             verticalAlignment = Alignment.CenterVertically
         ) {
             SeverityBadgeItem(
-                label = "Critical",
+                label = stringResource(R.string.critical),
                 count = critical,
                 color = AppColors.riskCritical,
                 modifier = Modifier.weight(1f)
             )
 
             SeverityBadgeItem(
-                label = "High",
+                label = stringResource(R.string.high),
                 count = high,
                 color = AppColors.riskHigh,
                 modifier = Modifier.weight(1f)
             )
 
             SeverityBadgeItem(
-                label = "Medium",
+                label = stringResource(R.string.medium),
                 count = medium,
                 color = AppColors.riskMedium,
                 modifier = Modifier.weight(1f)
             )
 
             SeverityBadgeItem(
-                label = "Info",
+                label = stringResource(R.string.info),
                 count = info,
                 color = AppColors.info,
                 modifier = Modifier.weight(1f)
@@ -469,7 +471,7 @@ private fun AlertRecommendationsCard(criticalCount: Int, highCount: Int) {
                 )
                 Spacer(modifier = Modifier.width(AppSpacing.sm))
                 Text(
-                    text = "Security Recommendations",
+                    text = stringResource(R.string.security_recommendations),
                     color = AppColors.textPrimary,
                     style = AppTypography.labelLarge,
                     fontWeight = FontWeight.Bold
@@ -546,7 +548,9 @@ fun parseAnyTimestamp(timestamp: String): Date? {
             if (p.endsWith("'Z'")) f.timeZone = TimeZone.getTimeZone("UTC")
             val d = f.parse(s)
             if (d != null) return d
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+            // Not this format; try the next pattern.
+        }
     }
     s.toLongOrNull()?.let { num ->
         val millis = when (s.length) {

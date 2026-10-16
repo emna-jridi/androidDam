@@ -1,15 +1,16 @@
 package tn.esprit.dam.features.profile.presentation
 
-import android.content.Context
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import tn.esprit.dam.features.profile.data.local.AvatarCache
+import tn.esprit.dam.features.profile.data.local.AvatarStorage
 import tn.esprit.dam.features.profile.data.repository.UserRepository
 import javax.inject.Inject
 import tn.esprit.dam.core.session.TokenRepository
@@ -18,7 +19,7 @@ import tn.esprit.dam.core.session.TokenRepository
 class ProfileViewModel @Inject constructor(
     private val repository: UserRepository,
     private val tokenRepository: TokenRepository,
-    @ApplicationContext private val context: Context
+    private val avatarStorage: AvatarStorage
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -37,8 +38,7 @@ class ProfileViewModel @Inject constructor(
                 val user = repository.getProfile()
 
                 val localAvatarPath = if (user.avatarFileName != null) {
-                    AvatarCache.cacheAvatar(
-                        context = context,
+                    avatarStorage.cacheAvatar(
                         userId = user.id ?: "default",
                         avatarFileName = user.avatarFileName
                     )
@@ -53,11 +53,11 @@ class ProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 val errorMessage = e.message?.let {
                     when {
-                        it.contains("Session expired") -> "Votre session a expiré. Veuillez vous reconnecter."
-                        it.contains("Unauthorized") -> "Accès refusé. Veuillez vous reconnecter."
-                        else -> it
+                        it.contains("Session expired") -> UiText.Res(R.string.profile_session_expired)
+                        it.contains("Unauthorized") -> UiText.Res(R.string.profile_access_denied)
+                        else -> UiText.Raw(it)
                     }
-                } ?: "Erreur de chargement du profil"
+                } ?: UiText.Res(R.string.profile_error_load)
                 _uiState.value = ProfileUiState.Error(errorMessage)
             }
         }
@@ -83,7 +83,7 @@ class ProfileViewModel @Inject constructor(
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(
-                    e.message ?: "Erreur de mise à jour"
+                    e.message.toUiTextOr(R.string.profile_error_update)
                 )
             }
         }
@@ -95,8 +95,7 @@ class ProfileViewModel @Inject constructor(
                 val updatedUser = repository.getProfile()
 
                 val localAvatarPath = if (updatedUser.avatarFileName != null) {
-                    AvatarCache.cacheAvatar(
-                        context = context,
+                    avatarStorage.cacheAvatar(
                         userId = updatedUser.id ?: "default",
                         avatarFileName = updatedUser.avatarFileName
                     )
@@ -112,7 +111,7 @@ class ProfileViewModel @Inject constructor(
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(
-                    e.message ?: "Erreur de mise à jour de l'avatar"
+                    e.message.toUiTextOr(R.string.profile_error_avatar_update)
                 )
             }
         }
@@ -121,7 +120,7 @@ class ProfileViewModel @Inject constructor(
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             runCatching { tokenRepository.clearTokens() }
-            AvatarCache.clearAllCache(context)
+            avatarStorage.clearAll()
             onLogoutComplete()
         }
     }

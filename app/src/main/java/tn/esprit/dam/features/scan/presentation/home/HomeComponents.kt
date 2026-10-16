@@ -51,7 +51,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tn.esprit.dam.R
-import tn.esprit.dam.features.scan.data.remote.dto.AppResult
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
@@ -118,7 +117,7 @@ fun ScoreSection(
                 verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
             ) {
                 Text(
-                    text = "Security Score",
+                    text = stringResource(R.string.security_score),
                     style = MaterialTheme.typography.labelMedium,
                     color = AppColors.textSecondary,
                     fontWeight = FontWeight.SemiBold
@@ -152,12 +151,12 @@ fun ScoreSection(
                     }
                 }
                 Text(
-                    text = "Score based on sensitive permissions and detected trackers",
+                    text = stringResource(R.string.score_based_on_sensitive_permissions_and),
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.textSecondary
                 )
                 TextButton(onClick = onImproveClick) {
-                    Text("See how to improve", color = AppColors.primary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.see_how_to_improve), color = AppColors.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -191,17 +190,17 @@ fun FeatureGrid(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "New Scan",
+                title = stringResource(R.string.new_scan),
                 icon = Icons.Default.Security,
-                description = "Analyze now",
+                description = stringResource(R.string.analyze_now),
                 onClick = onScan,
                 gradient = listOf(AppColors.primaryDark, AppColors.primary),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
-                title = "History",
+                title = stringResource(R.string.history),
                 icon = Icons.Default.History,
-                description = "Latest results",
+                description = stringResource(R.string.latest_results),
                 onClick = onHistory,
                 gradient = listOf(AppColors.info, AppColors.infoDark),
                 modifier = Modifier.weight(1f)
@@ -209,17 +208,17 @@ fun FeatureGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "Scan an APK",
+                title = stringResource(R.string.scan_an_apk),
                 icon = Icons.Default.Android,
-                description = "External file",
+                description = stringResource(R.string.external_file),
                 onClick = onScanApk,
                 gradient = listOf(AppColors.success, AppColors.successDark),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
-                title = "Search an app",
+                title = stringResource(R.string.search_an_app),
                 icon = Icons.Default.Search,
-                description = "Check an app",
+                description = stringResource(R.string.check_an_app),
                 onClick = onSearch,
                 gradient = listOf(AppColors.teal, AppColors.info),
                 modifier = Modifier.weight(1f)
@@ -227,17 +226,17 @@ fun FeatureGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             FeatureCard(
-                title = "Security Alerts",
+                title = stringResource(R.string.security_alerts),
                 icon = Icons.Default.Error,
-                description = "Access logs",
+                description = stringResource(R.string.access_logs),
                 onClick = onAlerts,
                 gradient = listOf(AppColors.error, AppColors.warning),
                 modifier = Modifier.weight(1f)
             )
             FeatureCard(
-                title = "ShadowVault",
+                title = stringResource(R.string.shadowvault),
                 icon = Icons.Default.Lock,
-                description = "Password management",
+                description = stringResource(R.string.password_management),
                 onClick = onShadowGuard,
                 gradient = listOf(AppColors.primary, AppColors.primaryDark),
                 modifier = Modifier.weight(1f)
@@ -328,7 +327,7 @@ fun FeatureCard(
 
 @Composable
 fun RecentActivitySection(
-    riskyApps: List<AppResult>,
+    riskyApps: List<RiskyAppUi>,
     onNavigateToAppDetails: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -337,7 +336,7 @@ fun RecentActivitySection(
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
         Text(
-            text = "Recent activity",
+            text = stringResource(R.string.recent_activity),
             style = MaterialTheme.typography.titleMedium,
             color = AppColors.textPrimary,
             fontWeight = FontWeight.Bold
@@ -345,13 +344,13 @@ fun RecentActivitySection(
 
         if (riskyApps.isEmpty()) {
             Text(
-                text = "No recent analysis",
+                text = stringResource(R.string.no_recent_analysis),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.textSecondary
             )
         } else {
             riskyApps.take(3).forEach { app ->
-                val score = app.aiRiskScore ?: app.finalScore ?: 0f
+                val score = app.score
                 val name = app.appName ?: app.packageName ?: "App"
 
                 var appCardPressed by remember { mutableStateOf(false) }

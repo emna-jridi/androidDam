@@ -1,5 +1,6 @@
 ﻿package tn.esprit.dam
 
+import timber.log.Timber
 import android.Manifest
 import android.app.AppOpsManager
 import android.content.Context
@@ -49,11 +50,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
-            val allGranted = permissions.values.all { it }
-            if (allGranted) {
-                checkAndStartServiceIfLoggedIn()
-            } else {
-            }
+            if (permissions.values.all { it }) checkAndStartServiceIfLoggedIn()
         }
 
         checkAndRequestPermissions()
@@ -101,19 +98,17 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
 
         val permissionsToRequest = mutableListOf<String>()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.CAMERA)
-            }
+        if (!isGranted(Manifest.permission.CAMERA)) {
+            permissionsToRequest.add(Manifest.permission.CAMERA)
+        }
 
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
-            }
+        if (!isGranted(Manifest.permission.RECORD_AUDIO)) {
+            permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+        }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!isGranted(Manifest.permission.POST_NOTIFICATIONS)) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
 
@@ -134,61 +129,29 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     }
 
     private fun startPrivacyMonitoringServiceIfPermitted() {
-        if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(this)) {
-            return
-        }
+        val canMonitor = hasUsageStatsPermission() &&
+            Settings.canDrawOverlays(this) &&
+            isGranted(Manifest.permission.CAMERA) &&
+            isGranted(Manifest.permission.RECORD_AUDIO)
+        if (!canMonitor) return
 
-        val hasCamera = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        } else true
-
-        val hasMic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        } else true
-
-        if (hasCamera && hasMic) {
-            startPrivacyMonitoringService()
-        } else {
-        }
-    }
-
-    private fun startPrivacyMonitoringService() {
+        val serviceIntent = Intent(this, PrivacyMonitorService::class.java)
         try {
-            val hasCameraPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true
-            }
-
-            val hasMicPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true
-            }
-
-            if (!hasCameraPermission || !hasMicPermission) {
-                return
-            }
-
-            val hasUsageStatsPermission = hasUsageStatsPermission()
-
-            if (!hasUsageStatsPermission) {
-            }
-
-            val serviceIntent = Intent(this, PrivacyMonitorService::class.java)
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                try {
-                    startForegroundService(serviceIntent)
-                } catch (e: SecurityException) {
-                } catch (e: IllegalStateException) {
-                }
+                startForegroundService(serviceIntent)
             } else {
                 startService(serviceIntent)
             }
-        } catch (e: Exception) {
+        } catch (e: SecurityException) {
+            Timber.w(e, "Privacy monitor service not allowed to start")
+        } catch (e: IllegalStateException) {
+            // Android 12+ refuses foreground-service starts from the background.
+            Timber.w(e, "Privacy monitor service start refused")
         }
     }
+
+    private fun isGranted(permission: String): Boolean =
+        checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
     private fun hasUsageStatsPermission(): Boolean {
         return try {
@@ -209,6 +172,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
             }
             mode == AppOpsManager.MODE_ALLOWED
         } catch (e: Exception) {
+            Timber.w(e, "MainActivity.hasUsageStatsPermission failed")
             false
         }
     }

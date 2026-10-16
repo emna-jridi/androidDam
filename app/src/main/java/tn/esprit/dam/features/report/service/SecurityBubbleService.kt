@@ -1,4 +1,5 @@
 ﻿package tn.esprit.dam.features.report.service
+import timber.log.Timber
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -152,6 +153,7 @@ class SecurityBubbleService : Service() {
                         try {
                             windowManager.updateViewLayout(view, paramsHead)
                         } catch (e: Exception) {
+                            Timber.w(e, "SecurityBubbleService.showHead failed")
                         }
 
                         if (isOverCloseTarget(rawX, rawY)) {
@@ -189,6 +191,7 @@ class SecurityBubbleService : Service() {
             headView = null
             stopSelf()
         } catch (e: Exception) {
+            Timber.w(e, "SecurityBubbleService.showHead failed")
             headView = null
         }
     }
@@ -221,6 +224,7 @@ class SecurityBubbleService : Service() {
         try {
             windowManager.addView(closeView, paramsClose)
         } catch (e: Exception) {
+            Timber.w(e, "SecurityBubbleService.setupCloseTarget failed")
             closeView = null
         }
     }
@@ -273,7 +277,7 @@ class SecurityBubbleService : Service() {
         try {
             windowManager.addView(expandedView, paramsExpanded)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.e(e, "SecurityBubbleService failed")
         }
     }
 
@@ -294,7 +298,7 @@ class SecurityBubbleService : Service() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.e(e, "SecurityBubbleService failed")
         }
     }
 
@@ -385,6 +389,7 @@ class SecurityBubbleService : Service() {
             try {
                 startForeground(NOTIFICATION_ID, notification)
             } catch (e2: Exception) {
+                Timber.w(e2, "SecurityBubbleService.startForegroundServiceNotification failed")
             }
         }
     }
@@ -397,6 +402,7 @@ class SecurityBubbleService : Service() {
                 windowManager.removeView(it)
             }
         } catch (e: Exception) {
+            Timber.w(e, "SecurityBubbleService.onDestroy failed")
         }
 
         try {
@@ -404,6 +410,7 @@ class SecurityBubbleService : Service() {
                 windowManager.removeView(it)
             }
         } catch (e: Exception) {
+            Timber.w(e, "SecurityBubbleService.onDestroy failed")
         }
 
         try {
@@ -411,6 +418,7 @@ class SecurityBubbleService : Service() {
                 windowManager.removeView(it)
             }
         } catch (e: Exception) {
+            Timber.w(e, "SecurityBubbleService.onDestroy failed")
         }
 
         headView = null

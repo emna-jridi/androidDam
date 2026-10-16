@@ -60,7 +60,7 @@ object PasswordStrengthCalculator {
 
         if (length < 8) score -= 20
         if (length > 16) score += 10
-        if (password.toLowerCase() == password || password.toUpperCase() == password) score -= 10
+        if (password.lowercase() == password || password.uppercase() == password) score -= 10
         if (password.all { it.isLetterOrDigit() }) score -= 5
 
         score = score.coerceIn(0, 100)

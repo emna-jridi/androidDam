@@ -1,5 +1,6 @@
 ﻿package tn.esprit.dam.features.auth.presentation.components
 
+import tn.esprit.dam.core.ui.theme.AppColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -121,16 +122,16 @@ fun OTPBox(
         modifier = modifier
             .aspectRatio(1f)
             .background(
-                color = Color(0xFF2D3250),
+                color = AppColors.surfaceVariant,
                 shape = RoundedCornerShape(12.dp)
             )
             .border(
                 width = 2.dp,
                 color = when {
-                    !enabled -> Color(0xFF374151)
-                    isFocused -> Color(0xFF7C3AED)
-                    digit.isNotEmpty() -> Color(0xFF10B981)
-                    else -> Color(0xFF374151)
+                    !enabled -> AppColors.border
+                    isFocused -> AppColors.primary
+                    digit.isNotEmpty() -> AppColors.success
+                    else -> AppColors.border
                 },
                 shape = RoundedCornerShape(12.dp)
             ),
@@ -142,7 +143,7 @@ fun OTPBox(
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp
             ),
-            color = if (digit.isNotEmpty()) Color.White else Color(0xFF6B7280),
+            color = if (digit.isNotEmpty()) Color.White else AppColors.textMuted,
             textAlign = TextAlign.Center
         )
     }

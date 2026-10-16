@@ -1,4 +1,9 @@
 ﻿package tn.esprit.dam.features.profile.presentation
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.features.vault.presentation.access.VaultStatusUiState
+import tn.esprit.dam.features.vault.presentation.access.VaultStatusViewModel
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,7 +27,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import tn.esprit.dam.core.model.User
 import tn.esprit.dam.features.profile.presentation.components.*
 import tn.esprit.dam.core.ui.theme.*
-import tn.esprit.dam.core.ui.theme.ScanTheme
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
@@ -57,13 +61,13 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Primary)
+                    CircularProgressIndicator(color = AppColors.primary)
                 }
             }
 
             is ProfileUiState.Error -> {
                     AppErrorState(
-                    message = state.message,
+                    message = state.message.asString(),
                     onRetry = { viewModel.loadProfile() },
                     retryText = "Réessayer"
                 )
@@ -137,19 +141,19 @@ private fun ProfileContent(
                 ) {
                     Icon(
                         Icons.Default.Security,
-                        contentDescription = "Dark Web",
+                        contentDescription = stringResource(R.string.dark_web),
                         tint = AppColors.primary
                     )
                     Spacer(modifier = Modifier.width(AppSpacing.md))
                     Column {
                         Text(
-                            text = "Dark Web Monitoring",
+                            text = stringResource(R.string.dark_web_monitoring),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.textPrimary
                         )
                         Text(
-                            text = "Check for data breaches",
+                            text = stringResource(R.string.check_for_data_breaches),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.textSecondary
                         )
@@ -209,7 +213,7 @@ private fun VaultStatusSection(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Password Vault",
+                    text = stringResource(R.string.password_vault),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
@@ -220,7 +224,7 @@ private fun VaultStatusSection(
                     is VaultStatusUiState.Loading -> "Checking status..."
                     is VaultStatusUiState.NoVault -> "Vault not configured"
                     is VaultStatusUiState.VaultExists -> "Vault configured"
-                    is VaultStatusUiState.Error -> (status as VaultStatusUiState.Error).message
+                    is VaultStatusUiState.Error -> (status as VaultStatusUiState.Error).message.asString()
                 }
                 Text(
                     text = statusText,
@@ -243,7 +247,7 @@ private fun VaultStatusSection(
                     ),
                     shape = RoundedCornerShape(AppCorners.medium)
                 ) {
-                    Text("Create Master Password")
+                    Text(stringResource(R.string.create_master_password))
                 }
             }
             is VaultStatusUiState.VaultExists -> {
@@ -258,7 +262,7 @@ private fun VaultStatusSection(
                     ),
                     shape = RoundedCornerShape(AppCorners.medium)
                 ) {
-                    Text("Open Vault")
+                    Text(stringResource(R.string.open_vault))
                 }
             }
             is VaultStatusUiState.Error -> {
@@ -270,7 +274,7 @@ private fun VaultStatusSection(
                         .padding(bottom = AppSpacing.lg),
                     shape = RoundedCornerShape(AppCorners.medium)
                 ) {
-                    Text("Retry")
+                    Text(stringResource(R.string.retry))
                 }
             }
             is VaultStatusUiState.Loading -> {

@@ -19,29 +19,6 @@ object AppConstants {
         const val OPERATION_TIMEOUT_MS = 60000L
     }
 
-    object API {
-        const val ENDPOINT_LOGIN = "/auth/login"
-        const val ENDPOINT_REGISTER = "/auth/register"
-        const val ENDPOINT_REFRESH = "/auth/refresh"
-        const val ENDPOINT_LOGOUT = "/auth/logout"
-        const val ENDPOINT_VERIFY_EMAIL = "/auth/verify-email"
-        const val ENDPOINT_PASSWORD_RESET = "/auth/password-reset"
-
-        const val ENDPOINT_SCAN_DEVICE = "/scan/device"
-        const val ENDPOINT_SCAN_HISTORY = "/scan/history"
-        const val ENDPOINT_APP_DETAIL = "/scan/app"
-        const val ENDPOINT_SCAN_BATCH = "/scan/batch"
-
-        const val ENDPOINT_PROFILE = "/users/profile"
-        const val ENDPOINT_AVATAR = "/users/avatar"
-
-        const val ENDPOINT_VAULT = "/vault"
-        const val ENDPOINT_PASSWORD = "/vault/passwords"
-
-        const val CONNECT_TIMEOUT_MS = 30000
-        const val SOCKET_TIMEOUT_MS = 30000
-    }
-
     object Validation {
         const val EMAIL_MIN_LENGTH = 3
         const val EMAIL_MAX_LENGTH = 254
@@ -131,7 +108,7 @@ object AppConstants {
     }
 
     object Logging {
-        const val TAG_AUTH = "AuthViewModel"
+        const val TAG_AUTH = "LoginViewModel"
         const val TAG_SCAN = "ScanViewModel"
         const val TAG_NETWORK = "NetworkClient"
         const val TAG_SECURITY = "SecurityManager"

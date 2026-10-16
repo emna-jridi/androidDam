@@ -3,25 +3,10 @@ package tn.esprit.dam.features.darkweb.data.remote
 import tn.esprit.dam.core.network.ApiResult
 import tn.esprit.dam.core.network.Config
 import tn.esprit.dam.features.darkweb.data.model.Breach
+import tn.esprit.dam.features.darkweb.data.model.ManualBreachResult
+import tn.esprit.dam.features.darkweb.data.model.PasswordCheckResult
 import tn.esprit.dam.core.network.KtorHttpClient
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import javax.inject.Inject
-
-@Serializable
-data class ManualBreachResult(
-    @SerialName("Name") val name: String = "",
-    @SerialName("BreachDate") val breachDate: String = "",
-    @SerialName("Description") val description: String = "",
-    @SerialName("DataClasses") val dataClasses: List<String> = emptyList(),
-    @SerialName("IsResolved") val isResolved: Boolean = false,
-    @SerialName("Domain") val domain: String = ""
-)
-
-@Serializable
-data class PasswordCheckResult(
-    val count: Int = 0
-)
 
 class DarkWebApi @Inject constructor(
     private val client: KtorHttpClient

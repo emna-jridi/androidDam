@@ -1,4 +1,8 @@
 ﻿package tn.esprit.dam.features.auth.presentation.register
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.R
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,7 +38,6 @@ import kotlinx.coroutines.delay
 import tn.esprit.dam.features.auth.presentation.components.AuthBackground
 import tn.esprit.dam.features.auth.presentation.components.AuthCard
 import tn.esprit.dam.features.auth.presentation.components.AuthCardTitle
-import tn.esprit.dam.features.auth.presentation.components.AuthColors
 import tn.esprit.dam.features.auth.presentation.components.AuthFieldLabel
 import tn.esprit.dam.features.auth.presentation.components.AuthIconBadge
 import tn.esprit.dam.features.auth.presentation.components.AuthPasswordField
@@ -69,9 +72,9 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(24.dp))
             AuthTitle("ShadowGuard")
             Text(
-                text = "Créez votre compte sécurisé",
+                text = stringResource(R.string.creez_votre_compte_securise),
                 style = MaterialTheme.typography.bodyLarge,
-                color = AuthColors.TextSecondary
+                color = AppColors.textSecondary
             )
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -82,7 +85,7 @@ fun RegisterScreen(
                 AuthTextField(
                     value = uiState.name,
                     onValueChange = { viewModel.onNameChange(it) },
-                    placeholder = "Votre nom",
+                    placeholder = stringResource(R.string.votre_nom),
                     leadingIcon = Icons.Filled.Person,
                     enabled = !uiState.isLoading,
                     error = uiState.nameError
@@ -92,7 +95,7 @@ fun RegisterScreen(
                 AuthTextField(
                     value = uiState.email,
                     onValueChange = { viewModel.onEmailChange(it) },
-                    placeholder = "votre@email.com",
+                    placeholder = stringResource(R.string.votre_email_com),
                     leadingIcon = Icons.Filled.Email,
                     enabled = !uiState.isLoading,
                     error = uiState.emailError
@@ -109,21 +112,21 @@ fun RegisterScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 AuthPrimaryButton(
-                    text = "S'inscrire",
+                    text = stringResource(R.string.s_inscrire),
                     onClick = { viewModel.register() },
                     enabled = !uiState.isLoading,
                     isLoading = uiState.isLoading
                 )
-                uiState.successMessage?.let { AuthStatusMessage(it, isError = false) }
-                uiState.errorMessage?.let { AuthStatusMessage(it, isError = true) }
+                uiState.successMessage?.let { AuthStatusMessage(it.asString(), isError = false) }
+                uiState.errorMessage?.let { AuthStatusMessage(it.asString(), isError = true) }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Déjà un compte ? ",
-                    color = AuthColors.TextSecondary,
+                    text = stringResource(R.string.deja_un_compte),
+                    color = AppColors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 TextButton(
@@ -131,8 +134,8 @@ fun RegisterScreen(
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        "Se connecter",
-                        color = AuthColors.Primary,
+                        stringResource(R.string.se_connecter),
+                        color = AppColors.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -147,13 +150,13 @@ fun RegisterScreen(
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = AuthColors.Placeholder,
+                    tint = AppColors.textMuted,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Vos données sont sécurisées et chiffrées",
-                    color = AuthColors.Placeholder,
+                    text = stringResource(R.string.vos_donnees_sont_securisees_et_chiffrees),
+                    color = AppColors.textMuted,
                     style = MaterialTheme.typography.bodySmall
                 )
             }

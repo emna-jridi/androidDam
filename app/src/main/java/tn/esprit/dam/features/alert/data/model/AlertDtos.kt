@@ -9,3 +9,9 @@ data class AlertEventDto(
     val timestamp: Long,
     val details: Map<String, String>
 )
+
+@Serializable
+data class DeviceTokenDto(
+    val token: String,
+    val platform: String
+)

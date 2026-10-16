@@ -1,5 +1,9 @@
 ﻿package tn.esprit.dam.features.auth.presentation.register
-import android.util.Patterns
+import tn.esprit.dam.core.ui.toUiTextOr
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.R
+import tn.esprit.dam.features.auth.domain.validation.AuthValidator
+import kotlinx.coroutines.flow.update
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,8 +27,8 @@ data class RegisterUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val registeredEmail: String? = null,
-    val errorMessage: String? = null,
-    val successMessage: String? = null
+    val errorMessage: UiText? = null,
+    val successMessage: UiText? = null
 )
 
 @HiltViewModel
@@ -35,70 +39,56 @@ class RegisterViewModel @Inject constructor(
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     fun onNameChange(name: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             name = name,
             nameError = null
-        )
+        ) }
     }
 
     fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             email = email,
             emailError = null
-        )
+        ) }
     }
 
     fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             password = password,
             passwordError = null
-        )
+        ) }
     }
 
     fun togglePasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            passwordVisible = !_uiState.value.passwordVisible
-        )
+        _uiState.update { it.copy(
+            passwordVisible = !it.passwordVisible
+        ) }
     }
 
     private fun validateName(): Boolean {
         val name = _uiState.value.name.trim()
 
-        val error = when {
-            name.isEmpty() -> "Nom requis"
-            name.length < 2 -> "Nom trop court"
-            else -> null
-        }
+        val error = AuthValidator.validateName(name)
 
-        _uiState.value = _uiState.value.copy(nameError = error)
+        _uiState.update { it.copy(nameError = error) }
         return error == null
     }
 
     private fun validateEmail(): Boolean {
         val email = _uiState.value.email.trim()
 
-        val error = when {
-            email.isEmpty() -> "Email requis"
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email invalide"
-            else -> null
-        }
+        val error = AuthValidator.validateEmail(email)
 
-        _uiState.value = _uiState.value.copy(emailError = error)
+        _uiState.update { it.copy(emailError = error) }
         return error == null
     }
 
     private fun validatePassword(): Boolean {
         val password = _uiState.value.password
 
-        val error = when {
-            password.isEmpty() -> "Mot de passe requis"
-            password.length < 6 -> "Minimum 6 caractères"
-            !password.any { it.isDigit() } -> "Doit contenir au moins un chiffre"
-            !password.any { it.isLetter() } -> "Doit contenir au moins une lettre"
-            else -> null
-        }
+        val error = AuthValidator.validateNewPassword(password)
 
-        _uiState.value = _uiState.value.copy(passwordError = error)
+        _uiState.update { it.copy(passwordError = error) }
         return error == null
     }
 
@@ -117,11 +107,11 @@ class RegisterViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = true,
                     errorMessage = null,
                     successMessage = null
-                )
+                ) }
 
                 val result = repository.register(
                     email = _uiState.value.email.trim(),
@@ -131,38 +121,38 @@ class RegisterViewModel @Inject constructor(
 
                 result.onSuccess { response ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         isSuccess = true,
                         registeredEmail = response.user.email,
-                        successMessage = "Inscription réussie! Vérifiez votre email.",
+                        successMessage = UiText.Res(R.string.auth_register_success),
                         errorMessage = null
-                    )
+                    ) }
                 }.onFailure { error ->
 
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         isLoading = false,
                         isSuccess = false,
-                        errorMessage = error.message ?: "Inscription échouée",
+                        errorMessage = error.message.toUiTextOr(R.string.auth_error_register_failed),
                         successMessage = null
-                    )
+                    ) }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     isSuccess = false,
-                    errorMessage = "Erreur inattendue: ${e.message}",
+                    errorMessage = UiText.Res(R.string.error_unexpected, e.message.orEmpty()),
                     successMessage = null
-                )
+                ) }
             }
         }
     }
 
     fun clearMessages() {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             errorMessage = null,
             successMessage = null
-        )
+        ) }
     }
 
     fun resetState() {

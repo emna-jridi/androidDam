@@ -1,4 +1,5 @@
 ﻿package tn.esprit.dam.features.alert.service
+import timber.log.Timber
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -79,6 +80,7 @@ class PrivacyMonitorService : Service() {
             }
             registerReceiver(appInstallReceiver, filter)
         } catch (e: Exception) {
+            Timber.w(e, "PrivacyMonitorService.registerInstallReceiver failed")
         }
     }
 
@@ -147,6 +149,7 @@ class PrivacyMonitorService : Service() {
                     details = mapOf("app_name" to appName, "detection_method" to "HardwareCallback")
                 )
             } catch (e: Exception) {
+                Timber.w(e, "PrivacyMonitorService.identifyAndSendAlert failed")
             }
         }
     }
@@ -172,6 +175,7 @@ class PrivacyMonitorService : Service() {
             val info = pm.getApplicationInfo(packageName, 0)
             pm.getApplicationLabel(info).toString()
         } catch (e: Exception) {
+            Timber.w(e, "PrivacyMonitorService.getAppNameFromPackage failed")
             packageName
         }
     }
@@ -181,6 +185,7 @@ class PrivacyMonitorService : Service() {
         try {
             unregisterReceiver(appInstallReceiver)
         } catch (e: Exception) {
+            Timber.w(e, "PrivacyMonitorService.onDestroy failed")
         }
     }
 
