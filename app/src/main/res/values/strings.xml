@@ -340,6 +340,34 @@
     <string name="password_strength_label">Robustesse : %1$s</string>
     <string name="password_strength_hint">8+ caractères, majuscules, chiffres et symboles.</string>
 
+    <!-- Auth sub-screens redesign -->
+    <string name="auth_step">Étape %1$d sur %2$d</string>
+    <string name="auth_back_to_login">Retour à la connexion</string>
+    <string name="forgot_title">Mot de passe oublié ?</string>
+    <string name="forgot_subtitle">Pas de souci. Entrez votre email, nous vous envoyons un code.</string>
+    <string name="otp_title">Entrez le code</string>
+    <string name="otp_sent_to">Code à 6 chiffres envoyé à</string>
+    <string name="otp_verify_code">Vérifier le code</string>
+    <string name="otp_expires">Le code expire dans 10 minutes.</string>
+    <string name="otp_check_spam">Pas d\'email ? Vérifiez vos spams.</string>
+    <string name="otp_resend_in">Renvoyer dans %1$ds</string>
+    <string name="email_verify_title">Vérifiez votre email</string>
+    <string name="new_password_title">Nouveau mot de passe</string>
+    <string name="new_password_subtitle">Choisissez un mot de passe que vous n\'utilisez nulle part ailleurs.</string>
+    <string name="new_password_label">Nouveau mot de passe</string>
+    <string name="confirm_password_label">Confirmer le mot de passe</string>
+    <string name="reset_success_title">Mot de passe réinitialisé</string>
+    <string name="email_verified_title">Email vérifié</string>
+    <string name="welcome_user">Bienvenue %1$s !</string>
+
+    <!-- Vault access redesign -->
+    <string name="vault_unlock_with_biometric">Unlock with fingerprint</string>
+    <string name="vault_biometric_prompt_title">Unlock Vault</string>
+    <string name="vault_biometric_prompt_subtitle">Use your fingerprint or face to unlock</string>
+    <string name="vault_biometric_dialog_extra">This creates a secure cryptographic key on your device for quick access.</string>
+    <string name="vault_auth_failed">Authentication failed</string>
+    <string name="vault_no_recovery_title">No recovery option</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

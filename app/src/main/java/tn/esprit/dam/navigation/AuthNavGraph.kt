@@ -63,7 +63,6 @@ fun NavGraphBuilder.authNavGraph(
 
     composable(Screens.VerificationSuccess.route) {
         VerificationSuccessScreen(
-            userName = "Utilisateur",
             onContinue = {
                 navController.navigate(Screens.Login.route) {
                     popUpTo(0) { inclusive = true }

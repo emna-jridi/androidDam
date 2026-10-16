@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.ui.draw.clip
@@ -93,7 +95,10 @@ fun AuthBackground(
 
 /** Scrollable auth page on a hex-shield pattern with a cyan glow at the top; stays usable when the keyboard opens. */
 @Composable
-fun AuthScreenLayout(content: @Composable ColumnScope.() -> Unit) {
+fun AuthScreenLayout(
+    applySystemBarsPadding: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -113,7 +118,7 @@ fun AuthScreenLayout(content: @Composable ColumnScope.() -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding()
+                .then(if (applySystemBarsPadding) Modifier.systemBarsPadding() else Modifier)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.xl),
@@ -156,7 +161,13 @@ private fun DrawScope.drawHexShield(unit: Float) {
 
 /** Shield emblem in concentric rings, brand label, title and subtitle. */
 @Composable
-fun AuthHeroHeader(icon: ImageVector, title: String, subtitle: String) {
+fun AuthHeroHeader(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    accent: Color = AppColors.primary,
+    accentContainer: Color = AppColors.primaryContainer
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -164,27 +175,27 @@ fun AuthHeroHeader(icon: ImageVector, title: String, subtitle: String) {
         Box(
             modifier = Modifier
                 .size(112.dp)
-                .border(1.dp, AppColors.primary.copy(alpha = 0.15f), CircleShape),
+                .border(1.dp, accent.copy(alpha = 0.15f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(88.dp)
-                    .border(1.dp, AppColors.primary.copy(alpha = 0.35f), CircleShape),
+                    .border(1.dp, accent.copy(alpha = 0.35f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(AppColors.primaryContainer),
+                        .background(accentContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(32.dp),
-                        tint = AppColors.primary
+                        tint = accent
                     )
                 }
             }
@@ -209,6 +220,66 @@ fun AuthHeroHeader(icon: ImageVector, title: String, subtitle: String) {
             color = AppColors.textSecondary,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+/** Back arrow on the left; on multi-step flows, "Étape x sur y" with a segmented bar on the right. */
+@Composable
+fun AuthTopBar(onBack: () -> Unit, step: Int? = null, totalSteps: Int = 3) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = AppSpacing.md),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(AppColors.surface)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.retour),
+                tint = AppColors.textPrimary
+            )
+        }
+        if (step != null) {
+            Spacer(modifier = Modifier.weight(1f))
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                Text(
+                    text = stringResource(R.string.auth_step, step, totalSteps),
+                    style = AppTypography.labelMedium,
+                    color = AppColors.textSecondary
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                    repeat(totalSteps) { index ->
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(if (index < step) AppColors.primary else AppColors.surfaceVariant)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Icon + text line, used for tips and feature lists on auth success screens. */
+@Composable
+fun AuthCheckItem(text: String, icon: ImageVector = Icons.Default.CheckCircle) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = AppColors.success, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(AppSpacing.md))
+        Text(text = text, style = AppTypography.bodyMedium, color = AppColors.textSecondary)
     }
 }
 
@@ -399,7 +470,8 @@ fun AuthTextField(
     styleDisabledState: Boolean = false,
     trailingIcon: (@Composable () -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     OutlinedTextField(
         value = value,
@@ -417,6 +489,7 @@ fun AuthTextField(
         enabled = enabled,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         singleLine = true,
         isError = error != null,
         supportingText = error?.let { { Text(it, color = AppColors.error) } },
@@ -454,7 +527,9 @@ fun AuthPasswordField(
     visible: Boolean,
     onToggleVisibility: () -> Unit,
     enabled: Boolean,
-    error: String?
+    error: String?,
+    imeAction: ImeAction = ImeAction.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     AuthTextField(
         value = value,
@@ -473,7 +548,8 @@ fun AuthPasswordField(
             }
         },
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction),
+        keyboardActions = keyboardActions
     )
 }
 
@@ -582,7 +658,7 @@ fun AuthResendCode(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                "Renvoyer dans ${countdownSeconds}s",
+                stringResource(R.string.otp_resend_in, countdownSeconds),
                 color = AppColors.textTertiary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -651,16 +727,15 @@ fun AuthAutoRedirectNotice() {
     }
 }
 
+/** Shared "enter the 6-digit code" page for email verification and password reset. */
 @Composable
 fun OtpVerificationLayout(
     icon: ImageVector,
     title: String,
-    subtitle: String,
     email: String,
     otp: String,
     onOtpChange: (String) -> Unit,
     isLoading: Boolean,
-    verifyLabel: String,
     onVerify: () -> Unit,
     canResend: Boolean,
     resendCountdown: Int,
@@ -668,55 +743,50 @@ fun OtpVerificationLayout(
     successMessage: String?,
     errorMessage: String?,
     infoText: String,
-    backLabel: String,
     onBack: () -> Unit,
-    columnModifier: Modifier
+    step: Int? = null
 ) {
-    AuthBackground {
-        Column(
-            modifier = columnModifier,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AuthIconBadge(icon)
-            Spacer(modifier = Modifier.height(24.dp))
-            AuthTitle(title)
-            Spacer(modifier = Modifier.height(16.dp))
-            AuthSubtitle(subtitle)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = email,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = AppColors.primary,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(48.dp))
+    AuthScreenLayout {
+        AuthTopBar(onBack = onBack, step = step)
+        AuthHeroHeader(
+            icon = icon,
+            title = title,
+            subtitle = stringResource(R.string.otp_sent_to)
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        Text(
+            text = email,
+            style = AppTypography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = AppColors.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            AuthCard(horizontalAlignment = Alignment.CenterHorizontally) {
-                AuthCardTitle("Entrez le code")
-                Spacer(modifier = Modifier.height(32.dp))
-                OTPInput(otp = otp, onOtpChange = onOtpChange, enabled = !isLoading)
-                Spacer(modifier = Modifier.height(32.dp))
-                AuthPrimaryButton(
-                    text = verifyLabel,
-                    onClick = onVerify,
-                    enabled = !isLoading && otp.length == 6,
-                    isLoading = isLoading
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                AuthResendCode(
-                    canResend = canResend,
-                    countdownSeconds = resendCountdown,
-                    enabled = !isLoading,
-                    onResend = onResend
-                )
-                successMessage?.let { AuthStatusMessage(it, isError = false, compact = true) }
-                errorMessage?.let { AuthStatusMessage(it, isError = true) }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            AuthInfoCard(infoText)
-            Spacer(modifier = Modifier.height(24.dp))
-            AuthBackButton(backLabel, onBack)
+        Spacer(modifier = Modifier.height(AppSpacing.xl))
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            OTPInput(otp = otp, onOtpChange = onOtpChange, enabled = !isLoading)
         }
+        Spacer(modifier = Modifier.height(AppSpacing.xl))
+
+        AuthPrimaryButton(
+            text = stringResource(R.string.otp_verify_code),
+            onClick = onVerify,
+            enabled = !isLoading && otp.length == 6,
+            isLoading = isLoading
+        )
+        successMessage?.let { AuthStatusMessage(it, isError = false, compact = true) }
+        errorMessage?.let { AuthStatusMessage(it, isError = true) }
+
+        Spacer(modifier = Modifier.height(AppSpacing.md))
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            AuthResendCode(
+                canResend = canResend,
+                countdownSeconds = resendCountdown,
+                enabled = !isLoading,
+                onResend = onResend
+            )
+        }
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
+        AuthTrustBadge(text = infoText, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
