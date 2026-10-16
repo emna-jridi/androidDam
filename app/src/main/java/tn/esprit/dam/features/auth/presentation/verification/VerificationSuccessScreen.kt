@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +63,7 @@ fun VerificationSuccessScreen(
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = Color.White,
+                    color = AppColors.textPrimary,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -105,7 +104,7 @@ fun FeatureItem(icon: ImageVector, text: String) {
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = text,
-            color = Color.White,
+            color = AppColors.textPrimary,
             style = MaterialTheme.typography.bodyMedium
         )
     }

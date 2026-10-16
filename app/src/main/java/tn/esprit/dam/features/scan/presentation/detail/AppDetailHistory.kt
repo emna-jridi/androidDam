@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
@@ -35,7 +34,7 @@ fun AppHistorySection(history: List<AppScanHistoryUi>) {
             text = "Scan History (${history.size})",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = AppColors.textPrimary
         )
 
         history.forEach { entry ->
@@ -63,7 +62,7 @@ fun HistoryEntryCard(entry: AppScanHistoryUi) {
                     text = formatHistoryDate(entry.scanDate),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
                 Text(
                     text = "Score: ${entry.score.toInt()}/100",

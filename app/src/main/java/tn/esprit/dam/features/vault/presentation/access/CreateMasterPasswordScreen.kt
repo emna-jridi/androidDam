@@ -248,7 +248,7 @@ private data class PasswordStrength(
 )
 
 private fun calculatePasswordStrength(password: String): PasswordStrength {
-    if (password.isEmpty()) return PasswordStrength(0, "None", Color.Gray)
+    if (password.isEmpty()) return PasswordStrength(0, "None", AppColors.textMuted)
 
     val metrics = PasswordStrengthCalculator.analyze(password)
     val (label, color) = when (metrics.riskLevel) {

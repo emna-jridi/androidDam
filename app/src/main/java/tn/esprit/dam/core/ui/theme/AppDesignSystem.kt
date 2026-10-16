@@ -15,9 +15,12 @@ object AppColors {
     val textSecondary = Color(0xFFCBD5E1)
     val textTertiary = Color(0xFF94A3B8)
 
-    val primary = Color(0xFF6366F1)
-    val primaryLight = Color(0xFF818CF8)
-    val primaryDark = Color(0xFF4F46E5)
+    // Cyan brand. Anything drawn ON primary (button text, selected chip, icon in a primary circle) uses onPrimary.
+    val primary = Color(0xFF22D3EE)
+    val primaryLight = Color(0xFF67E8F9)
+    val primaryDark = Color(0xFF0891B2)
+    val primaryContainer = Color(0xFF164E63)
+    val onPrimary = Color(0xFF0F172A)
 
     val success = Color(0xFF10B981)
     val successDark = Color(0xFF059669)

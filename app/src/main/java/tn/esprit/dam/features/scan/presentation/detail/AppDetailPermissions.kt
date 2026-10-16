@@ -82,7 +82,7 @@ fun PermissionsAnalysisSection(app: AppDetailUi) {
                     text = stringResource(R.string.permissions_analysis),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
             }
             Surface(
@@ -94,7 +94,7 @@ fun PermissionsAnalysisSection(app: AppDetailUi) {
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
             }
         }
@@ -198,7 +198,7 @@ fun EnhancedPermissionChip(permission: String) {
                 text = permissionData.label.take(10),
                 fontSize = 10.sp,
                 textAlign = TextAlign.Center,
-                color = Color.White,
+                color = AppColors.textPrimary,
                 maxLines = 2,
                 lineHeight = 12.sp
             )

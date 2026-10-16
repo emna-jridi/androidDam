@@ -143,7 +143,7 @@ fun OTPBox(
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp
             ),
-            color = if (digit.isNotEmpty()) Color.White else AppColors.textMuted,
+            color = if (digit.isNotEmpty()) AppColors.textPrimary else AppColors.textMuted,
             textAlign = TextAlign.Center
         )
     }

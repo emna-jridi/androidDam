@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,7 +64,7 @@ fun PasswordResetSuccessScreen(
                 Text(
                     text = stringResource(R.string.votre_mot_de_passe_a_ete_reinitialise_av),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
+                    color = AppColors.textPrimary,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -94,7 +93,7 @@ fun PasswordResetSuccessScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.conseils_de_securite),
-                                color = Color.White,
+                                color = AppColors.textPrimary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -121,7 +120,7 @@ fun PasswordResetSuccessScreen(
                     Icon(
                         imageVector = Icons.Default.Login,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = AppColors.onPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -130,7 +129,7 @@ fun PasswordResetSuccessScreen(
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = Color.White
+                        color = AppColors.onPrimary
                     )
                 }
             }

@@ -74,7 +74,7 @@ fun WhyFlaggedSection(
                 text = stringResource(R.string.why_was_this_flagged),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = AppColors.textPrimary
             )
         }
 

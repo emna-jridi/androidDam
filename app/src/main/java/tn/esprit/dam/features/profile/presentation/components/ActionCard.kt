@@ -52,7 +52,7 @@ fun ActionCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = AppColors.textPrimary,
                     modifier = Modifier.size(24.dp)
                 )
             }

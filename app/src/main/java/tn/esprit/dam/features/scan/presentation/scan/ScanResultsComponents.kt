@@ -337,14 +337,14 @@ fun FilterTabs(
                     Text(
                         filter,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (isSelected) Color.White else AppColors.textSecondary,
+                        color = if (isSelected) AppColors.onPrimary else AppColors.textSecondary,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     )
                     if (count > 0) {
                         Text(
                             "($count)",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isSelected) Color.White.copy(alpha = 0.8f) else AppColors.textSecondary
+                            color = if (isSelected) AppColors.onPrimary.copy(alpha = 0.8f) else AppColors.textSecondary
                         )
                     }
                 }
@@ -468,5 +468,5 @@ fun deriveAppRisk(app: LocalAppInfo): AppRiskData {
         }
         return AppRiskData(label = risk.riskLevel.label, color = color, score = risk.score)
     }
-    return AppRiskData("Unknown", Color.Gray, 0)
+    return AppRiskData("Unknown", AppColors.textMuted, 0)
 }

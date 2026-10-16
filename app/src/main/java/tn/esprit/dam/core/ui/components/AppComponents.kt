@@ -60,7 +60,7 @@ fun AppPrimaryButton(
             Text(
                 text,
                 style = AppTypography.labelLarge,
-                color = AppColors.textPrimary
+                color = if (enabled) AppColors.onPrimary else AppColors.textTertiary
             )
         }
     }

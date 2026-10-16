@@ -1,34 +1,41 @@
 ﻿package tn.esprit.dam.features.auth.presentation.login
-import tn.esprit.dam.core.ui.asString
-import tn.esprit.dam.R
-import androidx.compose.ui.res.stringResource
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.flow.collectLatest
+import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.core.ui.components.AppErrorAlert
 import tn.esprit.dam.core.ui.theme.AppColors
-import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
 import tn.esprit.dam.core.ui.theme.AppTypography
-import tn.esprit.dam.core.ui.components.AppPrimaryButton
-import tn.esprit.dam.core.ui.components.AppErrorAlert
-import kotlinx.coroutines.flow.collectLatest
+import tn.esprit.dam.features.auth.presentation.components.AuthFieldLabel
+import tn.esprit.dam.features.auth.presentation.components.AuthHeroHeader
+import tn.esprit.dam.features.auth.presentation.components.AuthPasswordField
+import tn.esprit.dam.features.auth.presentation.components.AuthPrimaryButton
+import tn.esprit.dam.features.auth.presentation.components.AuthScreenLayout
+import tn.esprit.dam.features.auth.presentation.components.AuthTextField
+import tn.esprit.dam.features.auth.presentation.components.AuthTrustBadge
 
 @Composable
 fun LoginScreen(
@@ -46,232 +53,98 @@ fun LoginScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColors.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AppSpacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally
+    AuthScreenLayout {
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
+        AuthHeroHeader(
+            icon = Icons.Filled.Shield,
+            title = stringResource(R.string.login_welcome_back),
+            subtitle = stringResource(R.string.login_subtitle)
+        )
+
+        Spacer(modifier = Modifier.height(AppSpacing.xxl))
+
+        AuthFieldLabel(stringResource(R.string.email))
+        AuthTextField(
+            value = uiState.email,
+            onValueChange = { viewModel.onEmailChange(it) },
+            placeholder = stringResource(R.string.votre_email_com),
+            leadingIcon = Icons.Filled.Email,
+            enabled = !uiState.isLoading,
+            error = uiState.emailError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+        )
+
+        Spacer(modifier = Modifier.height(AppSpacing.md))
+
+        AuthFieldLabel(stringResource(R.string.mot_de_passe))
+        AuthPasswordField(
+            value = uiState.password,
+            onValueChange = { viewModel.onPasswordChange(it) },
+            visible = uiState.passwordVisible,
+            onToggleVisibility = { viewModel.togglePasswordVisibility() },
+            enabled = !uiState.isLoading,
+            error = uiState.passwordError
+        )
+
+        TextButton(
+            onClick = onNavigateToForgotPassword,
+            modifier = Modifier.align(Alignment.End),
+            enabled = !uiState.isLoading
         ) {
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(AppCorners.xlarge),
+            Text(
+                stringResource(R.string.mot_de_passe_oublie),
+                style = AppTypography.labelMedium,
                 color = AppColors.primary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.Shield,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(AppSpacing.lg))
-
-            Text(
-                text = stringResource(R.string.shadowguard_title),
-                style = AppTypography.displayLarge,
-                color = AppColors.textPrimary
             )
+        }
 
-            Text(
-                text = stringResource(R.string.protegez_votre_vie_privee),
-                style = AppTypography.bodyLarge,
-                color = AppColors.textSecondary
+        Spacer(modifier = Modifier.height(AppSpacing.md))
+
+        AuthPrimaryButton(
+            text = stringResource(R.string.se_connecter),
+            onClick = { viewModel.login() },
+            enabled = !uiState.isLoading,
+            isLoading = uiState.isLoading
+        )
+
+        uiState.errorMessage?.let { error ->
+            Spacer(modifier = Modifier.height(AppSpacing.md))
+            AppErrorAlert(
+                message = error.asString(),
+                modifier = Modifier.fillMaxWidth()
             )
+        }
 
-            Spacer(modifier = Modifier.height(AppSpacing.xxl))
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(AppCorners.xlarge),
-                colors = CardDefaults.cardColors(
-                    containerColor = AppColors.surface
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(AppSpacing.lg),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Text(
-                        text = stringResource(R.string.connexion),
-                        style = AppTypography.titleLarge,
-                        color = AppColors.textPrimary
-                    )
-
-                    Spacer(modifier = Modifier.height(AppSpacing.lg))
-
-                    Text(
-                        text = stringResource(R.string.email),
-                        style = AppTypography.bodyMedium,
-                        color = AppColors.textPrimary,
-                        modifier = Modifier.padding(bottom = AppSpacing.sm)
-                    )
-
-                    OutlinedTextField(
-                        value = uiState.email,
-                        onValueChange = { viewModel.onEmailChange(it) },
-                        placeholder = { Text(stringResource(R.string.votre_email_com), color = AppColors.textTertiary) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        enabled = !uiState.isLoading,
-                        isError = uiState.emailError != null,
-                        supportingText = uiState.emailError?.let {
-                            { Text(it, color = AppColors.error) }
-                        },
-                        shape = RoundedCornerShape(AppCorners.medium),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = AppColors.textPrimary,
-                            unfocusedTextColor = AppColors.textPrimary,
-                            focusedBorderColor = AppColors.primary,
-                            unfocusedBorderColor = AppColors.surfaceVariant,
-                            focusedContainerColor = AppColors.surfaceVariant,
-                            unfocusedContainerColor = AppColors.surfaceVariant,
-                            cursorColor = AppColors.primary
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(AppSpacing.md))
-
-                    Text(
-                        text = stringResource(R.string.mot_de_passe),
-                        style = AppTypography.bodyMedium,
-                        color = AppColors.textPrimary,
-                        modifier = Modifier.padding(bottom = AppSpacing.sm)
-                    )
-
-                    OutlinedTextField(
-                        value = uiState.password,
-                        onValueChange = { viewModel.onPasswordChange(it) },
-                        placeholder = { Text("●●●●●●●●", color = AppColors.textTertiary) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { viewModel.togglePasswordVisibility() },
-                                enabled = !uiState.isLoading
-                            ) {
-                                Icon(
-                                    imageVector = if (uiState.passwordVisible)
-                                        Icons.Filled.Visibility
-                                    else
-                                        Icons.Filled.VisibilityOff,
-                                    contentDescription = null,
-                                    tint = AppColors.textSecondary
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (uiState.passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
-                        singleLine = true,
-                        enabled = !uiState.isLoading,
-                        isError = uiState.passwordError != null,
-                        supportingText = uiState.passwordError?.let {
-                            { Text(it, color = AppColors.error) }
-                        },
-                        shape = RoundedCornerShape(AppCorners.medium),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = AppColors.textPrimary,
-                            unfocusedTextColor = AppColors.textPrimary,
-                            focusedBorderColor = AppColors.primary,
-                            unfocusedBorderColor = AppColors.surfaceVariant,
-                            focusedContainerColor = AppColors.surfaceVariant,
-                            unfocusedContainerColor = AppColors.surfaceVariant,
-                            cursorColor = AppColors.primary
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(AppSpacing.sm))
-
-                    TextButton(
-                        onClick = onNavigateToForgotPassword,
-                        modifier = Modifier.align(Alignment.End),
-                        enabled = !uiState.isLoading
-                    ) {
-                        Text(
-                            stringResource(R.string.mot_de_passe_oublie),
-                            color = AppColors.primary,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(AppSpacing.lg))
-
-                    AppPrimaryButton(
-                        text = stringResource(R.string.se_connecter),
-                        onClick = { viewModel.login() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isLoading,
-                        loading = uiState.isLoading
-                    )
-
-                    uiState.errorMessage?.let { error ->
-                        Spacer(modifier = Modifier.height(AppSpacing.md))
-                        AppErrorAlert(
-                            message = error.asString(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(AppSpacing.lg))
-
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = stringResource(R.string.ou_continuer_avec),
+                text = stringResource(R.string.pas_encore_de_compte),
                 color = AppColors.textSecondary,
-                style = AppTypography.labelMedium
+                style = AppTypography.bodyMedium
             )
-
-            Spacer(modifier = Modifier.height(AppSpacing.md))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            TextButton(
+                onClick = onNavigateToRegister,
+                enabled = !uiState.isLoading
             ) {
                 Text(
-                    text = stringResource(R.string.pas_encore_de_compte),
-                    color = AppColors.textSecondary,
-                    style = AppTypography.bodyMedium
-                )
-                TextButton(
-                    onClick = onNavigateToRegister,
-                    enabled = !uiState.isLoading
-                ) {
-                    Text(
-                        stringResource(R.string.creer_un_compte),
-                        color = AppColors.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(AppSpacing.md))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = AppColors.textTertiary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(AppSpacing.xs))
-                Text(
-                    text = stringResource(R.string.connexion_securisee_et_chiffree),
-                    color = AppColors.textTertiary,
-                    style = AppTypography.labelMedium
+                    stringResource(R.string.creer_un_compte),
+                    color = AppColors.primary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
+
+        AuthTrustBadge(
+            text = stringResource(R.string.connexion_securisee_et_chiffree),
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
     }
 }
 

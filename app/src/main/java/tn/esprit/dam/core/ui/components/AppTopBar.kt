@@ -11,7 +11,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import tn.esprit.dam.R
@@ -36,7 +35,7 @@ fun AppTopBar(
                 text = currentScreen.titleString ?: if (currentScreen.titleRes != 0) stringResource(id = currentScreen.titleRes) else "",
                 fontWeight = FontWeight.Bold,
                 fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                color = Color.White
+                color = AppColors.textPrimary
             )
         },
         navigationIcon = {
@@ -45,16 +44,16 @@ fun AppTopBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.retour),
-                        tint = Color.White
+                        tint = AppColors.textPrimary
                     )
                 }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = AppColors.surface,
-            titleContentColor = Color.White,
-            navigationIconContentColor = Color.White,
-            actionIconContentColor = Color.White
+            titleContentColor = AppColors.textPrimary,
+            navigationIconContentColor = AppColors.textPrimary,
+            actionIconContentColor = AppColors.textPrimary
         )
     )
 }

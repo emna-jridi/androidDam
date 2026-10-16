@@ -9,13 +9,13 @@ import androidx.compose.runtime.Composable
  * derived from the same tokens instead of following the system light/dark setting.
  */
 private val ShadowGuardColorScheme = darkColorScheme(
-    primary = AppColors.primaryLight,
-    onPrimary = AppColors.background,
-    primaryContainer = AppColors.primaryDark,
+    primary = AppColors.primary,
+    onPrimary = AppColors.onPrimary,
+    primaryContainer = AppColors.primaryContainer,
     onPrimaryContainer = AppColors.primaryLight,
     secondary = AppColors.primaryLight,
-    onSecondary = AppColors.background,
-    secondaryContainer = AppColors.primaryDark,
+    onSecondary = AppColors.onPrimary,
+    secondaryContainer = AppColors.primaryContainer,
     onSecondaryContainer = AppColors.primaryLight,
     tertiary = AppColors.info,
     onTertiary = AppColors.background,

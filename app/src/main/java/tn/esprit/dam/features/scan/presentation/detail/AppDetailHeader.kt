@@ -63,17 +63,17 @@ fun DetailHeader(onBackClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         IconButton(onClick = onBackClick) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppColors.textPrimary)
         }
         Text(
             text = stringResource(R.string.app_analysis),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = AppColors.textPrimary
         )
         Spacer(modifier = Modifier.weight(1f))
         IconButton(onClick = {}) {
-            Icon(imageVector = Icons.Default.Share, contentDescription = stringResource(R.string.share), tint = Color.White)
+            Icon(imageVector = Icons.Default.Share, contentDescription = stringResource(R.string.share), tint = AppColors.textPrimary)
         }
     }
 }
@@ -143,7 +143,7 @@ fun AppHeaderWithRiskCard(
                             Text(
                                 text = (app.displayName?.firstOrNull()?.uppercaseChar() ?: 'A').toString(),
                                 fontSize = 28.sp,
-                                color = Color.White,
+                                color = AppColors.textPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -155,7 +155,7 @@ fun AppHeaderWithRiskCard(
                         text = app.displayName ?: app.packageName,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = AppColors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -206,7 +206,7 @@ fun AppHeaderWithRiskCard(
                         text = animatedScore.toInt().toString(),
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = AppColors.textPrimary
                     )
                     Text(
                         text = stringResource(R.string.risk_score),
@@ -302,7 +302,7 @@ fun StatBadge(
             text = value,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = AppColors.textPrimary
         )
         Text(
             text = label,

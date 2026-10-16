@@ -27,8 +27,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_ROOT", "\"http://192.168.0.14:3000\"")
-            buildConfigField("String", "BASE_ROOT", "\"http://192.168.0.14:3000\"")
+            buildConfigField("String", "API_ROOT", "\"http://192.168.1.100:3000\"")
+            buildConfigField("String", "BASE_ROOT", "\"http://192.168.1.100:3000\"")
         }
         release {
             isMinifyEnabled = true

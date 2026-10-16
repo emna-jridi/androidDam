@@ -35,7 +35,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +69,7 @@ fun DetectedTrackersSection(app: AppDetailUi) {
                     text = stringResource(R.string.detected_trackers),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
             }
             Surface(
@@ -216,7 +215,7 @@ fun EnhancedTrackerCard(tracker: TrackerUi) {
                     text = tracker.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = AppColors.textPrimary
                 )
                 Text(
                     text = tracker.riskLevel?.uppercase() ?: "UNKNOWN",

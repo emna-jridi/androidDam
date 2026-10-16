@@ -45,7 +45,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -117,7 +116,7 @@ fun RecommendationsSection(
                 text = stringResource(R.string.recommendations),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = AppColors.textPrimary
             )
         }
 
@@ -149,7 +148,7 @@ fun RecommendationsSection(
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, AppColors.textMuted),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
+                    contentColor = AppColors.textPrimary
                 )
             ) {
                 Icon(
@@ -232,7 +231,7 @@ fun EnhancedCollapsibleRecommendationCard(
                         text = recommendation.title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = AppColors.textPrimary
                     )
                 }
                 Icon(

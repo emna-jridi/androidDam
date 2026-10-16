@@ -326,4 +326,42 @@
     <string name="add_password">Add Password</string>
     <string name="favorite">Favorite</string>
     <string name="delete_password_2">Delete Password</string>
+
+    <!-- Auth redesign -->
+    <string name="login_welcome_back">Bon retour</string>
+    <string name="login_subtitle">Connectez-vous pour garder vos données sous protection.</string>
+    <string name="register_title">Créez votre compte</string>
+    <string name="register_subtitle">Quelques secondes pour sécuriser vos apps et vos mots de passe.</string>
+    <string name="nom_complet">Nom complet</string>
+    <string name="password_strength_weak">Faible</string>
+    <string name="password_strength_medium">Moyen</string>
+    <string name="password_strength_good">Bon</string>
+    <string name="password_strength_strong">Fort</string>
+    <string name="password_strength_label">Robustesse : %1$s</string>
+    <string name="password_strength_hint">8+ caractères, majuscules, chiffres et symboles.</string>
+
+    <!-- Home redesign -->
+    <string name="home_score_label">SCORE</string>
+    <string name="home_state_excellent">Excellente protection</string>
+    <string name="home_state_good">Bonne protection</string>
+    <string name="home_state_medium">Protection moyenne</string>
+    <string name="home_state_low">Protection faible</string>
+    <plurals name="home_apps_to_check">
+        <item quantity="one">%d app à vérifier</item>
+        <item quantity="other">%d apps à vérifier</item>
+    </plurals>
+    <string name="home_no_app_to_check">Aucune app à risque élevé</string>
+    <string name="home_last_scan">Dernier scan : %1$s</string>
+    <string name="home_run_scan">Lancer un scan</string>
+    <string name="home_count_high">Élevé</string>
+    <string name="home_count_medium">Moyen</string>
+    <string name="home_count_safe">Sûres</string>
+    <string name="home_tool_apk">APK</string>
+    <string name="home_tool_search">Chercher</string>
+    <string name="home_tool_alerts">Alertes</string>
+    <string name="home_tool_vault">Vault</string>
+    <string name="home_watchlist">À surveiller</string>
+    <string name="home_see_all">Tout voir</string>
+    <string name="home_app_score">Score %1$d/100</string>
+    <string name="home_watchlist_empty">Rien à signaler : aucune app à risque élevé.</string>
 </resources>

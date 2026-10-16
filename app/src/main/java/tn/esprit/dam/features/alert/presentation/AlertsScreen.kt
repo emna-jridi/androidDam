@@ -102,7 +102,7 @@ fun AlertsScreen(
                         ) {
                             Text(
                                 text = unreadCount.toString(),
-                                color = Color.White,
+                                color = AppColors.textPrimary,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier

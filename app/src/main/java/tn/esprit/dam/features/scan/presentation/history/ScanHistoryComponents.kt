@@ -151,7 +151,7 @@ fun ScanHistoryCard(scan: ScanHistoryItemUi, onClick: (ScanHistoryItemUi) -> Uni
                             text = scan.appName ?: scan.packageName ?: "Unknown App",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = AppColors.textPrimary,
                             maxLines = 1
                         )
                         Text(
@@ -236,7 +236,7 @@ fun MiniStatItem(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.height(2.dp))
-        Text(text = value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(text = value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = AppColors.textPrimary)
         Text(text = label, fontSize = 10.sp, color = AppColors.textTertiary)
     }
 }
@@ -301,7 +301,7 @@ fun ScanDetailSheet(scan: ScanHistoryItemUi, onDismiss: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         stringResource(R.string.details_du_scan),
-                        color = Color.White,
+                        color = AppColors.textPrimary,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -344,7 +344,7 @@ fun ScanDetailSheet(scan: ScanHistoryItemUi, onDismiss: () -> Unit) {
 
             Text(
                 stringResource(R.string.risk_distribution),
-                color = Color.White,
+                color = AppColors.textPrimary,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold
             )
@@ -388,7 +388,7 @@ fun DetailStatCard(
         ) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
             Text(title, color = AppColors.textTertiary, style = MaterialTheme.typography.bodySmall)
-            Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(value, color = AppColors.textPrimary, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
     }
 }

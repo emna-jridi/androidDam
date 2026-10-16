@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -115,18 +114,18 @@ fun ScanBottomBar(
                     Icon(
                         if (canScan) Icons.Default.Security else Icons.Default.Lock,
                         contentDescription = null,
-                        tint = Color.White
+                        tint = (if (canScan) AppColors.onPrimary else AppColors.textPrimary)
                     )
                     Column {
                         Text(
                             if (canScan) "Analyze Applications" else "Select apps",
-                            color = Color.White,
+                            color = (if (canScan) AppColors.onPrimary else AppColors.textPrimary),
                             fontWeight = FontWeight.Bold
                         )
                         if (canScan) {
                             Text(
                                 "$selectedCount app${if (selectedCount > 1) "s" else ""}",
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = AppColors.onPrimary.copy(alpha = 0.9f),
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -282,7 +281,7 @@ fun HeaderCard(
                 ) {
                     Text(
                         if (selectedCount > 0) "Deselect All" else "Select All",
-                        color = Color.White,
+                        color = AppColors.onPrimary,
                         fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.labelMedium
                     )
@@ -337,7 +336,7 @@ fun LevelChip(
 ) {
     val container = if (selected) AppColors.primary else AppColors.surface.copy(alpha = 0.5f)
     val border = if (selected) AppColors.primary else AppColors.textMuted.copy(alpha = 0.3f)
-    val textColor = if (selected) Color.White else AppColors.textSecondary
+    val textColor = if (selected) AppColors.onPrimary else AppColors.textSecondary
 
     Card(
         modifier = modifier
@@ -363,7 +362,7 @@ fun LevelChip(
             Text(
                 description,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (selected) Color.White.copy(alpha = 0.8f) else AppColors.textSecondary.copy(alpha = 0.6f)
+                color = if (selected) AppColors.onPrimary.copy(alpha = 0.8f) else AppColors.textSecondary.copy(alpha = 0.6f)
             )
         }
     }
@@ -462,7 +461,7 @@ fun AppRow(app: LocalAppInfo, onToggle: () -> Unit) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = stringResource(R.string.selected),
-                        tint = Color.White,
+                        tint = AppColors.onPrimary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
