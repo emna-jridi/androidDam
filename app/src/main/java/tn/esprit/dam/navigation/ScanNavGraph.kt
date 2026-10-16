@@ -1,6 +1,5 @@
 package tn.esprit.dam.navigation
 
-import android.content.Context
 import android.provider.Settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,27 +17,22 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import tn.esprit.dam.data.TokenManager
-import tn.esprit.dam.features.scan.presentation.AppDetailScreen
-import tn.esprit.dam.features.scan.presentation.ScanHistoryScreen
-import tn.esprit.dam.features.scan.presentation.ScanScreen
-import tn.esprit.dam.features.scan.presentation.SearchAppScreen
+import tn.esprit.dam.core.session.rememberTokenRepository
+import tn.esprit.dam.features.scan.presentation.detail.AppDetailScreen
+import tn.esprit.dam.features.scan.presentation.history.ScanHistoryScreen
+import tn.esprit.dam.features.scan.presentation.scan.ScanScreen
+import tn.esprit.dam.features.scan.presentation.search.SearchAppScreen
 
-/**
- * Scan feature routes
- * Handles device scanning, app analysis, and search functionality
- */
-@androidx.compose.runtime.Composable
 fun NavGraphBuilder.scanNavGraph(navController: NavHostController) {
-    val context = LocalContext.current
-
     composable(Screens.Scan.route) {
+        val context = LocalContext.current
+        val tokenRepository = rememberTokenRepository()
         var userId by remember { mutableStateOf<String?>(null) }
         var deviceId by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
-            val user = TokenManager.getUser(context)
-            val token = TokenManager.getAccessToken(context)
+            val user = tokenRepository.getUser()
+            val token = tokenRepository.getAccessToken()
             val decodedId = token?.let { decodeUserIdFromToken(it) }
             userId = user?.id ?: decodedId ?: "unknown"
 
@@ -48,7 +42,6 @@ fun NavGraphBuilder.scanNavGraph(navController: NavHostController) {
             ) ?: "unknown"
         }
 
-        // Only render ScanScreen when userId is loaded
         if (userId != null && deviceId != null) {
             ScanScreen(
                 userId = userId!!,
@@ -63,7 +56,6 @@ fun NavGraphBuilder.scanNavGraph(navController: NavHostController) {
                 }
             )
         } else {
-            // Loading state while fetching userId
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -77,12 +69,14 @@ fun NavGraphBuilder.scanNavGraph(navController: NavHostController) {
         route = Screens.AppDetails.route,
         arguments = listOf(navArgument("packageName") { type = NavType.StringType })
     ) { backStackEntry ->
+        val context = LocalContext.current
+        val tokenRepository = rememberTokenRepository()
         val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
         var userId by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
-            val user = TokenManager.getUser(context)
-            val token = TokenManager.getAccessToken(context)
+            val user = tokenRepository.getUser()
+            val token = tokenRepository.getAccessToken()
             val decodedId = token?.let { decodeUserIdFromToken(it) }
             userId = user?.id ?: decodedId ?: "unknown"
         }

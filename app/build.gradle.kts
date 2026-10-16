@@ -26,8 +26,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_ROOT", "\"http://172.18.1.18:3000\"")
-            buildConfigField("String", "BASE_ROOT", "\"http://172.18.1.18:3000\"")
+            buildConfigField("String", "API_ROOT", "\"http://192.168.0.14:3000\"")
+            buildConfigField("String", "BASE_ROOT", "\"http://192.168.0.14:3000\"")
         }
         release {
             isMinifyEnabled = true
@@ -121,6 +121,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     testImplementation(libs.junit)
+    testImplementation("io.ktor:ktor-client-mock:2.3.7")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

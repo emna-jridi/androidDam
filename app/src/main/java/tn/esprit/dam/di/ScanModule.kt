@@ -1,4 +1,4 @@
-﻿package tn.esprit.dam.di
+package tn.esprit.dam.di
 
 import android.content.Context
 import dagger.Module
@@ -6,26 +6,21 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import tn.esprit.dam.data.api.ScanApiService
-import tn.esprit.dam.data.TokenManager
-import tn.esprit.dam.data.repository.ScanRepository
+import io.ktor.client.HttpClient
+import tn.esprit.dam.features.scan.data.remote.ScanApiService
+import tn.esprit.dam.features.scan.data.repository.ScanRepository
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object ScanModule {
-
-    @Singleton
-    @Provides
-    fun provideTokenManager(): TokenManager = TokenManager
-
     @Singleton
     @Provides
     fun provideScanApiService(
-        @ApplicationContext context: Context,
-        tokenManager: TokenManager
+        httpClient: HttpClient,
+        @ApplicationContext context: Context
     ): ScanApiService {
-        return ScanApiService(context, tokenManager)
+        return ScanApiService(httpClient, context)
     }
 
     @Singleton

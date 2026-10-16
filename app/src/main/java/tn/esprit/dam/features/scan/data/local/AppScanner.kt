@@ -1,0 +1,45 @@
+﻿package tn.esprit.dam.features.scan.data.local
+
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
+import dagger.hilt.android.qualifiers.ApplicationContext
+import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AppScanner @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    fun getInstalledApps(): List<LocalAppInfo> {
+        val pm = context.packageManager
+        val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+
+        return packages.mapNotNull { app ->
+            try {
+                val appName = pm.getApplicationLabel(app).toString()
+                val packageName = app.packageName
+                val appIcon: Drawable? = try {
+                    pm.getApplicationIcon(app)
+                } catch (e: Exception) {
+                    null
+                }
+
+                LocalAppInfo(
+                    packageName = packageName,
+                    displayName = appName,
+                    category = null,
+                    isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                    permissions = emptyList(),
+                    trackers = emptyList(),
+                    isSelected = false,
+                    icon = appIcon
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+}

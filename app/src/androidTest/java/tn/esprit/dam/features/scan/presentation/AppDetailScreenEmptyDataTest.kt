@@ -1,12 +1,13 @@
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.runner.AndroidJUnit4
-import tn.esprit.dam.data.api.models.AppInfoDto
-import tn.esprit.dam.data.api.models.AnalysisResultDto
-import tn.esprit.dam.features.scan.presentation.AppDetailScreen
+import tn.esprit.dam.features.scan.data.remote.dto.AppInfoDto
+import tn.esprit.dam.features.scan.data.remote.dto.AnalysisResultDto
+import tn.esprit.dam.features.scan.presentation.detail.AppDetailScreen
 
 @RunWith(AndroidJUnit4::class)
 class AppDetailScreenEmptyDataTest {
@@ -39,7 +40,6 @@ class AppDetailScreenEmptyDataTest {
             )
         }
 
-        // Screen should render without crash when permissions/trackers are empty
         composeRule.onNodeWithText("Test App").assertIsDisplayed()
     }
 
@@ -52,7 +52,6 @@ class AppDetailScreenEmptyDataTest {
             )
         }
 
-        // Permissions section title should not appear if empty
         composeRule.onNodeWithText("Permissions détectées").assertDoesNotExist()
     }
 
@@ -65,7 +64,6 @@ class AppDetailScreenEmptyDataTest {
             )
         }
 
-        // Trackers section title should not appear if empty
         composeRule.onNodeWithText("Trackers identifiés").assertDoesNotExist()
     }
 
@@ -78,7 +76,6 @@ class AppDetailScreenEmptyDataTest {
             )
         }
 
-        // AI status badge should appear in analysis card
         composeRule.onNodeWithText("Analyse de Sécurité").assertIsDisplayed()
     }
 
@@ -93,8 +90,6 @@ class AppDetailScreenEmptyDataTest {
             )
         }
 
-        // Should handle zero score gracefully (score breakdown hidden if ≤ 0)
-        // No crash expected
         composeRule.onRoot().assertIsDisplayed()
     }
 }

@@ -1,13 +1,10 @@
 ﻿package tn.esprit.dam.features.scan.domain
 
-import tn.esprit.dam.features.scan.data.LocalAppInfo
+import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
 import java.util.Locale
 
-/**
- * Normalized Risk Result (0-100)
- */
 data class ScanRiskResult(
-    val score: Int, // 0 = Dangerous, 100 = Safe
+    val score: Int,
     val riskLevel: RiskLevel,
     val permissionScore: Int,
     val trackerScore: Int,
@@ -18,7 +15,7 @@ data class ScanRiskResult(
 )
 
 enum class RiskLevel(val label: String) {
-    SAFE("SÃ»r"),
+    SAFE("Sûr"),
     LOW("Faible"),
     MEDIUM("Moyen"),
     HIGH("Élevé"),
@@ -32,8 +29,6 @@ enum class ConfidenceLevel(val label: String) {
 }
 
 object SecurityUtils {
-
-    // 1. Permission Categorization & Risk
     data class PermissionAnalysis(
         val name: String,
         val label: String,
@@ -85,10 +80,8 @@ object SecurityUtils {
 
     fun analyzePermission(permission: String): PermissionAnalysis {
         val key = permission.uppercase(Locale.getDefault())
-        // Try exact match first
         DANGEROUS_PERMISSIONS[permission]?.let { return it }
-        
-        // Try suffix match logic
+
         return when {
             key.contains("CAMERA") -> PermissionAnalysis(
                 "CAMERA", "Camera", "Potential access to the lens.", Category.PRIVACY, RiskLevel.MEDIUM
@@ -109,16 +102,15 @@ object SecurityUtils {
                 "INTERNET", "Internet", "Network communication.", Category.NETWORK, RiskLevel.LOW
             )
             else -> PermissionAnalysis(
-                permission.substringAfterLast("."), 
-                permission.substringAfterLast("."), 
-                "Standard Android permission.", 
-                Category.OTHER, 
+                permission.substringAfterLast("."),
+                permission.substringAfterLast("."),
+                "Standard Android permission.",
+                Category.OTHER,
                 RiskLevel.LOW
             )
         }
     }
 
-    // 2. Tracker Analysis
     data class TrackerAnalysis(
         val name: String,
         val category: String,
@@ -142,7 +134,7 @@ object SecurityUtils {
         KNOWN_TRACKERS.forEach { (key, value) ->
             if (trackerName.contains(key, ignoreCase = true)) return value
         }
-        
+
         return if (trackerName.contains("ads", ignoreCase = true) || trackerName.contains("chartboost", ignoreCase = true)) {
             TrackerAnalysis(trackerName, "Advertising", RiskLevel.MEDIUM, "Third-party advertising network.")
         } else if (trackerName.contains("analytics", ignoreCase = true)) {
@@ -152,19 +144,15 @@ object SecurityUtils {
         }
     }
 
-    // 3. Risk Calculation Engine
     fun calculateAppRisk(
         permissions: List<String>,
         trackers: List<String>,
         isSystemApp: Boolean
     ): ScanRiskResult {
-        
-        // Base score starts at 100 (Safe)
         var currentScore = 100.0
         val criticalIssues = mutableListOf<String>()
         val warnings = mutableListOf<String>()
 
-        // -- Analyze Permissions --
         var permDeduction = 0.0
         permissions.forEach { perm ->
             val analysis = analyzePermission(perm)
@@ -180,15 +168,12 @@ object SecurityUtils {
                 RiskLevel.MEDIUM -> {
                     permDeduction += 3
                 }
-                else -> { /* Low/Safe: No penalty */ }
+                else -> {  }
             }
         }
-        // Cap permission deduction
         if (permDeduction > 60) permDeduction = 60.0
         val permScore = (100 - permDeduction).toInt()
 
-
-        // -- Analyze Trackers --
         var trackerDeduction = 0.0
         trackers.forEach { tracker ->
             val analysis = analyzeTracker(tracker)
@@ -201,23 +186,16 @@ object SecurityUtils {
                 else -> trackerDeduction += 2
             }
         }
-        // Cap tracker deduction
         if (trackerDeduction > 40) trackerDeduction = 40.0
         val trackerScore = (100 - trackerDeduction).toInt()
 
-        // -- Combine Scores --
-        // Permissions weight: 60%, Trackers weight: 40%
-        // If system app, we trust it more (reduce deductions by 50%)
-        
         var totalDeduction = (permDeduction * 0.7) + (trackerDeduction * 0.3)
         if (isSystemApp) totalDeduction *= 0.5
 
         currentScore -= totalDeduction
 
-        // Ensure bounds
         val finalScore = currentScore.coerceIn(0.0, 100.0).toInt()
 
-        // Determine Risk Level
         val riskLevel = when (finalScore) {
             in 0..40 -> RiskLevel.HIGH
             in 41..70 -> RiskLevel.MEDIUM
@@ -225,8 +203,6 @@ object SecurityUtils {
             else -> RiskLevel.SAFE
         }
 
-        // Determine Confidence Level
-        // If we have minimal info (no perms, no trackers), confidence is lower unless it's a very simple app
         val confidence = if (permissions.isEmpty() && trackers.isEmpty()) {
             ConfidenceLevel.LOW
         } else if (permissions.isNotEmpty()) {
@@ -240,19 +216,10 @@ object SecurityUtils {
             riskLevel = riskLevel,
             permissionScore = permScore,
             trackerScore = trackerScore,
-            codeScore = 100, // Placeholder for now (Static analysis usually handled by server)
+            codeScore = 100,
             criticalIssues = criticalIssues,
             warnings = warnings,
             confidence = confidence
         )
     }
 }
-
-
-
-
-
-
-
-
-

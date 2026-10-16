@@ -112,14 +112,14 @@
 
         <!-- Privacy Monitor Service (monitors camera/mic access) -->
         <service
-            android:name=".alert.PrivacyMonitorService"
+            android:name=".features.alert.service.PrivacyMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera|microphone" />
 
         <!-- Security Bubble Service (shows floating security reports) -->
         <service
-            android:name=".report.SecurityBubbleService"
+            android:name=".features.report.service.SecurityBubbleService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -131,7 +131,7 @@
 
         <!-- App Install Receiver (triggers bubble on new app installations) -->
         <receiver
-            android:name=".report.receiver.AppInstallReceiver"
+            android:name=".features.report.receiver.AppInstallReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

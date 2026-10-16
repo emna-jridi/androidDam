@@ -4,16 +4,15 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import tn.esprit.dam.data.remote.KtorHttpClient
-import tn.esprit.dam.data.remote.api.VaultApi
-import tn.esprit.dam.data.repository.VaultRepository
-import tn.esprit.dam.data.remote.ai.OllamaPasswordAdvisor
+import tn.esprit.dam.core.network.KtorHttpClient
+import tn.esprit.dam.features.vault.data.remote.VaultApi
+import tn.esprit.dam.features.vault.data.repository.VaultRepository
+import tn.esprit.dam.features.vault.data.ai.OllamaPasswordAdvisor
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object VaultModule {
-
     @Provides
     @Singleton
     fun provideVaultApi(client: KtorHttpClient): VaultApi {
@@ -30,17 +29,5 @@ object VaultModule {
     @Singleton
     fun provideOllamaPasswordAdvisor(repository: VaultRepository): OllamaPasswordAdvisor {
         return OllamaPasswordAdvisor(repository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideDarkWebApi(client: KtorHttpClient): tn.esprit.dam.data.remote.darkweb.DarkWebApi {
-        return tn.esprit.dam.data.remote.darkweb.DarkWebApi(client)
-    }
-
-    @Provides
-    @Singleton
-    fun provideDarkWebRepository(api: tn.esprit.dam.data.remote.darkweb.DarkWebApi): tn.esprit.dam.data.repository.DarkWebRepository {
-        return tn.esprit.dam.data.repository.DarkWebRepository(api)
     }
 }

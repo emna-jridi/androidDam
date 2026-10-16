@@ -1,31 +1,26 @@
 package tn.esprit.dam.navigation
 
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordScreen
-import tn.esprit.dam.features.auth.forgotpassword.ForgotPasswordViewModel
-import tn.esprit.dam.features.auth.forgotpassword.NewPasswordScreen
-import tn.esprit.dam.features.auth.forgotpassword.PasswordResetSuccessScreen
-import tn.esprit.dam.features.auth.forgotpassword.ResetPasswordOTPScreen
-import tn.esprit.dam.features.auth.login.LoginScreen
-import tn.esprit.dam.features.auth.register.RegisterScreen
-import tn.esprit.dam.features.auth.verification.EmailVerificationScreen
-import tn.esprit.dam.features.auth.verification.VerificationSuccessScreen
+import tn.esprit.dam.features.auth.presentation.forgotpassword.ForgotPasswordScreen
+import tn.esprit.dam.features.auth.presentation.forgotpassword.ForgotPasswordViewModel
+import tn.esprit.dam.features.auth.presentation.forgotpassword.NewPasswordScreen
+import tn.esprit.dam.features.auth.presentation.forgotpassword.PasswordResetSuccessScreen
+import tn.esprit.dam.features.auth.presentation.forgotpassword.ResetPasswordOTPScreen
+import tn.esprit.dam.features.auth.presentation.login.LoginScreen
+import tn.esprit.dam.features.auth.presentation.register.RegisterScreen
+import tn.esprit.dam.features.auth.presentation.verification.EmailVerificationScreen
+import tn.esprit.dam.features.auth.presentation.verification.VerificationSuccessScreen
 
-/**
- * Authentication feature routes
- */
-@androidx.compose.runtime.Composable
 fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,
     onLoginSuccess: () -> Unit
 ) {
-    val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
-
     composable(Screens.Login.route) {
         LoginScreen(
             onLoginSuccess = onLoginSuccess,
@@ -77,7 +72,8 @@ fun NavGraphBuilder.authNavGraph(
         )
     }
 
-    composable(Screens.ForgotPassword.route) {
+    composable(Screens.ForgotPassword.route) { backStackEntry ->
+        val forgotPasswordViewModel: ForgotPasswordViewModel = hiltViewModel(backStackEntry)
         ForgotPasswordScreen(
             onNavigateToOTP = {
                 val email = forgotPasswordViewModel.uiState.value.email
@@ -93,6 +89,10 @@ fun NavGraphBuilder.authNavGraph(
         arguments = listOf(navArgument("email") { type = NavType.StringType })
     ) { backStackEntry ->
         val email = backStackEntry.arguments?.getString("email") ?: ""
+        val parentEntry = remember(backStackEntry) {
+            navController.getBackStackEntry(Screens.ForgotPassword.route)
+        }
+        val forgotPasswordViewModel: ForgotPasswordViewModel = hiltViewModel(parentEntry)
 
         ResetPasswordOTPScreen(
             email = email,
@@ -109,6 +109,10 @@ fun NavGraphBuilder.authNavGraph(
         arguments = listOf(navArgument("email") { type = NavType.StringType })
     ) { backStackEntry ->
         val email = backStackEntry.arguments?.getString("email") ?: ""
+        val parentEntry = remember(backStackEntry) {
+            navController.getBackStackEntry(Screens.ForgotPassword.route)
+        }
+        val forgotPasswordViewModel: ForgotPasswordViewModel = hiltViewModel(parentEntry)
 
         NewPasswordScreen(
             onPasswordResetSuccess = {
