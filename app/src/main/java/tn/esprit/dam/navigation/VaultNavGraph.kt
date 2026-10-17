@@ -39,8 +39,10 @@ fun NavGraphBuilder.vaultNavGraph(
     composable(Screens.VaultAddPassword.route) {
         val vaultViewModel: VaultViewModel = hiltViewModel()
         val pwdVm: PasswordViewModel = passwordViewModel ?: hiltViewModel()
+        val leakState by pwdVm.leakState.collectAsState()
         VaultAddPasswordScreen(
-            passwordViewModel = pwdVm,
+            leakState = leakState,
+            onCheckLeak = { pwdVm.checkPasswordLeak(it) },
             vaultViewModel = vaultViewModel,
             onBackClick = { navController.popBackStack() },
             onPasswordAdded = {
@@ -52,11 +54,14 @@ fun NavGraphBuilder.vaultNavGraph(
     composable(Screens.VaultDetail.route) {
         val pwdVm: PasswordViewModel = passwordViewModel ?: hiltViewModel()
         val selectedPassword by pwdVm.selectedPassword.collectAsState()
+        val leakState by pwdVm.leakState.collectAsState()
         val passwordState = selectedPassword
 
         if (passwordState != null) {
             PasswordDetailScreen(
                 data = passwordState,
+                leakState = leakState,
+                onCheckLeak = { pwdVm.checkPasswordLeak(it, debounceMs = 0) },
                 onBack = { navController.popBackStack() },
                 onDelete = {
                     pwdVm.deletePassword(passwordState.entry.id)

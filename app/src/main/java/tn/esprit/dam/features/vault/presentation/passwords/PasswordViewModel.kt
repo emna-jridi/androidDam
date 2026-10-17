@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import tn.esprit.dam.features.darkweb.domain.CheckPasswordLeakUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 sealed class PasswordListUiState {
@@ -23,6 +26,16 @@ sealed class PasswordListUiState {
     data class Success(val passwords: List<PasswordEntry>) : PasswordListUiState()
     data class Error(val message: UiText) : PasswordListUiState()
 }
+
+/** Result of the "seen in leaks?" check for one password. */
+sealed interface PasswordLeakState {
+    data object Idle : PasswordLeakState
+    data object Checking : PasswordLeakState
+    data class Checked(val count: Int) : PasswordLeakState
+    data object Failed : PasswordLeakState
+}
+
+private const val MIN_LEAK_CHECK_LENGTH = 4
 
 data class PasswordDetailData(
     val entry: PasswordEntry,
@@ -33,7 +46,8 @@ data class PasswordDetailData(
 @HiltViewModel
 class PasswordViewModel @Inject constructor(
     private val repository: VaultRepository,
-    private val advisor: OllamaPasswordAdvisor
+    private val advisor: OllamaPasswordAdvisor,
+    private val leakChecker: CheckPasswordLeakUseCase
 ) : ViewModel() {
     private val _listState = MutableStateFlow<PasswordListUiState>(PasswordListUiState.Loading)
     val listState: StateFlow<PasswordListUiState> = _listState.asStateFlow()
@@ -63,7 +77,13 @@ class PasswordViewModel @Inject constructor(
     val generatedPassword = _generatedPassword.asStateFlow()
 
     private val analysisCache = mutableMapOf<String, PasswordAnalysisMetrics>()
-    private val breachCheckCache = mutableMapOf<String, Boolean>()
+
+    private val _leakState = MutableStateFlow<PasswordLeakState>(PasswordLeakState.Idle)
+    val leakState: StateFlow<PasswordLeakState> = _leakState.asStateFlow()
+
+    // Keyed by SHA-1 hash, never by the plain password.
+    private val leakCache = mutableMapOf<String, Int>()
+    private var leakJob: Job? = null
 
     fun generateNewPassword(length: Int, useUpper: Boolean, useNums: Boolean, useSymbols: Boolean) {
         _generatedPassword.value = PasswordGenerator.generatePassword(length, useUpper, useNums, useSymbols)
@@ -73,31 +93,44 @@ class PasswordViewModel @Inject constructor(
         _generatedPassword.value = PasswordGenerator.generatePassphrase(wordCount, separator)
     }
 
-    fun checkPasswordBreach(password: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            try {
-                breachCheckCache[password]?.let {
-                    onResult(it)
-                    return@launch
-                }
-
-                val sha1Hash = password.sha1Hash()
-                val prefix = sha1Hash.take(5)
-                val suffix = sha1Hash.drop(5)
-
-                val isBreached = false
-                breachCheckCache[password] = isBreached
-                onResult(isBreached)
-            } catch (e: Exception) {
-                Timber.w(e, "PasswordViewModel.checkPasswordBreach failed")
-                onResult(false)
-            }
+    /**
+     * Checks [password] against known leaks. Debounced, so it can be called on every keystroke;
+     * a newer call cancels the previous one. A failure is shown as an error, never as "not found".
+     */
+    fun checkPasswordLeak(password: String, debounceMs: Long = 600) {
+        leakJob?.cancel()
+        if (password.length < MIN_LEAK_CHECK_LENGTH) {
+            _leakState.value = PasswordLeakState.Idle
+            return
         }
+        val hash = CheckPasswordLeakUseCase.sha1Hex(password)
+        leakCache[hash]?.let {
+            _leakState.value = PasswordLeakState.Checked(it)
+            return
+        }
+        leakJob = viewModelScope.launch {
+            delay(debounceMs)
+            _leakState.value = PasswordLeakState.Checking
+            leakChecker(password)
+                .onSuccess { count ->
+                    leakCache[hash] = count
+                    _leakState.value = PasswordLeakState.Checked(count)
+                }
+                .onFailure {
+                    Timber.w(it, "PasswordViewModel.checkPasswordLeak failed")
+                    _leakState.value = PasswordLeakState.Failed
+                }
+        }
+    }
+
+    fun clearLeakCheck() {
+        leakJob?.cancel()
+        _leakState.value = PasswordLeakState.Idle
     }
 
     fun clearAnalysisCache() {
         analysisCache.clear()
-        breachCheckCache.clear()
+        leakCache.clear()
     }
 
     fun analyzePassword(password: String) {

@@ -610,6 +610,13 @@
     <string name="alerts_load_more">Show %1$d more</string>
     <string name="alerts_empty_filter">No alerts of this type.</string>
 
+    <!-- Vault leak check -->
+    <string name="vault_leak_checking">Checking known leaks…</string>
+    <string name="vault_leak_safe">Not found in known leaks</string>
+    <string name="vault_leak_found">Seen %1$s times in leaks. Don\'t use this password.</string>
+    <string name="vault_leak_failed">Couldn\'t check leaks right now.</string>
+    <string name="vault_leak_retry">Retry</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

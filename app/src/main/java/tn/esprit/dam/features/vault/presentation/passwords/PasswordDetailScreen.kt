@@ -1,5 +1,7 @@
 package tn.esprit.dam.features.vault.presentation.passwords
 import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.theme.AppSpacing
+import tn.esprit.dam.features.vault.presentation.components.PasswordLeakBadge
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.*
@@ -33,10 +35,14 @@ import kotlinx.coroutines.delay
 @Composable
 fun PasswordDetailScreen(
     data: PasswordDetailData,
+    leakState: PasswordLeakState,
+    onCheckLeak: (String) -> Unit,
     onBack: () -> Unit,
     onEdit: () -> Unit = {},
     onDelete: () -> Unit
 ) {
+    LaunchedEffect(data.decryptedPassword) { onCheckLeak(data.decryptedPassword) }
+
     var showPassword by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var copiedField by remember { mutableStateOf<String?>(null) }
@@ -198,6 +204,9 @@ fun PasswordDetailScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(AppSpacing.sm))
+                    PasswordLeakBadge(state = leakState, onRetry = { onCheckLeak(data.decryptedPassword) })
 
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

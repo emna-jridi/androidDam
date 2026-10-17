@@ -1,5 +1,6 @@
 package tn.esprit.dam.features.vault.presentation.passwords
 import tn.esprit.dam.features.vault.presentation.access.VaultViewModel
+import tn.esprit.dam.features.vault.presentation.components.PasswordLeakBadge
 import tn.esprit.dam.R
 import androidx.compose.ui.res.stringResource
 import tn.esprit.dam.features.vault.domain.password.PasswordStrengthCalculator
@@ -36,7 +37,8 @@ import tn.esprit.dam.core.ui.theme.AppTypography
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultAddPasswordScreen(
-    passwordViewModel: Any?,
+    leakState: PasswordLeakState,
+    onCheckLeak: (String) -> Unit,
     vaultViewModel: VaultViewModel,
     onBackClick: () -> Unit,
     onPasswordAdded: () -> Unit
@@ -44,6 +46,9 @@ fun VaultAddPasswordScreen(
     var serviceName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // The ViewModel debounces, so this can run on every keystroke.
+    LaunchedEffect(password) { onCheckLeak(password) }
     var confirmPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
@@ -170,6 +175,8 @@ fun VaultAddPasswordScreen(
             )
 
                 PasswordStrengthBar(password = password)
+
+                PasswordLeakBadge(state = leakState, onRetry = { onCheckLeak(password) })
 
                 TextField(
                 value = confirmPassword,
