@@ -4,7 +4,6 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
@@ -26,11 +25,23 @@ class PushTokenRegistrar @Inject constructor(
 ) {
     fun start(scope: CoroutineScope) {
         scope.launch {
+            var wasLoggedIn = false
             tokenRepository.isLoggedInFlow()
                 .distinctUntilChanged()
-                .filter { it }
-                .collect { register() }
+                .collect { loggedIn ->
+                    if (loggedIn) register() else if (wasLoggedIn) unregister()
+                    wasLoggedIn = loggedIn
+                }
         }
+    }
+
+    /**
+     * Session ended (logout or expired): kill this device's FCM token so the backend's copy
+     * stops reaching it. A fresh token is created and registered on the next login.
+     */
+    private fun unregister() {
+        FirebaseMessaging.getInstance().deleteToken()
+            .addOnFailureListener { Timber.w(it, "FCM token deletion failed") }
     }
 
     /** [token] is passed by onNewToken; otherwise the current one is fetched from Firebase. */

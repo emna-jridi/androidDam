@@ -37,6 +37,9 @@ class AuthApi @Inject constructor(
     suspend fun login(request: LoginRequest): ApiResult<LoginResponse> =
         safeApiCall { client.post("$AUTH_URL/login") { setBody(request) } }
 
+    suspend fun logout(): ApiResult<Unit> =
+        safeApiCall { client.post("$AUTH_URL/logout") }
+
     suspend fun googleLogin(idToken: String): ApiResult<LoginResponse> =
         safeApiCall { client.post("$AUTH_URL/google") { setBody(GoogleLoginRequest(idToken)) } }
 

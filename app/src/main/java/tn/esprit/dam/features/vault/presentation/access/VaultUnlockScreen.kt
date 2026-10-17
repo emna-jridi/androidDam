@@ -39,7 +39,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,7 +73,8 @@ fun VaultUnlockScreen(
 ) {
     val uiState by vaultViewModel.uiState.collectAsState()
     val biometricEnabled by vaultViewModel.biometricEnabled.collectAsState()
-    val biometricRegistered by vaultViewModel.biometricRegistered.collectAsState()
+    val biometricSetupPending by vaultViewModel.biometricSetupPending.collectAsState()
+    val biometricSetupCipher by vaultViewModel.biometricSetupCipher.collectAsState()
     val biometricOperationState by vaultViewModel.biometricOperationState.collectAsState()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -84,6 +87,13 @@ fun VaultUnlockScreen(
 
     val promptTitle = stringResource(R.string.vault_biometric_prompt_title)
     val promptSubtitle = stringResource(R.string.vault_biometric_prompt_subtitle)
+    val enableTitle = stringResource(R.string.vault_biometric_enable_title)
+    val enableSubtitle = stringResource(R.string.vault_biometric_enable_subtitle)
+    val useMasterPassword = stringResource(R.string.vault_use_master_password)
+    val notNow = stringResource(R.string.not_now)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val showPromptError: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
 
     val shakeOffset by animateFloatAsState(
         targetValue = 0f,
@@ -105,21 +115,20 @@ fun VaultUnlockScreen(
         BiometricManager.from(context).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
     }
     val biometricReady = canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS &&
-        (biometricRegistered || biometricEnabled) && activity != null
+        biometricEnabled && activity != null
 
     val unlockWithBiometric: () -> Unit = {
-        if (activity != null) {
-            if (biometricRegistered) {
-                vaultViewModel.authenticateWithCryptoBiometric(activity)
-            } else {
-                BiometricHelper.authenticateWithBiometric(
-                    activity = activity,
-                    title = promptTitle,
-                    subtitle = promptSubtitle,
-                    onSuccess = { vaultViewModel.unlockVaultWithBiometric() },
-                    onError = {}
-                )
-            }
+        val cipher = vaultViewModel.biometricUnlockCipher()
+        if (activity != null && cipher != null) {
+            BiometricHelper.authenticateWithCipher(
+                activity = activity,
+                cipher = cipher,
+                title = promptTitle,
+                subtitle = promptSubtitle,
+                negativeText = useMasterPassword,
+                onSuccess = { vaultViewModel.unlockWithBiometric(it) },
+                onError = showPromptError
+            )
         }
     }
 
@@ -132,20 +141,30 @@ fun VaultUnlockScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (biometricRegistered && activity != null && vaultViewModel.isBiometricAvailable()) {
-            vaultViewModel.authenticateWithCryptoBiometric(activity)
-        } else if (biometricEnabled && activity != null && BiometricHelper.isBiometricAvailable(activity)) {
-            BiometricHelper.authenticateWithBiometric(
-                activity = activity,
-                title = promptTitle,
-                subtitle = promptSubtitle,
-                onSuccess = { vaultViewModel.unlockVaultWithBiometric() },
-                onError = {}
-            )
-        }
+        if (biometricReady) unlockWithBiometric()
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    // After a password unlock with setup pending: one prompt wraps the vault key
+    LaunchedEffect(biometricSetupCipher) {
+        val cipher = biometricSetupCipher
+        if (cipher != null && activity != null) {
+            BiometricHelper.authenticateWithCipher(
+                activity = activity,
+                cipher = cipher,
+                title = enableTitle,
+                subtitle = enableSubtitle,
+                negativeText = notNow,
+                onSuccess = { vaultViewModel.finishBiometricSetup(it) },
+                onError = {
+                    showPromptError(it)
+                    vaultViewModel.finishBiometricSetup(null)
+                },
+                onCancel = { vaultViewModel.finishBiometricSetup(null) }
+            )
+        } else if (cipher != null) {
+            vaultViewModel.finishBiometricSetup(null)
+        }
+    }
 
     LaunchedEffect(biometricOperationState) {
         when (val state = biometricOperationState) {
@@ -177,7 +196,7 @@ fun VaultUnlockScreen(
             confirmButton = {
                 Button(onClick = {
                     showBiometricSetupDialog = false
-                    vaultViewModel.registerBiometricDevice(activity)
+                    vaultViewModel.requestBiometricSetup()
                 }) {
                     Text(stringResource(R.string.enable))
                 }
@@ -237,6 +256,13 @@ fun VaultUnlockScreen(
                 )
             }
 
+            if (biometricSetupPending && uiState !is VaultUiState.Error) {
+                AuthStatusMessage(
+                    text = stringResource(R.string.vault_biometric_finish_setup),
+                    isError = false
+                )
+            }
+
             Spacer(modifier = Modifier.height(AppSpacing.lg))
 
             AuthPrimaryButton(
@@ -253,7 +279,7 @@ fun VaultUnlockScreen(
 
             BiometricSetupLink(
                 canAuthenticate = canAuthenticate,
-                alreadySetUp = biometricRegistered || biometricEnabled,
+                alreadySetUp = biometricEnabled || biometricSetupPending,
                 hasActivity = activity != null,
                 onEnable = { showBiometricSetupDialog = true },
                 onOpenSettings = { BiometricHelper.openBiometricSettings(context) }

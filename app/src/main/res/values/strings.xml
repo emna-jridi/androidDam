@@ -364,7 +364,15 @@
     <string name="vault_unlock_with_biometric">Unlock with fingerprint</string>
     <string name="vault_biometric_prompt_title">Unlock Vault</string>
     <string name="vault_biometric_prompt_subtitle">Use your fingerprint or face to unlock</string>
-    <string name="vault_biometric_dialog_extra">This creates a secure cryptographic key on your device for quick access.</string>
+    <string name="vault_biometric_dialog_extra">Unlock with your master password once to finish. Your vault key is then locked to your fingerprint on this device.</string>
+    <string name="vault_biometric_finish_setup">Unlock with your master password to finish turning on fingerprint unlock.</string>
+    <string name="vault_biometric_now_on">Fingerprint unlock is on</string>
+    <string name="vault_biometric_setup_failed">Couldn\'t turn on fingerprint unlock</string>
+    <string name="vault_biometric_unlock_failed">Fingerprint unlock failed. Use your master password.</string>
+    <string name="vault_biometric_changed">Your fingerprints changed. Unlock with your master password, then turn fingerprint unlock on again.</string>
+    <string name="vault_biometric_enable_title">Turn on fingerprint unlock</string>
+    <string name="vault_biometric_enable_subtitle">Confirm with your fingerprint or face</string>
+    <string name="vault_use_master_password">Use master password</string>
     <string name="vault_auth_failed">Authentication failed</string>
     <string name="vault_no_recovery_title">No recovery option</string>
 

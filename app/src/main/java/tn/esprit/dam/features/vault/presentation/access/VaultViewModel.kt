@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.crypto.Cipher
 import javax.inject.Inject
 
 sealed class VaultUiState {
@@ -55,11 +56,25 @@ class VaultViewModel @Inject constructor(
 
     private val _registeredDevices = MutableStateFlow<List<BiometricDeviceInfo>>(emptyList())
     val registeredDevices: StateFlow<List<BiometricDeviceInfo>> = _registeredDevices.asStateFlow()
-    private var cachedMasterPassword: String? = null
+
+    /** User asked to turn on biometric unlock; it finishes after the next password unlock. */
+    private val _biometricSetupPending = MutableStateFlow(false)
+    val biometricSetupPending: StateFlow<Boolean> = _biometricSetupPending.asStateFlow()
+
+    /** Non-null while the screen must show the prompt that wraps the vault key. */
+    private val _biometricSetupCipher = MutableStateFlow<Cipher?>(null)
+    val biometricSetupCipher: StateFlow<Cipher?> = _biometricSetupCipher.asStateFlow()
 
     init {
+        _biometricEnabled.value = repository.isBiometricUnlockEnabled()
         checkVaultStatus()
         checkBiometricRegistration()
+        viewModelScope.launch {
+            // Auto-lock (background / logout) drops the key: leave the unlocked UI right away
+            repository.unlocked.collect { unlocked ->
+                if (!unlocked && _uiState.value is VaultUiState.Unlocked) _uiState.value = VaultUiState.Locked
+            }
+        }
     }
 
     private fun checkBiometricRegistration() {
@@ -145,9 +160,14 @@ class VaultViewModel @Inject constructor(
             repository.unlockVault(masterPassword)
                 .onSuccess { response ->
                     if (response.success) {
-                        cachedMasterPassword = masterPassword
-                        _biometricEnabled.value = true
-                        checkVaultStatus()
+                        val setupCipher = if (_biometricSetupPending.value) repository.biometricEnableCipher() else null
+                        if (setupCipher != null) {
+                            // Stay on Loading until the screen's prompt calls finishBiometricSetup
+                            _biometricSetupCipher.value = setupCipher
+                        } else {
+                            _biometricSetupPending.value = false
+                            checkVaultStatus()
+                        }
                     } else {
                         _uiState.value = VaultUiState.Error(response.message.toUiTextOr(R.string.vault_error_unlock_failed))
                     }
@@ -158,12 +178,47 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    fun unlockVaultWithBiometric() {
-        cachedMasterPassword?.let { password ->
-            unlockVault(password)
-        } ?: run {
-            _uiState.value = VaultUiState.Error(UiText.Res(R.string.vault_error_unlock_first))
+    fun requestBiometricSetup() {
+        _biometricSetupPending.value = true
+    }
+
+    /** [cipher] is the authenticated cipher from the prompt, or null if the user cancelled. */
+    fun finishBiometricSetup(cipher: Cipher?) {
+        _biometricSetupCipher.value = null
+        _biometricSetupPending.value = false
+        if (cipher != null) {
+            repository.enableBiometricUnlock(cipher)
+                .onSuccess {
+                    _biometricEnabled.value = true
+                    _biometricOperationState.value = BiometricOperationState.Success(UiText.Res(R.string.vault_biometric_now_on))
+                }
+                .onFailure {
+                    _biometricOperationState.value = BiometricOperationState.Error(UiText.Res(R.string.vault_biometric_setup_failed))
+                }
         }
+        checkVaultStatus()
+    }
+
+    /** Cipher for the unlock prompt; null means biometric unlock is no longer usable. */
+    fun biometricUnlockCipher(): Cipher? {
+        val cipher = repository.biometricUnlockCipher()
+        if (cipher == null && _biometricEnabled.value) {
+            // Keystore key invalidated (new fingerprint enrolled): fall back to the master password
+            _biometricEnabled.value = repository.isBiometricUnlockEnabled()
+            _uiState.value = VaultUiState.Error(UiText.Res(R.string.vault_biometric_changed))
+        }
+        return cipher
+    }
+
+    fun unlockWithBiometric(cipher: Cipher) {
+        repository.unlockWithBiometric(cipher)
+            .onSuccess { checkVaultStatus() }
+            .onFailure { _uiState.value = VaultUiState.Error(UiText.Res(R.string.vault_biometric_unlock_failed)) }
+    }
+
+    fun disableBiometricUnlock() {
+        repository.disableBiometricUnlock()
+        _biometricEnabled.value = false
     }
 
     fun registerBiometricDevice(activity: FragmentActivity, deviceName: String? = null) {
@@ -279,14 +334,7 @@ class VaultViewModel @Inject constructor(
 
     fun lockVault() {
         repository.lockVault()
-        cachedMasterPassword = null
-        _biometricEnabled.value = false
         _uiState.value = VaultUiState.Locked
-    }
-
-    fun disableBiometric() {
-        cachedMasterPassword = null
-        _biometricEnabled.value = false
     }
 
     fun updateSettings(

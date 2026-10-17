@@ -7,6 +7,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import javax.crypto.Cipher
 
 object BiometricHelper {
     fun isBiometricAvailable(context: Context): Boolean {
@@ -39,32 +40,34 @@ object BiometricHelper {
         context.startActivity(intent)
     }
 
-    fun authenticateWithBiometric(
+    /**
+     * Shows a BiometricPrompt bound to [cipher]: the Keystore only lets the cipher work after
+     * a real biometric match, so success can't be faked by skipping the prompt.
+     * A wrong finger keeps the prompt open; [onError] gets final errors, [onCancel] user cancels.
+     */
+    fun authenticateWithCipher(
         activity: FragmentActivity,
-        title: String = "Unlock Vault",
-        subtitle: String = "Use your fingerprint to unlock",
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        cipher: Cipher,
+        title: String,
+        subtitle: String,
+        negativeText: String,
+        onSuccess: (Cipher) -> Unit,
+        onError: (String) -> Unit,
+        onCancel: () -> Unit = {}
     ) {
-        val executor = ContextCompat.getMainExecutor(activity)
-
         val biometricPrompt = BiometricPrompt(
             activity,
-            executor,
+            ContextCompat.getMainExecutor(activity),
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    onSuccess()
+                    result.cryptoObject?.cipher?.let(onSuccess)
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    onError(errString.toString())
-                }
-
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                    onError("Authentication failed. Try again.")
+                    val cancelled = errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                        errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_CANCELED
+                    if (cancelled) onCancel() else onError(errString.toString())
                 }
             }
         )
@@ -72,9 +75,10 @@ object BiometricHelper {
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-            .setNegativeButtonText("Use Master Password")
+            .setNegativeButtonText(negativeText)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .build()
 
-        biometricPrompt.authenticate(promptInfo)
+        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
     }
 }

@@ -73,20 +73,6 @@ data class PasswordEntryResponse(
     val entry: PasswordEntry
 )
 
-@Serializable
-data class AnalyzePasswordRequest(
-    val password: String
-)
-
-@Serializable
-data class PasswordStrengthResponse(
-    val score: Int,
-    val level: String,
-    val crackTime: String,
-    val issues: List<String>,
-    val recommendations: List<String>
-)
-
 object PasswordCategory {
     const val SOCIAL = "social"
     const val EMAIL = "email"

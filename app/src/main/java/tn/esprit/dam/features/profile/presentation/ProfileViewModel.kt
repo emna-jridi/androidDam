@@ -13,12 +13,12 @@ import kotlinx.coroutines.launch
 import tn.esprit.dam.features.profile.data.local.AvatarStorage
 import tn.esprit.dam.features.profile.data.repository.UserRepository
 import javax.inject.Inject
-import tn.esprit.dam.core.session.TokenRepository
+import tn.esprit.dam.features.auth.data.repository.AuthRepository
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val repository: UserRepository,
-    private val tokenRepository: TokenRepository,
+    private val authRepository: AuthRepository,
     private val avatarStorage: AvatarStorage
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -119,7 +119,7 @@ class ProfileViewModel @Inject constructor(
 
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
-            runCatching { tokenRepository.clearTokens() }
+            authRepository.logout()
             avatarStorage.clearAll()
             onLogoutComplete()
         }

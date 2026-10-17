@@ -52,6 +52,8 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
+        // Best effort: revoke the refresh token server-side; offline logout still clears locally
+        authApi.logout()
         runCatching { tokenRepository.clearTokens() }
         httpClient.invalidateBearerTokens()
     }

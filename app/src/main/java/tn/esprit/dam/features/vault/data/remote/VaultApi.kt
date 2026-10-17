@@ -5,14 +5,12 @@ import tn.esprit.dam.core.network.Config
 import tn.esprit.dam.core.network.KtorHttpClient
 import tn.esprit.dam.core.network.map
 import tn.esprit.dam.features.vault.data.ai.OllamaAdvice
-import tn.esprit.dam.features.vault.data.model.AnalyzePasswordRequest
 import tn.esprit.dam.features.vault.data.model.CreatePasswordEntryRequest
 import tn.esprit.dam.features.vault.data.model.CreatePasswordEntryResponse
 import tn.esprit.dam.features.vault.data.model.CreateVaultRequest
 import tn.esprit.dam.features.vault.data.model.CreateVaultResponse
 import tn.esprit.dam.features.vault.data.model.PasswordEntriesResponse
 import tn.esprit.dam.features.vault.data.model.PasswordEntryResponse
-import tn.esprit.dam.features.vault.data.model.PasswordStrengthResponse
 import tn.esprit.dam.features.vault.data.model.UnlockVaultRequest
 import tn.esprit.dam.features.vault.data.model.UpdatePasswordEntryRequest
 import tn.esprit.dam.features.vault.data.model.UpdateVaultSettingsRequest
@@ -86,10 +84,6 @@ class VaultApi @Inject constructor(private val client: KtorHttpClient) {
 
     suspend fun toggleFavorite(id: String): ApiResult<CreatePasswordEntryResponse> {
         return client.post("$PASSWORDS_URL/$id/favorite", emptyMap<String, String>())
-    }
-
-    suspend fun analyzePassword(request: AnalyzePasswordRequest): ApiResult<PasswordStrengthResponse> {
-        return client.post("$PASSWORDS_URL/analyze", request)
     }
 
     suspend fun analyzePasswordWithAi(metrics: PasswordAnalysisMetrics): ApiResult<OllamaAdvice> {

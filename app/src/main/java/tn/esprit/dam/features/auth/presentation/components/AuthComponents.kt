@@ -78,21 +78,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Composable
-fun AuthBackground(
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(AppColors.background, AppColors.surface)))
-            .then(modifier),
-        contentAlignment = Alignment.Center,
-        content = content
-    )
-}
-
 /** Scrollable auth page on a hex-shield pattern with a cyan glow at the top; stays usable when the keyboard opens. */
 @Composable
 fun AuthScreenLayout(
@@ -359,97 +344,6 @@ fun PasswordStrengthMeter(password: String) {
 }
 
 @Composable
-fun AuthIconBadge(icon: ImageVector) {
-    Surface(
-        modifier = Modifier.size(80.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = AppColors.primary
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = AppColors.onPrimary
-            )
-        }
-    }
-}
-
-@Composable
-fun AuthSuccessBadge() {
-    Surface(
-        modifier = Modifier.size(120.dp),
-        shape = RoundedCornerShape(60.dp),
-        color = AppColors.success.copy(alpha = 0.2f)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = stringResource(R.string.success),
-                modifier = Modifier.size(70.dp),
-                tint = AppColors.success
-            )
-        }
-    }
-}
-
-@Composable
-fun AuthTitle(
-    text: String,
-    fontSize: TextUnit = 32.sp,
-    textAlign: TextAlign? = null
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.headlineLarge.copy(
-            fontWeight = FontWeight.Bold,
-            fontSize = fontSize
-        ),
-        color = AppColors.textPrimary,
-        textAlign = textAlign
-    )
-}
-
-@Composable
-fun AuthSubtitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = AppColors.textSecondary,
-        textAlign = TextAlign.Center
-    )
-}
-
-@Composable
-fun AuthCard(
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    contentPadding: Dp = 24.dp,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(contentPadding),
-            horizontalAlignment = horizontalAlignment,
-            content = content
-        )
-    }
-}
-
-@Composable
-fun AuthCardTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-        color = AppColors.textPrimary
-    )
-}
-
-@Composable
 fun AuthFieldLabel(text: String) {
     Text(
         text = text,
@@ -662,49 +556,6 @@ fun AuthResendCode(
                 color = AppColors.textTertiary,
                 style = MaterialTheme.typography.bodySmall
             )
-        }
-    }
-}
-
-@Composable
-fun AuthInfoCard(text: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.surface.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = AppColors.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = text,
-                color = AppColors.textSecondary,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-}
-
-@Composable
-fun AuthBackButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                tint = AppColors.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text, color = AppColors.primary, fontWeight = FontWeight.SemiBold)
         }
     }
 }

@@ -2,15 +2,12 @@ package tn.esprit.dam.navigation
 
 import android.content.Context
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import kotlinx.coroutines.launch
-import tn.esprit.dam.core.session.rememberTokenRepository
 import tn.esprit.dam.features.alert.presentation.AlertsScreen
 import tn.esprit.dam.features.darkweb.presentation.BreachDetailScreen
 import tn.esprit.dam.features.darkweb.presentation.DarkWebMonitoringScreen
@@ -23,8 +20,6 @@ fun NavGraphBuilder.profileNavGraph(
     context: Context
 ) {
     composable(Screens.Home.route) {
-        val coroutineScope = rememberCoroutineScope()
-        val tokenRepository = rememberTokenRepository()
         HomeScreen(
             onNavigateToScan = { navController.navigate(Screens.Scan.route) },
             onNavigateToHistory = { navController.navigate(Screens.ScanHistory.route) },
@@ -34,28 +29,16 @@ fun NavGraphBuilder.profileNavGraph(
                 navController.navigate(Screens.AppDetails.createRoute(packageName))
             },
             onNavigateToVault = { navController.navigate(Screens.Vault.route) },
-            onLogout = {
-                coroutineScope.launch {
-                    runCatching { tokenRepository.clearTokens() }
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            },
             onNavigateToAlerts = { navController.navigate(Screens.AlertsHistory.route) }
         )
     }
 
     composable(Screens.Profile.route) {
-        val coroutineScope = rememberCoroutineScope()
-        val tokenRepository = rememberTokenRepository()
         ProfileScreen(
+            // ProfileViewModel.logout ends the session before calling this
             onLogout = {
-                coroutineScope.launch {
-                    runCatching { tokenRepository.clearTokens() }
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                navController.navigate(Screens.Login.route) {
+                    popUpTo(0) { inclusive = true }
                 }
             },
             onOpenVault = { navController.navigate(Screens.Vault.route) },

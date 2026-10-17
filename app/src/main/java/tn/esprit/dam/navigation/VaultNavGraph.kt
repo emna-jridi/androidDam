@@ -1,6 +1,7 @@
 package tn.esprit.dam.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -37,6 +38,7 @@ fun NavGraphBuilder.vaultNavGraph(
     }
 
     composable(Screens.VaultAddPassword.route) {
+        PopToVaultWhenLocked(navController)
         val vaultViewModel: VaultViewModel = hiltViewModel()
         val pwdVm: PasswordViewModel = passwordViewModel ?: hiltViewModel()
         val leakState by pwdVm.leakState.collectAsState()
@@ -52,6 +54,7 @@ fun NavGraphBuilder.vaultNavGraph(
     }
 
     composable(Screens.VaultDetail.route) {
+        PopToVaultWhenLocked(navController)
         val pwdVm: PasswordViewModel = passwordViewModel ?: hiltViewModel()
         val selectedPassword by pwdVm.selectedPassword.collectAsState()
         val leakState by pwdVm.leakState.collectAsState()
@@ -70,6 +73,18 @@ fun NavGraphBuilder.vaultNavGraph(
             )
         } else {
             androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
+        }
+    }
+}
+
+/** Screens that need the vault key go back to the vault entry (unlock screen) once it locks. */
+@Composable
+private fun PopToVaultWhenLocked(navController: NavHostController) {
+    val vaultViewModel: VaultViewModel = hiltViewModel()
+    val uiState by vaultViewModel.uiState.collectAsState()
+    LaunchedEffect(uiState) {
+        if (uiState is VaultUiState.Locked && !navController.popBackStack(Screens.Vault.route, inclusive = false)) {
+            navController.popBackStack()
         }
     }
 }

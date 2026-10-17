@@ -1,5 +1,7 @@
 ﻿package tn.esprit.dam.features.vault.data.repository
 
+import kotlinx.coroutines.flow.StateFlow
+import javax.crypto.Cipher
 import tn.esprit.dam.features.vault.data.model.*
 import tn.esprit.dam.features.vault.data.ai.OllamaAdvice
 import tn.esprit.dam.features.vault.domain.password.PasswordAnalysisMetrics
@@ -25,6 +27,25 @@ interface VaultRepository {
     fun lockVault()
 
     fun isUnlocked(): Boolean
+
+    /** Emits false as soon as the in-memory vault key is dropped (manual, background, logout). */
+    val unlocked: StateFlow<Boolean>
+
+    fun isBiometricUnlockEnabled(): Boolean
+
+    /** Cipher for the BiometricPrompt that turns biometric unlock on (vault must be unlocked). */
+    fun biometricEnableCipher(): Cipher?
+
+    /** Cipher for the BiometricPrompt that unlocks; null if off or biometrics changed. */
+    fun biometricUnlockCipher(): Cipher?
+
+    /** Wraps the current vault key with the authenticated [cipher]. */
+    fun enableBiometricUnlock(cipher: Cipher): Result<Unit>
+
+    /** Unwraps the vault key with the authenticated [cipher]; no master password involved. */
+    fun unlockWithBiometric(cipher: Cipher): Result<Unit>
+
+    fun disableBiometricUnlock()
 
     suspend fun createPasswordEntry(
         site: String,
@@ -70,8 +91,6 @@ interface VaultRepository {
     suspend fun deletePasswordEntry(id: String): Result<Unit>
 
     suspend fun toggleFavorite(id: String): Result<PasswordEntry>
-
-    suspend fun analyzePassword(password: String): Result<PasswordStrengthResponse>
 
     suspend fun analyzeWithAi(metrics: PasswordAnalysisMetrics): Result<OllamaAdvice>
 }

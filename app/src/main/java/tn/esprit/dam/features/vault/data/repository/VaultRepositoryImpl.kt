@@ -1,17 +1,33 @@
 ﻿package tn.esprit.dam.features.vault.data.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import tn.esprit.dam.core.network.toResult
 import tn.esprit.dam.features.vault.data.model.*
 import tn.esprit.dam.features.vault.data.remote.VaultApi
+import tn.esprit.dam.features.vault.data.crypto.VaultBiometricStore
 import tn.esprit.dam.features.vault.data.crypto.VaultCrypto
+import javax.crypto.Cipher
 import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 import tn.esprit.dam.features.vault.data.ai.OllamaAdvice
 import tn.esprit.dam.features.vault.domain.password.PasswordAnalysisMetrics
 
-class VaultRepositoryImpl @Inject constructor(private val api: VaultApi) : VaultRepository {
+class VaultRepositoryImpl @Inject constructor(
+    private val api: VaultApi,
+    private val biometricStore: VaultBiometricStore
+) : VaultRepository {
     private var encryptionKey: SecretKey? = null
+        set(value) {
+            field = value
+            _unlocked.value = value != null
+        }
     private var vaultSalt: String? = null
+
+    private val _unlocked = MutableStateFlow(false)
+    override val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
 
     override suspend fun createVault(masterPassword: String): Result<CreateVaultResponse> {
         return api.createVault(CreateVaultRequest(masterPassword)).toResult()
@@ -64,6 +80,25 @@ class VaultRepositoryImpl @Inject constructor(private val api: VaultApi) : Vault
     }
 
     override fun isUnlocked(): Boolean = encryptionKey != null
+
+    override fun isBiometricUnlockEnabled(): Boolean = biometricStore.isEnabled()
+
+    override fun biometricEnableCipher(): Cipher? =
+        if (encryptionKey == null) null else biometricStore.encryptCipher()
+
+    override fun biometricUnlockCipher(): Cipher? = biometricStore.decryptCipher()
+
+    override fun enableBiometricUnlock(cipher: Cipher): Result<Unit> = runCatching {
+        val key = checkNotNull(encryptionKey) { "Vault is locked" }
+        biometricStore.save(cipher, key.encoded)
+    }
+
+    override fun unlockWithBiometric(cipher: Cipher): Result<Unit> = runCatching {
+        val keyBytes = checkNotNull(biometricStore.read(cipher)) { "Biometric unlock is off" }
+        encryptionKey = SecretKeySpec(keyBytes, "AES")
+    }
+
+    override fun disableBiometricUnlock() = biometricStore.clear()
 
     override suspend fun createPasswordEntry(
         site: String,
@@ -181,9 +216,6 @@ class VaultRepositoryImpl @Inject constructor(private val api: VaultApi) : Vault
         return api.toggleFavorite(id).toResult().map { it.entry }
     }
 
-    override suspend fun analyzePassword(password: String): Result<PasswordStrengthResponse> {
-        return api.analyzePassword(AnalyzePasswordRequest(password)).toResult()
-    }
 
     override suspend fun analyzeWithAi(metrics: PasswordAnalysisMetrics): Result<OllamaAdvice> {
         return api.analyzePasswordWithAi(metrics).toResult()

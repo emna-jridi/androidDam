@@ -112,10 +112,3 @@ object PasswordStrengthCalculator {
 
     private fun emptyMetrics() = PasswordAnalysisMetrics(0, PasswordRiskLevel.WEAK, 0, 0.0, "N/A", emptyList(), emptyList())
 }
-
-fun String.sha1Hash(): String {
-    val bytes = this.toByteArray()
-    val md = java.security.MessageDigest.getInstance("SHA-1")
-    val digest = md.digest(bytes)
-    return digest.joinToString("") { "%02x".format(it) }.uppercase()
-}
