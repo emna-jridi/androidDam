@@ -10,12 +10,18 @@ data class Vault(
     val twoFactorEnabled: Boolean = false,
     val lastUnlockedAt: String,
     val failedUnlockAttempts: Int = 0,
-    val isLocked: Boolean? = false
+    val isLocked: Boolean? = false,
+    /** Key-derivation salt, needed before unlock. */
+    val salt: String? = null,
+    /** 1 = legacy vault that still needs the one-time master password upgrade, 2 = auth hash only. */
+    val authVersion: Int = 1
 )
 
+/** The master password never leaves the device: only a one-way hash of the derived key. */
 @Serializable
 data class CreateVaultRequest(
-    val masterPassword: String
+    val salt: String,
+    val authHash: String
 )
 
 @Serializable
@@ -25,9 +31,11 @@ data class CreateVaultResponse(
     val salt: String
 )
 
+/** [masterPassword] is only sent once, to upgrade a legacy (authVersion 1) vault. */
 @Serializable
 data class UnlockVaultRequest(
-    val masterPassword: String
+    val authHash: String,
+    val masterPassword: String? = null
 )
 
 @Serializable

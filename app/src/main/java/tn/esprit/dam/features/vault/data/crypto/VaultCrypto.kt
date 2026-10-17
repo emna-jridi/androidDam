@@ -10,7 +10,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.random.Random
+import java.security.SecureRandom
 
 object VaultCrypto {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
@@ -18,6 +18,7 @@ object VaultCrypto {
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val GCM_TAG_LENGTH = 128
     private const val IV_SIZE = 12
+    private val secureRandom = SecureRandom()
 
     fun deriveKeyFromPassword(masterPassword: String, salt: String): SecretKey {
         val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
@@ -31,10 +32,29 @@ object VaultCrypto {
         return SecretKeySpec(tmp.encoded, "AES")
     }
 
+    /** Random per-vault salt, generated on the device when the vault is created. */
+    fun generateSalt(): String {
+        val salt = ByteArray(32)
+        secureRandom.nextBytes(salt)
+        return Base64.encodeToString(salt, Base64.NO_WRAP)
+    }
+
+    /**
+     * What the server stores (Argon2-hashed) to check the master password. HMAC is one-way,
+     * so the server can't get back to the vault key from it.
+     */
+    fun deriveAuthHash(vaultKey: SecretKey): String {
+        val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(vaultKey.encoded, "HmacSHA256"))
+        val hash = mac.doFinal("shadowguard-vault-auth-v2".toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(hash, Base64.NO_WRAP)
+    }
+
     fun encrypt(plaintext: String, key: SecretKey): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
+        // GCM breaks if an IV repeats under the same key: it must come from a CSPRNG
         val iv = ByteArray(IV_SIZE)
-        Random.Default.nextBytes(iv)
+        secureRandom.nextBytes(iv)
 
         val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmSpec)

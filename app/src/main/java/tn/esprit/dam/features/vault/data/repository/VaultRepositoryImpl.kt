@@ -1,6 +1,8 @@
 ﻿package tn.esprit.dam.features.vault.data.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,23 +31,35 @@ class VaultRepositoryImpl @Inject constructor(
     private val _unlocked = MutableStateFlow(false)
     override val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
 
+    // The master password only ever feeds key derivation here; the server gets the auth hash.
     override suspend fun createVault(masterPassword: String): Result<CreateVaultResponse> {
-        return api.createVault(CreateVaultRequest(masterPassword)).toResult()
-            .onSuccess { response ->
-                vaultSalt = response.salt
-                encryptionKey = VaultCrypto.deriveKeyFromPassword(masterPassword, response.salt)
+        val salt = VaultCrypto.generateSalt()
+        val key = deriveKey(masterPassword, salt)
+        return api.createVault(CreateVaultRequest(salt, VaultCrypto.deriveAuthHash(key))).toResult()
+            .onSuccess {
+                vaultSalt = salt
+                encryptionKey = key
             }
     }
 
     override suspend fun unlockVault(masterPassword: String): Result<VaultUnlockResponse> {
-        return api.unlockVault(UnlockVaultRequest(masterPassword)).toResult()
+        val vault = api.getVault().toResult().getOrElse { return Result.failure(it) }
+        val salt = vault.salt ?: return Result.failure(IllegalStateException("Vault has no salt"))
+        val key = deriveKey(masterPassword, salt)
+        // A legacy vault needs the raw master password once so the server can switch to auth hashes
+        val legacyPassword = masterPassword.takeIf { vault.authVersion < 2 }
+        return api.unlockVault(UnlockVaultRequest(VaultCrypto.deriveAuthHash(key), legacyPassword)).toResult()
             .onSuccess { response ->
-                if (response.success && response.salt != null) {
-                    vaultSalt = response.salt
-                    encryptionKey = VaultCrypto.deriveKeyFromPassword(masterPassword, response.salt)
+                if (response.success) {
+                    vaultSalt = salt
+                    encryptionKey = key
                 }
             }
     }
+
+    /** PBKDF2 with 100k rounds: keep it off the main thread. */
+    private suspend fun deriveKey(masterPassword: String, salt: String): SecretKey =
+        withContext(Dispatchers.Default) { VaultCrypto.deriveKeyFromPassword(masterPassword, salt) }
 
     override suspend fun getVault(): Result<Vault> {
         return api.getVault().toResult()
