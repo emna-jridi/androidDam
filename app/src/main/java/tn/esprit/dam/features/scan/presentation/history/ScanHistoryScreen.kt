@@ -26,8 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tn.esprit.dam.core.ui.components.AppEmptyState
 import tn.esprit.dam.core.ui.components.AppErrorState
-import tn.esprit.dam.core.ui.components.AppLoadingState
+import tn.esprit.dam.core.ui.components.AppSkeletonList
 import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.theme.AppSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,12 +51,13 @@ fun ScanHistoryScreen(
     ) {
         when {
             uiState.isLoading && uiState.scans.isEmpty() -> {
-                AppLoadingState(message = stringResource(R.string.loading_history))
+                AppSkeletonList(itemCount = 5, modifier = Modifier.padding(AppSpacing.md))
             }
             uiState.error != null && uiState.scans.isEmpty() -> {
                 AppErrorState(
                     message = uiState.error!!.asString(),
-                    onRetry = { viewModel.refresh() }
+                    onRetry = { viewModel.refresh() },
+                    retryText = stringResource(R.string.retry)
                 )
             }
             uiState.scans.isEmpty() -> {
@@ -90,7 +92,7 @@ fun ScanHistoryScreen(
             Snackbar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp),
+                    .padding(AppSpacing.md),
                 action = {
                     TextButton(onClick = { viewModel.clearError() }) {
                         Text(stringResource(R.string.ok))

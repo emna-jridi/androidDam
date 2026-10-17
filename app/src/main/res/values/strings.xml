@@ -499,6 +499,38 @@
     <string name="vault_favorite_add">Add to favorites</string>
     <string name="vault_favorite_remove">Remove from favorites</string>
 
+    <!-- Scan history redesign -->
+    <string name="history_today">Aujourd\'hui</string>
+    <string name="history_yesterday">Hier</string>
+    <plurals name="history_apps_scanned">
+        <item quantity="one">%d app analysée</item>
+        <item quantity="other">%d apps analysées</item>
+    </plurals>
+    <plurals name="history_high_risk_n">
+        <item quantity="one">%d à risque élevé</item>
+        <item quantity="other">%d à risque élevé</item>
+    </plurals>
+    <string name="history_no_high_risk">Aucune app à risque élevé</string>
+    <string name="history_apk_scan">Fichier APK</string>
+    <string name="history_trend_title">Ton score dans le temps</string>
+    <string name="history_last_score">Dernier score</string>
+    <string name="history_delta_up">▲ %1$d</string>
+    <string name="history_delta_down">▼ %1$d</string>
+    <string name="history_delta_same">= 0</string>
+    <string name="history_status_failed">Échec</string>
+    <string name="history_status_running">En cours</string>
+    <string name="history_type_apps">Applications</string>
+    <string name="history_type_apk">APK</string>
+    <string name="history_apps_value">%1$d / %2$d</string>
+    <string name="history_score_value">%1$d / 100</string>
+    <string name="history_no_score">—</string>
+    <string name="history_duration_h">%1$dh %2$dmin</string>
+    <string name="history_duration_m">%1$dmin %2$ds</string>
+    <string name="history_duration_s">%1$ds</string>
+    <string name="history_sheet_apps">Apps</string>
+    <string name="history_sheet_duration">Durée</string>
+    <string name="history_sheet_distribution">Répartition des risques</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>
