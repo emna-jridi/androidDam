@@ -11,7 +11,8 @@ interface DarkWebRepository {
 
     suspend fun checkEmail(email: String): Result<List<ManualBreachResult>>
 
-    suspend fun checkPassword(prefix: String): Result<Int>
+    /** How many times the password with this SHA-1 [prefix] + [suffix] appears in leaks (0 = not found). Only the prefix is sent. */
+    suspend fun checkPassword(prefix: String, suffix: String): Result<Int>
 
     suspend fun resolveBreach(breachId: String): Result<Unit>
 

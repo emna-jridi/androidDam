@@ -99,9 +99,7 @@ class DarkWebViewModel @Inject constructor(
             val sha1 = java.security.MessageDigest.getInstance("SHA-1")
             val bytes = sha1.digest(password.toByteArray())
             val hex = bytes.joinToString("") { "%02x".format(it) }.uppercase()
-            val prefix = hex.take(5)
-
-            val result = repository.checkPassword(prefix)
+            val result = repository.checkPassword(prefix = hex.take(5), suffix = hex.drop(5))
              if (result.isSuccess) {
                  _uiState.update { it.copy(
                     isLoading = false,

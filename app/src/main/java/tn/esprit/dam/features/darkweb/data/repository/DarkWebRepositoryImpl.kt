@@ -26,8 +26,11 @@ class DarkWebRepositoryImpl @Inject constructor(
         return api.checkEmail(email).toResult()
     }
 
-    override suspend fun checkPassword(prefix: String): Result<Int> {
-        return api.checkPassword(prefix).map { it.count }.toResult()
+    override suspend fun checkPassword(prefix: String, suffix: String): Result<Int> {
+        // The suffix is compared here, on the device; the server only ever receives the prefix.
+        return api.checkPassword(prefix)
+            .map { result -> result.suffixes.firstOrNull { it.suffix.equals(suffix, ignoreCase = true) }?.count ?: 0 }
+            .toResult()
     }
 
     override suspend fun resolveBreach(breachId: String): Result<Unit> {

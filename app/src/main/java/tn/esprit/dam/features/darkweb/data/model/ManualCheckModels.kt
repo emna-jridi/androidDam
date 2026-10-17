@@ -14,7 +14,14 @@ data class ManualBreachResult(
     @SerialName("Domain") val domain: String = ""
 )
 
+/** POST /darkweb/check-password: every leaked SHA-1 suffix for the 5-char prefix we sent (k-anonymity). */
 @Serializable
 data class PasswordCheckResult(
-    val count: Int = 0
+    val suffixes: List<PwnedSuffix> = emptyList()
+)
+
+@Serializable
+data class PwnedSuffix(
+    val suffix: String,
+    val count: Int
 )
