@@ -576,6 +576,40 @@
     <string name="darkweb_what_to_do">What to do</string>
     <string name="darkweb_resolved_banner">You marked this breach as resolved.</string>
 
+    <!-- Alerts redesign -->
+    <plurals name="alerts_unread_n">
+        <item quantity="one">%d unread alert</item>
+        <item quantity="other">%d unread alerts</item>
+    </plurals>
+    <string name="alerts_all_read">All alerts reviewed</string>
+    <plurals name="alerts_today_n">
+        <item quantity="one">%d sensitive access today</item>
+        <item quantity="other">%d sensitive accesses today</item>
+    </plurals>
+    <string name="alerts_none_today">No sensitive access today</string>
+    <string name="alerts_type_all">All</string>
+    <string name="alerts_type_camera">Camera</string>
+    <string name="alerts_type_mic">Microphone</string>
+    <string name="alerts_type_location">Location</string>
+    <string name="alerts_type_other">Other</string>
+    <string name="alerts_event_camera">Used the camera</string>
+    <string name="alerts_event_mic">Used the microphone</string>
+    <string name="alerts_event_location">Asked for your location</string>
+    <string name="alerts_event_install">Was just installed</string>
+    <string name="alerts_event_network">Made a network request</string>
+    <string name="alerts_event_notification">Sent a notification</string>
+    <string name="alerts_today">Today</string>
+    <string name="alerts_yesterday">Yesterday</string>
+    <string name="alerts_detail_time">Time</string>
+    <string name="alerts_detail_package">Package</string>
+    <string name="alerts_detail_notified">Notification sent</string>
+    <string name="alerts_yes">Yes</string>
+    <string name="alerts_no">No</string>
+    <string name="alerts_open_settings">Review app permissions</string>
+    <string name="alerts_not_installed">This app is no longer installed.</string>
+    <string name="alerts_load_more">Show %1$d more</string>
+    <string name="alerts_empty_filter">No alerts of this type.</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

@@ -1,11 +1,5 @@
 package tn.esprit.dam.features.scan.presentation.detail
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +25,7 @@ import tn.esprit.dam.core.ui.components.AppPrimaryButton
 import tn.esprit.dam.core.ui.components.AppSkeletonList
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppSpacing
+import tn.esprit.dam.core.ui.util.openAppSettings
 import tn.esprit.dam.features.scan.domain.SecurityUtils
 
 @Composable
@@ -117,21 +112,5 @@ private fun AppDetailContent(
         item {
             AppPrimaryButton(text = stringResource(R.string.detail_open_settings), onClick = openSettings)
         }
-    }
-}
-
-/** Opens Android's own settings page for the app, where the user can revoke permissions. */
-private fun openAppSettings(context: Context, packageName: String, notInstalledMessage: String) {
-    val isInstalled = runCatching { context.packageManager.getPackageInfo(packageName, 0) }.isSuccess
-    if (!isInstalled) {
-        Toast.makeText(context, notInstalledMessage, Toast.LENGTH_SHORT).show()
-        return
-    }
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, notInstalledMessage, Toast.LENGTH_SHORT).show()
     }
 }

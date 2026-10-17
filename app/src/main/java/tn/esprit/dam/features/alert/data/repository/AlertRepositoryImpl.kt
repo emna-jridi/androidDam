@@ -1,7 +1,7 @@
 package tn.esprit.dam.features.alert.data.repository
 
 import tn.esprit.dam.core.network.ApiResult
-import tn.esprit.dam.core.network.getOrNull
+import tn.esprit.dam.core.network.toResult
 import tn.esprit.dam.features.alert.data.model.Alert
 import tn.esprit.dam.features.alert.data.model.AlertEventDto
 import tn.esprit.dam.features.alert.data.model.DeviceTokenDto
@@ -14,8 +14,9 @@ class AlertRepositoryImpl @Inject constructor(
     private val api: AlertApi
 ) : AlertRepository {
 
-    override suspend fun getAlertHistory(): List<Alert> =
-        api.getAlerts().getOrNull().orEmpty()
+    // Result, not an empty list: a failed load must not look like "no threats".
+    override suspend fun getAlertHistory(): Result<List<Alert>> =
+        api.getAlerts().toResult()
 
     override suspend fun markAsRead(alertId: String): Boolean =
         api.markAsRead(alertId) is ApiResult.Success

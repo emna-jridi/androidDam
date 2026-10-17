@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.UiText
+import tn.esprit.dam.core.ui.toUiTextOr
 import tn.esprit.dam.features.alert.data.model.Alert
 import tn.esprit.dam.features.alert.data.repository.AlertRepository
 import javax.inject.Inject
@@ -22,6 +25,9 @@ class AlertsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<UiText?>(null)
+    val error: StateFlow<UiText?> = _error.asStateFlow()
+
     init {
         loadAlerts()
     }
@@ -29,7 +35,12 @@ class AlertsViewModel @Inject constructor(
     fun loadAlerts() {
         viewModelScope.launch {
             _isLoading.value = true
-            _alerts.value = repository.getAlertHistory()
+            repository.getAlertHistory()
+                .onSuccess {
+                    _alerts.value = it
+                    _error.value = null
+                }
+                .onFailure { _error.value = it.message.toUiTextOr(R.string.error_unknown_en) }
             _isLoading.value = false
         }
     }

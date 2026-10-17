@@ -3,7 +3,7 @@ package tn.esprit.dam.features.alert.data.repository
 import tn.esprit.dam.features.alert.data.model.Alert
 
 interface AlertRepository {
-    suspend fun getAlertHistory(): List<Alert>
+    suspend fun getAlertHistory(): Result<List<Alert>>
 
     suspend fun markAsRead(alertId: String): Boolean
 
