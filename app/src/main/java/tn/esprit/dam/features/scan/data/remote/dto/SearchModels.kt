@@ -17,16 +17,12 @@ data class SearchResultDto(
     val appName: String,
     @SerialName("iconUrl")
     val icon: String = "",
+    /** Play Store rating (0–5), null when the store doesn't give one. */
     @SerialName("rating")
-    val rating: Float = 0f,
-    @SerialName("downloads")
-    val downloads: String = "Unknown",
+    val rating: Float? = null,
     @SerialName("developer")
-    val developer: String = "Unknown",
-    @SerialName("predictedRiskScore")
-    val predictedRiskScore: Int = 0,
-    @SerialName("predictedRiskLevel")
-    val predictedRiskLevel: String = "low",
-    @SerialName("predictedRecommendations")
-    val predictedRecommendations: List<String> = emptyList()
+    val developer: String? = null,
+    /** Search results are not analyzed yet: the backend sends "UNKNOWN". */
+    @SerialName("riskLevel")
+    val riskLevel: String? = null
 )

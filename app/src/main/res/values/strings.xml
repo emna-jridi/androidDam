@@ -636,6 +636,21 @@
     <string name="profile_cancel">Annuler</string>
     <string name="profile_retry">Réessayer</string>
 
+    <!-- App search redesign -->
+    <string name="search_hint">Rechercher une app (ex. TikTok)</string>
+    <string name="search_clear">Effacer</string>
+    <string name="search_intro_title">Vérifie une app avant de l\'installer</string>
+    <string name="search_intro_desc">Cherche une app du Play Store pour voir ses permissions, ses trackers et son score de risque.</string>
+    <string name="search_popular">Recherches populaires</string>
+    <string name="search_no_result_title">Aucune app trouvée</string>
+    <string name="search_no_result_desc">Rien pour « %1$s ». Vérifie l\'orthographe ou essaie un autre nom.</string>
+    <string name="search_analyze">Analyser</string>
+    <string name="search_retry">Réessayer</string>
+    <plurals name="search_results_n">
+        <item quantity="one">%d résultat</item>
+        <item quantity="other">%d résultats</item>
+    </plurals>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

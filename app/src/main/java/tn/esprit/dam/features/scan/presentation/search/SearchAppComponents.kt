@@ -1,19 +1,20 @@
 package tn.esprit.dam.features.scan.presentation.search
-import tn.esprit.dam.core.ui.theme.AppColors
-import tn.esprit.dam.R
-import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -21,18 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -40,112 +36,129 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import java.util.Locale
+import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.theme.AppCorners
+import tn.esprit.dam.core.ui.theme.AppSpacing
+import tn.esprit.dam.core.ui.theme.AppTypography
+
+/** Example queries shown before the first search. App names, so not translated. */
+private val POPULAR_QUERIES = listOf("TikTok", "WhatsApp", "Instagram", "Snapchat", "Facebook", "Telegram")
 
 @Composable
 fun AppSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    focusRequester: FocusRequester
 ) {
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        placeholder = { Text(stringResource(R.string.search_for_an_application)) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = stringResource(R.string.search),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
+            .padding(AppSpacing.md)
+            .focusRequester(focusRequester),
+        singleLine = true,
+        placeholder = { Text(stringResource(R.string.search_hint), color = AppColors.textMuted) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.primary) },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
                 IconButton(onClick = onClear) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = stringResource(R.string.clear)
-                    )
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.search_clear), tint = AppColors.textTertiary)
                 }
             }
-        },
+        } else null,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-        singleLine = true,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppCorners.large),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            focusedTextColor = AppColors.textPrimary,
+            unfocusedTextColor = AppColors.textPrimary,
+            focusedBorderColor = AppColors.primary,
+            unfocusedBorderColor = AppColors.surfaceVariant,
+            focusedContainerColor = AppColors.surface,
+            unfocusedContainerColor = AppColors.surface,
+            cursorColor = AppColors.primary
         )
     )
 }
 
+/** Before the first search: what this screen is for, and one-tap example queries. */
 @Composable
-fun EmptySearchResults(query: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun SearchPlaceholder(onPick: (String) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = AppSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(AppCorners.xlarge))
+                .background(AppColors.surface)
+                .padding(AppSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.ManageSearch, contentDescription = null, tint = AppColors.primary, modifier = Modifier.size(32.dp))
+            }
+            Text(
+                text = stringResource(R.string.search_intro_title),
+                style = AppTypography.titleMedium,
+                color = AppColors.textPrimary,
+                textAlign = TextAlign.Center
             )
             Text(
-                text = "No results for \"$query\"",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.try_with_another_search_term),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline
+                text = stringResource(R.string.search_intro_desc),
+                style = AppTypography.bodyMedium,
+                color = AppColors.textSecondary,
+                textAlign = TextAlign.Center
             )
         }
-    }
-}
-
-@Composable
-fun SearchPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Text(
+            text = stringResource(R.string.search_popular).uppercase(),
+            style = AppTypography.labelMedium,
+            color = AppColors.textTertiary
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-            Text(
-                text = stringResource(R.string.search_for_an_application_2),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.analyze_risk_before_installing),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline
-            )
+            POPULAR_QUERIES.forEach { name ->
+                val shape = RoundedCornerShape(50)
+                Text(
+                    text = name,
+                    style = AppTypography.labelMedium,
+                    color = AppColors.textSecondary,
+                    modifier = Modifier
+                        .clip(shape)
+                        .background(AppColors.surface)
+                        .border(1.dp, AppColors.surfaceVariant, shape)
+                        .clickable { onPick(name) }
+                        .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm)
+                )
+            }
         }
     }
 }
@@ -156,153 +169,101 @@ fun SearchResults(
     onAppClick: (String) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = AppSpacing.md, end = AppSpacing.md, bottom = AppSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
-        items(results) { result ->
-            SearchResultCard(
-                result = result,
-                onClick = { onAppClick(result.packageName) }
+        item {
+            Text(
+                text = pluralStringResource(R.plurals.search_results_n, results.size, results.size),
+                style = AppTypography.labelMedium,
+                color = AppColors.textTertiary
             )
+        }
+        items(results, key = { it.packageName }) { result ->
+            SearchResultCard(result = result, onClick = { onAppClick(result.packageName) })
         }
     }
 }
 
 @Composable
-fun SearchResultCard(
-    result: SearchAppUi,
-    onClick: () -> Unit
-) {
-    Card(
+fun SearchResultCard(result: SearchAppUi, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .clip(RoundedCornerShape(AppCorners.large))
+            .background(AppColors.surface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm + AppSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = result.iconUrl,
-                contentDescription = result.appName,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
+        StoreIcon(name = result.appName, url = result.iconUrl)
+        Spacer(modifier = Modifier.width(AppSpacing.md))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = result.appName,
+                style = AppTypography.bodyMedium,
+                color = AppColors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = result.appName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = AppColors.warning
-                        )
-                        Text(
-                            text = String.format("%.1f", result.rating),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                result.rating?.let { rating ->
+                    Icon(Icons.Default.Star, contentDescription = null, tint = AppColors.warning, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(AppSpacing.xs))
                     Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        text = String.format(Locale.getDefault(), "%.1f", rating),
+                        style = AppTypography.labelMedium,
+                        color = AppColors.textSecondary
                     )
+                    if (result.developer != null) {
+                        Text(text = "  ·  ", style = AppTypography.labelMedium, color = AppColors.textMuted)
+                    }
+                }
+                result.developer?.let {
                     Text(
-                        text = result.downloads,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = it,
+                        style = AppTypography.labelMedium,
+                        color = AppColors.textTertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-
-                Text(
-                    text = result.developer,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
-
-            RiskScoreIndicator(
-                score = result.riskScore,
-                level = result.riskLevel
-            )
         }
+        Spacer(modifier = Modifier.width(AppSpacing.sm))
+        Text(text = stringResource(R.string.search_analyze), style = AppTypography.labelMedium, color = AppColors.primary)
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppColors.primary)
     }
 }
 
 @Composable
-fun RiskScoreIndicator(
-    score: Int,
-    level: String
-) {
-    val backgroundColor = when (level.lowercase()) {
-        "low" -> AppColors.success.copy(alpha = 0.15f)
-        "medium" -> AppColors.orange.copy(alpha = 0.15f)
-        "high" -> AppColors.error.copy(alpha = 0.15f)
-        "critical" -> AppColors.accentViolet.copy(alpha = 0.15f)
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-
-    val textColor = when (level.lowercase()) {
-        "low" -> AppColors.success
-        "medium" -> AppColors.orange
-        "high" -> AppColors.error
-        "critical" -> AppColors.accentViolet
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
+private fun StoreIcon(name: String, url: String) {
+    val letter: @Composable () -> Unit = {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .background(backgroundColor, CircleShape),
+                .fillMaxSize()
+                .background(AppColors.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "$score",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor
+            Text(text = name.take(1).uppercase(), style = AppTypography.titleMedium, color = AppColors.textPrimary)
+        }
+    }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(AppCorners.medium))
+    ) {
+        if (url.isBlank()) {
+            letter()
+        } else {
+            SubcomposeAsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                loading = { letter() },
+                error = { letter() }
             )
         }
-        Text(
-            text = level.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor,
-            fontWeight = FontWeight.Medium
-        )
     }
 }
