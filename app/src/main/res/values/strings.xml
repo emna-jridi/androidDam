@@ -531,6 +531,51 @@
     <string name="history_sheet_duration">Durée</string>
     <string name="history_sheet_distribution">Répartition des risques</string>
 
+    <!-- Dark web redesign -->
+    <string name="darkweb_tab_breaches">My breaches</string>
+    <string name="darkweb_tab_manual">Manual check</string>
+    <plurals name="darkweb_open_n">
+        <item quantity="one">%d breach needs action</item>
+        <item quantity="other">%d breaches need action</item>
+    </plurals>
+    <plurals name="darkweb_resolved_n">
+        <item quantity="one">%d resolved</item>
+        <item quantity="other">%d resolved</item>
+    </plurals>
+    <string name="darkweb_all_clear">No open breaches</string>
+    <string name="darkweb_all_clear_desc">Your email is checked against known leaks every day.</string>
+    <string name="darkweb_open_desc">Your data appeared in a leak. Follow the steps in each breach.</string>
+    <string name="darkweb_check_now">Check now</string>
+    <string name="darkweb_section_open">Needs action</string>
+    <string name="darkweb_section_resolved">Resolved</string>
+    <string name="darkweb_status_open">Action needed</string>
+    <string name="darkweb_status_resolved">Resolved</string>
+    <string name="darkweb_more">+%1$d</string>
+    <string name="darkweb_unknown_date">Unknown date</string>
+    <string name="darkweb_email_safe">Not found in known breaches</string>
+    <plurals name="darkweb_email_found">
+        <item quantity="one">Found in %d breach</item>
+        <item quantity="other">Found in %d breaches</item>
+    </plurals>
+    <string name="darkweb_password_safe">Not found in known breaches</string>
+    <string name="darkweb_password_found">Seen %1$d times in leaks. Change it now.</string>
+    <plurals name="darkweb_exposed_data">
+        <item quantity="one">%d type of data exposed</item>
+        <item quantity="other">%d types of data exposed</item>
+    </plurals>
+    <string name="darkweb_breach_date">Breach date: %1$s</string>
+    <string name="darkweb_insight_passwords">Your login details were exposed. Attackers try them on other sites, so change them everywhere you used them.</string>
+    <string name="darkweb_insight_financial">Financial details were exposed. Watch your bank statements for payments you don\'t recognize.</string>
+    <string name="darkweb_insight_contact">Your contact details were exposed. Expect phishing emails and scam calls.</string>
+    <string name="darkweb_insight_generic">This data can be used to target you with scams.</string>
+    <string name="darkweb_todo_password">Change this password, and anywhere you reused it</string>
+    <string name="darkweb_todo_email">Be careful with emails that pretend to be %1$s</string>
+    <string name="darkweb_todo_phone">Watch for suspicious calls and SMS</string>
+    <string name="darkweb_todo_2fa">Turn on two-factor authentication</string>
+    <string name="darkweb_todo_monitor">Check your accounts for activity you don\'t recognize</string>
+    <string name="darkweb_what_to_do">What to do</string>
+    <string name="darkweb_resolved_banner">You marked this breach as resolved.</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

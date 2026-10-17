@@ -1,33 +1,49 @@
 package tn.esprit.dam.features.darkweb.presentation
-import tn.esprit.dam.R
-import androidx.compose.ui.res.stringResource
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.LightbulbCircle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.components.AppEmptyState
+import tn.esprit.dam.core.ui.components.AppPrimaryButton
+import tn.esprit.dam.core.ui.components.AppSkeletonList
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
 import tn.esprit.dam.core.ui.theme.AppTypography
+import tn.esprit.dam.features.darkweb.data.model.Breach
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BreachDetailScreen(
     onBackClick: () -> Unit,
@@ -45,257 +61,156 @@ fun BreachDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AppColors.surface)
-                .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
+                .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = AppColors.textPrimary
-                )
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = AppColors.textPrimary)
             }
-            Spacer(modifier = Modifier.width(AppSpacing.sm))
             Text(
-                text = breach?.source ?: "Breach Details",
+                text = breach?.source.orEmpty(),
                 style = AppTypography.titleMedium,
                 color = AppColors.textPrimary,
-                fontWeight = FontWeight.Bold
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        if (breach == null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(R.string.breach_not_found),
-                    style = AppTypography.bodyMedium,
-                    color = AppColors.textSecondary
+        when {
+            breach != null -> BreachDetailContent(breach = breach, onResolve = { viewModel.resolveBreach(breach._id) })
+            // The list loads on open; don't flash "not found" while it does.
+            uiState.isLoading ->
+                AppSkeletonList(itemCount = 3, modifier = Modifier.padding(AppSpacing.md))
+            else -> AppEmptyState(
+                icon = Icons.Default.VerifiedUser,
+                title = stringResource(R.string.breach_not_found),
+                message = "",
+                actionText = stringResource(R.string.back),
+                onAction = onBackClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun BreachDetailContent(breach: Breach, onResolve: () -> Unit) {
+    val date = formatBreachDate(breach.breachDate, "d MMMM yyyy") ?: stringResource(R.string.darkweb_unknown_date)
+    val dataClasses = breach.dataClasses.sortedByDescending { it.isSensitiveData() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(start = AppSpacing.md, end = AppSpacing.md, bottom = AppSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(AppCorners.xlarge))
+                .background(AppColors.surface)
+                .padding(AppSpacing.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BreachAvatar(source = breach.source, resolved = breach.isResolved, size = 56.dp)
+            Spacer(modifier = Modifier.width(AppSpacing.md))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                Text(text = breach.source, style = AppTypography.titleLarge, color = AppColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                breach.domain?.takeIf { it.isNotBlank() }?.let {
+                    Text(text = it, style = AppTypography.labelMedium, color = AppColors.textTertiary)
+                }
+                Text(text = stringResource(R.string.darkweb_breach_date, date), style = AppTypography.labelMedium, color = AppColors.textTertiary)
+                BreachStatusPill(resolved = breach.isResolved)
+            }
+        }
+
+        breach.description?.takeIf { it.isNotBlank() }?.let {
+            Text(text = it, style = AppTypography.bodyMedium, color = AppColors.textSecondary)
+        }
+
+        Section(title = pluralStringResource(R.plurals.darkweb_exposed_data, dataClasses.size, dataClasses.size)) {
+            DataClassChips(dataClasses)
+            Text(text = stringResource(insightFor(dataClasses)), style = AppTypography.bodyMedium, color = AppColors.textSecondary)
+        }
+
+        Section(title = stringResource(R.string.darkweb_what_to_do)) {
+            todosFor(dataClasses).forEach { (res, needsSource) ->
+                TodoLine(
+                    text = if (needsSource) stringResource(res, breach.source) else stringResource(res),
+                    done = breach.isResolved
                 )
             }
-        } else {
-            val resolved = breach.isResolved
-            val accentColor = if (resolved) AppColors.success else AppColors.warning
-            val formattedDate = formatBreachDate(breach.breachDate, "MMMM dd, yyyy")
+        }
 
-            Column(
+        if (breach.isResolved) {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(AppSpacing.lg),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(AppCorners.medium))
+                    .background(AppColors.riskLow.copy(alpha = 0.12f))
+                    .padding(AppSpacing.md),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Card(
-                    shape = RoundedCornerShape(AppCorners.large),
-                    colors = CardDefaults.cardColors(containerColor = accentColor.copy(alpha = 0.1f)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(AppSpacing.lg),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(accentColor.copy(alpha = 0.2f), RoundedCornerShape(AppCorners.medium)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (resolved) Icons.Default.CheckCircle else Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = accentColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(AppSpacing.md))
-                        Column {
-                            Text(
-                                text = if (resolved) "RESOLVED" else "ACTION REQUIRED",
-                                style = AppTypography.labelLarge,
-                                color = accentColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(AppSpacing.xs))
-                            Text(
-                                text = "Breach Date: $formattedDate",
-                                style = AppTypography.bodyMedium,
-                                color = AppColors.textSecondary
-                            )
-                        }
-                    }
-                }
-
-                Card(
-                    shape = RoundedCornerShape(AppCorners.large),
-                    colors = CardDefaults.cardColors(containerColor = AppColors.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(AppSpacing.lg),
-                        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = AppColors.error,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(AppSpacing.sm))
-                            Text(
-                                "Exposed Data (${breach.dataClasses.size} types)",
-                                style = AppTypography.titleMedium,
-                                color = AppColors.textPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
-                        ) {
-                            breach.dataClasses.forEach { item ->
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            AppColors.error.copy(alpha = 0.1f),
-                                            RoundedCornerShape(AppCorners.small)
-                                        )
-                                        .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm)
-                                ) {
-                                    Text(
-                                        text = item,
-                                        style = AppTypography.labelMedium,
-                                        color = AppColors.error
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Card(
-                    shape = RoundedCornerShape(AppCorners.large),
-                    colors = CardDefaults.cardColors(containerColor = AppColors.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.primary.copy(alpha = 0.3f))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(AppSpacing.lg),
-                        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(AppColors.primary.copy(alpha = 0.15f), RoundedCornerShape(AppCorners.small)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.LightbulbCircle,
-                                    contentDescription = null,
-                                    tint = AppColors.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(AppSpacing.sm))
-                            Text(
-                                stringResource(R.string.ai_security_insight),
-                                style = AppTypography.titleMedium,
-                                color = AppColors.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Text(
-                            buildSecurityInsight(breach.source, breach.dataClasses),
-                            style = AppTypography.bodyMedium,
-                            color = AppColors.textSecondary,
-                            lineHeight = 22.sp
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
-                            Text(
-                                stringResource(R.string.recommended_actions),
-                                style = AppTypography.labelMedium,
-                                color = AppColors.textPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            getRecommendations(breach.dataClasses).forEach { rec ->
-                                Row(verticalAlignment = Alignment.Top) {
-                                    Text("•", color = AppColors.primary, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.width(AppSpacing.sm))
-                                    Text(
-                                        rec,
-                                        style = AppTypography.bodyMedium,
-                                        color = AppColors.textSecondary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!resolved) {
-                    Spacer(modifier = Modifier.height(AppSpacing.sm))
-                    Button(
-                        onClick = { viewModel.resolveBreach(breach._id) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(AppCorners.medium),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.primary)
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.textPrimary)
-                        Spacer(modifier = Modifier.width(AppSpacing.sm))
-                        Text(
-                            stringResource(R.string.mark_as_resolved),
-                            style = AppTypography.labelLarge,
-                            color = AppColors.textPrimary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
+                Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = AppColors.riskLow)
+                Spacer(modifier = Modifier.width(AppSpacing.sm))
+                Text(stringResource(R.string.darkweb_resolved_banner), style = AppTypography.bodyMedium, color = AppColors.textSecondary)
             }
+        } else {
+            AppPrimaryButton(text = stringResource(R.string.mark_as_resolved), onClick = onResolve)
         }
     }
 }
 
-private fun buildSecurityInsight(source: String, dataClasses: List<String>): String {
-    val hasPasswords = dataClasses.any { it.contains("password", ignoreCase = true) }
-    val hasEmails = dataClasses.any { it.contains("email", ignoreCase = true) }
-    val hasPhone = dataClasses.any { it.contains("phone", ignoreCase = true) }
-    val hasFinancial = dataClasses.any { it.contains("credit", ignoreCase = true) || it.contains("bank", ignoreCase = true) }
-
-    return buildString {
-        append("This breach from $source exposed ${dataClasses.size} types of personal data. ")
-        when {
-            hasPasswords -> append("Your login credentials were compromised, which puts you at high risk of credential stuffing attacks. ")
-            hasFinancial -> append("Financial information was exposed, which could lead to fraud or identity theft. ")
-            hasEmails && hasPhone -> append("Contact information was leaked, increasing risk of phishing and social engineering. ")
-            else -> append("This data could be used for identity verification bypasses or targeted attacks. ")
-        }
-        append("Take immediate action to protect your accounts.")
+@Composable
+private fun Section(title: String, content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppCorners.large))
+            .background(AppColors.surface)
+            .padding(AppSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+    ) {
+        Text(text = title, style = AppTypography.titleMedium, color = AppColors.textPrimary)
+        content()
     }
 }
 
-private fun getRecommendations(dataClasses: List<String>): List<String> {
-    val recommendations = mutableListOf<String>()
+@Composable
+private fun TodoLine(text: String, done: Boolean) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(
+            imageVector = if (done) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+            contentDescription = null,
+            tint = if (done) AppColors.riskLow else AppColors.textMuted,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(AppSpacing.sm))
+        Box(modifier = Modifier.weight(1f)) {
+            Text(text = text, style = AppTypography.bodyMedium, color = AppColors.textSecondary)
+        }
+    }
+}
 
-    if (dataClasses.any { it.contains("password", ignoreCase = true) }) {
-        recommendations.add("Change your password immediately and use a unique, strong password")
+@StringRes
+private fun insightFor(dataClasses: List<String>): Int {
+    fun has(word: String) = dataClasses.any { it.contains(word, ignoreCase = true) }
+    return when {
+        has("password") -> R.string.darkweb_insight_passwords
+        has("credit") || has("bank") || has("card") -> R.string.darkweb_insight_financial
+        has("email") || has("phone") -> R.string.darkweb_insight_contact
+        else -> R.string.darkweb_insight_generic
     }
-    if (dataClasses.any { it.contains("email", ignoreCase = true) }) {
-        recommendations.add("Be vigilant for phishing emails impersonating this service")
-    }
-    if (dataClasses.any { it.contains("phone", ignoreCase = true) }) {
-        recommendations.add("Watch for suspicious calls or SMS messages")
-    }
-    recommendations.add("Enable two-factor authentication (2FA) if available")
-    recommendations.add("Monitor your accounts for unauthorized activity")
+}
 
-    return recommendations.take(4)
+/** Steps for this breach, most important first. The flag says whether the string takes the source name. */
+private fun todosFor(dataClasses: List<String>): List<Pair<Int, Boolean>> {
+    fun has(word: String) = dataClasses.any { it.contains(word, ignoreCase = true) }
+    return buildList {
+        if (has("password")) add(R.string.darkweb_todo_password to false)
+        if (has("email")) add(R.string.darkweb_todo_email to true)
+        if (has("phone")) add(R.string.darkweb_todo_phone to false)
+        add(R.string.darkweb_todo_2fa to false)
+        add(R.string.darkweb_todo_monitor to false)
+    }.take(4)
 }
