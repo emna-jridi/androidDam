@@ -617,6 +617,25 @@
     <string name="vault_leak_failed">Couldn\'t check leaks right now.</string>
     <string name="vault_leak_retry">Retry</string>
 
+    <!-- Profile redesign -->
+    <string name="profile_edit">Modifier</string>
+    <string name="profile_email_verified">Email vérifié</string>
+    <string name="profile_email_not_verified">Email non vérifié</string>
+    <string name="profile_section_security">Sécurité</string>
+    <string name="profile_section_account">Compte</string>
+    <string name="profile_vault_title">Coffre-fort</string>
+    <string name="profile_vault_checking">Vérification…</string>
+    <string name="profile_vault_none">Pas encore configuré</string>
+    <string name="profile_vault_ready">Configuré et chiffré</string>
+    <string name="profile_vault_create">Créer</string>
+    <string name="profile_vault_error">Impossible de vérifier · touche pour réessayer</string>
+    <string name="profile_darkweb_title">Surveillance dark web</string>
+    <string name="profile_darkweb_desc">Vérifie si tes données ont fuité</string>
+    <string name="profile_logout_confirm_title">Se déconnecter ?</string>
+    <string name="profile_logout_confirm_text">Tu devras te reconnecter pour accéder à ton compte.</string>
+    <string name="profile_cancel">Annuler</string>
+    <string name="profile_retry">Réessayer</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

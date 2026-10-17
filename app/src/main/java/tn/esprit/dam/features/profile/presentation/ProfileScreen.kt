@@ -1,37 +1,62 @@
 ﻿package tn.esprit.dam.features.profile.presentation
-import tn.esprit.dam.core.ui.asString
-import tn.esprit.dam.features.vault.presentation.access.VaultStatusUiState
-import tn.esprit.dam.features.vault.presentation.access.VaultStatusViewModel
-import tn.esprit.dam.R
-import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tn.esprit.dam.R
 import tn.esprit.dam.core.model.User
-import tn.esprit.dam.features.profile.presentation.components.*
-import tn.esprit.dam.core.ui.theme.*
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.core.ui.components.AppErrorState
+import tn.esprit.dam.core.ui.components.AppSkeletonList
 import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
 import tn.esprit.dam.core.ui.theme.AppTypography
-import tn.esprit.dam.core.ui.components.AppErrorState
-import tn.esprit.dam.core.ui.components.AppPrimaryButton
+import tn.esprit.dam.features.profile.presentation.components.EditProfileDialog
+import tn.esprit.dam.features.profile.presentation.components.ProfileHeader
+import tn.esprit.dam.features.vault.presentation.access.VaultStatusUiState
+import tn.esprit.dam.features.vault.presentation.access.VaultStatusViewModel
 
 @Composable
 fun ProfileScreen(
@@ -41,9 +66,9 @@ fun ProfileScreen(
     onOpenDarkWeb: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
+    var confirmLogout by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -55,33 +80,22 @@ fun ProfileScreen(
             .background(AppColors.background)
     ) {
         when (val state = uiState) {
-            is ProfileUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = AppColors.primary)
-                }
-            }
+            is ProfileUiState.Loading -> AppSkeletonList(itemCount = 3, modifier = Modifier.padding(AppSpacing.md))
 
-            is ProfileUiState.Error -> {
-                    AppErrorState(
-                    message = state.message.asString(),
-                    onRetry = { viewModel.loadProfile() },
-                    retryText = "Réessayer"
-                )
-            }
+            is ProfileUiState.Error -> AppErrorState(
+                message = state.message.asString(),
+                onRetry = { viewModel.loadProfile() },
+                retryText = stringResource(R.string.profile_retry)
+            )
 
-            is ProfileUiState.Success -> {
-                    ProfileContent(
-                    user = state.user,
-                    onEditProfile = { viewModel.showEditDialog() },
-                    onLogout = { viewModel.logout(onLogout) },
-                    onOpenVault = onOpenVault,
-                    onCreateVault = onCreateVault,
-                    onOpenDarkWeb = onOpenDarkWeb
-                )
-            }
+            is ProfileUiState.Success -> ProfileContent(
+                user = state.user,
+                onEditProfile = { viewModel.showEditDialog() },
+                onLogout = { confirmLogout = true },
+                onOpenVault = onOpenVault,
+                onCreateVault = onCreateVault,
+                onOpenDarkWeb = onOpenDarkWeb
+            )
         }
     }
 
@@ -89,8 +103,32 @@ fun ProfileScreen(
         EditProfileDialog(
             user = (uiState as ProfileUiState.Success).user,
             onDismiss = { viewModel.hideEditDialog() },
-            onSave = { newName ->
-                viewModel.updateProfile(newName)
+            onSave = { newName -> viewModel.updateProfile(newName) }
+        )
+    }
+
+    if (confirmLogout) {
+        AlertDialog(
+            onDismissRequest = { confirmLogout = false },
+            containerColor = AppColors.surface,
+            icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = AppColors.error) },
+            title = { Text(stringResource(R.string.profile_logout_confirm_title), color = AppColors.textPrimary) },
+            text = { Text(stringResource(R.string.profile_logout_confirm_text), color = AppColors.textSecondary) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmLogout = false
+                        viewModel.logout(onLogout)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.error, contentColor = AppColors.textPrimary)
+                ) {
+                    Text(stringResource(R.string.deconnexion))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLogout = false }) {
+                    Text(stringResource(R.string.profile_cancel), color = AppColors.textSecondary)
+                }
             }
         )
     }
@@ -109,186 +147,148 @@ private fun ProfileContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = AppSpacing.lg)
+            .padding(AppSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
-        ProfileHeader(
-            user = user
-        )
+        ProfileHeader(user = user, onEdit = onEditProfile)
 
-        Column(modifier = Modifier.padding(AppSpacing.lg)) {
-            ProfileActionsSection(
-                onEditProfile = onEditProfile,
-                onLogout = onLogout
+        SettingsGroup(title = stringResource(R.string.profile_section_security)) {
+            VaultRow(onOpenVault = onOpenVault, onCreateVault = onCreateVault)
+            GroupDivider()
+            SettingsRow(
+                icon = Icons.Default.TravelExplore,
+                title = stringResource(R.string.profile_darkweb_title),
+                subtitle = stringResource(R.string.profile_darkweb_desc),
+                onClick = onOpenDarkWeb
             )
+        }
 
-            Spacer(modifier = Modifier.height(AppSpacing.md))
-
-            VaultStatusSection(
-                onOpenVault = onOpenVault,
-                onCreateVault = onCreateVault
+        SettingsGroup(title = stringResource(R.string.profile_section_account)) {
+            SettingsRow(
+                icon = Icons.Default.Edit,
+                title = stringResource(R.string.modifier_le_profil),
+                subtitle = stringResource(R.string.mettre_a_jour_vos_informations),
+                onClick = onEditProfile
             )
-
-            Spacer(modifier = Modifier.height(AppSpacing.md))
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AppColors.surface),
-                shape = RoundedCornerShape(AppCorners.large),
-                modifier = Modifier.fillMaxWidth().clickable { onOpenDarkWeb() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(AppSpacing.md),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Security,
-                        contentDescription = stringResource(R.string.dark_web),
-                        tint = AppColors.primary
-                    )
-                    Spacer(modifier = Modifier.width(AppSpacing.md))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.dark_web_monitoring),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.textPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.check_for_data_breaches),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.textSecondary
-                        )
-                    }
-                }
-            }
+            GroupDivider()
+            SettingsRow(
+                icon = Icons.AutoMirrored.Filled.Logout,
+                title = stringResource(R.string.deconnexion),
+                subtitle = stringResource(R.string.se_deconnecter_de_votre_compte),
+                onClick = onLogout,
+                accent = AppColors.error,
+                showChevron = false
+            )
         }
     }
 }
 
+/** Vault status as a settings row: live status line, and "Créer" when no vault exists yet. */
 @Composable
-private fun VaultStatusSection(
-    onOpenVault: () -> Unit,
-    onCreateVault: () -> Unit
-) {
+private fun VaultRow(onOpenVault: () -> Unit, onCreateVault: () -> Unit) {
     val viewModel: VaultStatusViewModel = hiltViewModel()
     val status by viewModel.status.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.checkStatus() }
 
-    when (status) {
-        is VaultStatusUiState.Loading -> {}
-        is VaultStatusUiState.NoVault -> {}
-        is VaultStatusUiState.VaultExists -> {}
-        is VaultStatusUiState.Error -> {}
+    val (subtitle, onClick) = when (val s = status) {
+        VaultStatusUiState.Loading -> stringResource(R.string.profile_vault_checking) to {}
+        VaultStatusUiState.NoVault -> stringResource(R.string.profile_vault_none) to onCreateVault
+        VaultStatusUiState.VaultExists -> stringResource(R.string.profile_vault_ready) to onOpenVault
+        is VaultStatusUiState.Error -> stringResource(R.string.profile_vault_error) to { viewModel.checkStatus() }
     }
 
-    Spacer(modifier = Modifier.height(AppSpacing.md))
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
-        shape = RoundedCornerShape(AppCorners.large),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppSpacing.lg),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(AppCorners.medium))
-                    .background(AppColors.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = AppColors.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
+    SettingsRow(
+        icon = Icons.Default.Lock,
+        title = stringResource(R.string.profile_vault_title),
+        subtitle = subtitle,
+        onClick = onClick,
+        accent = if (status is VaultStatusUiState.Error) AppColors.riskMedium else AppColors.primary,
+        trailing = when (status) {
+            VaultStatusUiState.Loading -> {
+                { CircularProgressIndicator(color = AppColors.primary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp)) }
             }
-
-            Spacer(modifier = Modifier.width(AppSpacing.md))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.password_vault),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = AppColors.textPrimary
-                )
-                Spacer(modifier = Modifier.height(AppSpacing.xs))
-                val statusText = when (status) {
-                    is VaultStatusUiState.Loading -> "Checking status..."
-                    is VaultStatusUiState.NoVault -> "Vault not configured"
-                    is VaultStatusUiState.VaultExists -> "Vault configured"
-                    is VaultStatusUiState.Error -> (status as VaultStatusUiState.Error).message.asString()
-                }
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.textSecondary
-                )
-            }
-        }
-
-        when (status) {
-            is VaultStatusUiState.NoVault -> {
-                Button(
-                    onClick = onCreateVault,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppSpacing.lg)
-                        .padding(bottom = AppSpacing.lg),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.primary
-                    ),
-                    shape = RoundedCornerShape(AppCorners.medium)
-                ) {
-                    Text(stringResource(R.string.create_master_password))
-                }
-            }
-            is VaultStatusUiState.VaultExists -> {
-                Button(
-                    onClick = onOpenVault,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppSpacing.lg)
-                        .padding(bottom = AppSpacing.lg),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.primary
-                    ),
-                    shape = RoundedCornerShape(AppCorners.medium)
-                ) {
-                    Text(stringResource(R.string.open_vault))
-                }
-            }
-            is VaultStatusUiState.Error -> {
-                OutlinedButton(
-                    onClick = { viewModel.checkStatus() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppSpacing.lg)
-                        .padding(bottom = AppSpacing.lg),
-                    shape = RoundedCornerShape(AppCorners.medium)
-                ) {
-                    Text(stringResource(R.string.retry))
-                }
-            }
-            is VaultStatusUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(AppSpacing.lg),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = AppColors.primary,
-                        modifier = Modifier.size(24.dp)
+            VaultStatusUiState.NoVault -> {
+                {
+                    Text(
+                        text = stringResource(R.string.profile_vault_create),
+                        style = AppTypography.labelMedium,
+                        color = AppColors.onPrimary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(AppColors.primary)
+                            .padding(horizontal = AppSpacing.md, vertical = AppSpacing.xs)
                     )
                 }
             }
+            else -> null
+        }
+    )
+}
+
+@Composable
+private fun SettingsGroup(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+        Text(
+            text = title.uppercase(),
+            style = AppTypography.labelMedium,
+            color = AppColors.textTertiary,
+            modifier = Modifier.padding(start = AppSpacing.xs)
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(AppCorners.large))
+                .background(AppColors.surface)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun GroupDivider() {
+    HorizontalDivider(color = AppColors.surfaceVariant, modifier = Modifier.padding(start = 68.dp))
+}
+
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    accent: Color = AppColors.primary,
+    showChevron: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm + AppSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(AppCorners.medium))
+                .background(accent.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(AppSpacing.md))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = AppTypography.bodyMedium,
+                color = if (accent == AppColors.error) AppColors.error else AppColors.textPrimary
+            )
+            Text(text = subtitle, style = AppTypography.labelMedium, color = AppColors.textTertiary)
+        }
+        when {
+            trailing != null -> trailing()
+            showChevron -> Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppColors.textMuted)
         }
     }
 }
