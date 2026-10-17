@@ -1,36 +1,95 @@
 package tn.esprit.dam.features.vault.presentation.passwords
-import tn.esprit.dam.core.ui.asString
-import tn.esprit.dam.R
-import androidx.compose.ui.res.stringResource
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import tn.esprit.dam.R
+import tn.esprit.dam.core.ui.asString
+import tn.esprit.dam.core.ui.components.AppEmptyState
+import tn.esprit.dam.core.ui.components.AppErrorState
+import tn.esprit.dam.core.ui.components.AppSkeletonList
+import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.theme.AppCorners
+import tn.esprit.dam.core.ui.theme.AppSpacing
+import tn.esprit.dam.core.ui.theme.AppTypography
 import tn.esprit.dam.features.vault.data.model.PasswordCategory
 import tn.esprit.dam.features.vault.data.model.PasswordEntry
+import tn.esprit.dam.features.vault.presentation.components.StrengthBucket
 import tn.esprit.dam.features.vault.presentation.components.VaultSecurityDashboard
-import tn.esprit.dam.core.ui.components.AppSkeletonList
-import tn.esprit.dam.core.ui.components.AppErrorState
-import tn.esprit.dam.core.ui.components.AppEmptyState
-import tn.esprit.dam.core.ui.util.animateListItem
+import tn.esprit.dam.features.vault.presentation.components.strengthBucket
+import tn.esprit.dam.features.vault.presentation.components.strengthLabel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** "All", "Favorites" and "Weak" filter locally; a category chip asks the ViewModel to filter. */
+private sealed interface ListFilter {
+    data object All : ListFilter
+    data object Favorites : ListFilter
+    data object Weak : ListFilter
+    data class Category(val key: String) : ListFilter
+}
+
+@StringRes
+private fun categoryLabel(key: String): Int = when (key) {
+    PasswordCategory.SOCIAL -> R.string.vault_cat_social
+    PasswordCategory.EMAIL -> R.string.vault_cat_email
+    PasswordCategory.BANKING -> R.string.vault_cat_banking
+    PasswordCategory.WORK -> R.string.vault_cat_work
+    PasswordCategory.SHOPPING -> R.string.vault_cat_shopping
+    PasswordCategory.ENTERTAINMENT -> R.string.vault_cat_entertainment
+    else -> R.string.vault_cat_other
+}
+
 @Composable
 fun PasswordListScreen(
     passwordViewModel: PasswordViewModel,
@@ -41,203 +100,195 @@ fun PasswordListScreen(
     val listState by passwordViewModel.listState.collectAsState()
     val searchQuery by passwordViewModel.searchQuery.collectAsState()
     val selectedCategory by passwordViewModel.selectedCategory.collectAsState()
-
-    var showSearchBar by remember { mutableStateOf(false) }
-    var showCategoryFilter by remember { mutableStateOf(false) }
+    var localFilter by remember { mutableStateOf<ListFilter>(ListFilter.All) }
+    val filter = selectedCategory?.let { ListFilter.Category(it) } ?: localFilter
 
     LaunchedEffect(Unit) {
         passwordViewModel.loadPasswords()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val onFilter: (ListFilter) -> Unit = { picked ->
+        when (picked) {
+            is ListFilter.Category -> passwordViewModel.filterByCategory(picked.key)
+            else -> {
+                passwordViewModel.filterByCategory(null)
+                localFilter = picked
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.background)
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            if (showSearchBar) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { passwordViewModel.search(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text(stringResource(R.string.search_passwords)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        Row {
-                            if (searchQuery.isNotBlank()) {
-                                IconButton(onClick = { passwordViewModel.search("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
-                                }
-                            }
-                            IconButton(onClick = { showSearchBar = false }) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.hide_search))
-                            }
-                        }
-                    },
-                    singleLine = true
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = AppSpacing.md, end = AppSpacing.sm, top = AppSpacing.md),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                VaultSearchField(
+                    query = searchQuery,
+                    onQueryChange = { passwordViewModel.search(it) },
+                    modifier = Modifier.weight(1f)
                 )
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { showSearchBar = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.search))
-                    }
-                    OutlinedButton(
-                        onClick = { showCategoryFilter = !showCategoryFilter },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.filter))
-                    }
-                    OutlinedButton(
-                        onClick = onLockClick,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.lock))
-                    }
+                IconButton(onClick = onLockClick) {
+                    Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.vault_lock), tint = AppColors.textSecondary)
                 }
             }
 
-            if (showCategoryFilter) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = selectedCategory == null,
-                            onClick = { passwordViewModel.filterByCategory(null) },
-                            label = { Text(stringResource(R.string.all)) }
-                        )
-                    }
-                    items(PasswordCategory.ALL.size) { index ->
-                        val category = PasswordCategory.ALL[index]
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { passwordViewModel.filterByCategory(category) },
-                            label = { Text(category.replaceFirstChar { it.uppercase() }) }
-                        )
-                    }
-                }
-            }
+            FilterRow(selected = filter, onSelect = onFilter)
 
             when (val state = listState) {
-                is PasswordListUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+                is PasswordListUiState.Loading -> AppSkeletonList(
+                    itemCount = 5,
+                    modifier = Modifier.padding(AppSpacing.md)
+                )
+
+                is PasswordListUiState.Error -> AppErrorState(
+                    message = state.message.asString(),
+                    onRetry = { passwordViewModel.loadPasswords() },
+                    retryText = stringResource(R.string.retry)
+                )
 
                 is PasswordListUiState.Success -> {
-                    if (state.passwords.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.outline
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = stringResource(R.string.no_passwords_yet),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = stringResource(R.string.tap_to_add_your_first_password),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
+                    val nothingStored = state.passwords.isEmpty() && searchQuery.isBlank() && selectedCategory == null
+                    if (nothingStored) {
+                        AppEmptyState(
+                            icon = Icons.Default.Key,
+                            title = stringResource(R.string.no_passwords_yet),
+                            message = stringResource(R.string.tap_to_add_your_first_password),
+                            actionText = stringResource(R.string.add_password),
+                            onAction = onAddClick
+                        )
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            item {
-                                VaultSecurityDashboard(
-                                    passwords = state.passwords,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-
-                            itemsIndexed(state.passwords) { index, entry ->
-                                Box(modifier = Modifier.animateListItem(index, true)) {
-                                    PasswordCard(
-                                        entry = entry,
-                                        onClick = { onPasswordClick(entry) },
-                                        onFavoriteClick = { passwordViewModel.toggleFavorite(entry.id) },
-                                        onDelete = { passwordViewModel.deletePassword(entry.id) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                is PasswordListUiState.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = state.message.asString(),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { passwordViewModel.loadPasswords() }) {
-                                Text(stringResource(R.string.retry))
-                            }
-                        }
+                        PasswordList(
+                            passwords = state.passwords,
+                            filter = filter,
+                            onPasswordClick = onPasswordClick,
+                            onFavoriteClick = { passwordViewModel.toggleFavorite(it.id) },
+                            onDelete = { passwordViewModel.deletePassword(it.id) }
+                        )
                     }
                 }
             }
         }
 
-        FloatingActionButton(
+        ExtendedFloatingActionButton(
             onClick = onAddClick,
+            containerColor = AppColors.primary,
+            contentColor = AppColors.onPrimary,
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text(stringResource(R.string.vault_add), style = AppTypography.labelLarge) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_password))
+                .padding(AppSpacing.md)
+        )
+    }
+}
+
+@Composable
+private fun PasswordList(
+    passwords: List<PasswordEntry>,
+    filter: ListFilter,
+    onPasswordClick: (PasswordEntry) -> Unit,
+    onFavoriteClick: (PasswordEntry) -> Unit,
+    onDelete: (PasswordEntry) -> Unit
+) {
+    val shown = remember(passwords, filter) {
+        when (filter) {
+            ListFilter.Favorites -> passwords.filter { it.isFavorite }
+            ListFilter.Weak -> passwords.filter { it.strengthBucket() == StrengthBucket.Weak }
+            else -> passwords
+        }.sortedWith(compareByDescending<PasswordEntry> { it.isFavorite }.thenBy { it.site.lowercase() })
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = AppSpacing.md, end = AppSpacing.md, top = AppSpacing.sm, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+    ) {
+        if (filter == ListFilter.All && passwords.isNotEmpty()) {
+            item { VaultSecurityDashboard(passwords = passwords, modifier = Modifier.padding(bottom = AppSpacing.sm)) }
+        }
+        if (shown.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.vault_no_match),
+                    style = AppTypography.bodyMedium,
+                    color = AppColors.textTertiary,
+                    modifier = Modifier.padding(vertical = AppSpacing.lg)
+                )
+            }
+        }
+        items(shown, key = { it.id }) { entry ->
+            PasswordCard(
+                entry = entry,
+                onClick = { onPasswordClick(entry) },
+                onFavoriteClick = { onFavoriteClick(entry) },
+                onDelete = { onDelete(entry) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun VaultSearchField(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier,
+        singleLine = true,
+        placeholder = { Text(stringResource(R.string.search_passwords), color = AppColors.textMuted) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.textTertiary) },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear), tint = AppColors.textTertiary)
+                }
+            }
+        } else null,
+        shape = RoundedCornerShape(AppCorners.medium),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = AppColors.textPrimary,
+            unfocusedTextColor = AppColors.textPrimary,
+            focusedBorderColor = AppColors.primary,
+            unfocusedBorderColor = AppColors.surfaceVariant,
+            focusedContainerColor = AppColors.surface,
+            unfocusedContainerColor = AppColors.surface,
+            cursorColor = AppColors.primary
+        )
+    )
+}
+
+@Composable
+private fun FilterRow(selected: ListFilter, onSelect: (ListFilter) -> Unit) {
+    val options: List<Pair<ListFilter, Int>> = listOf(
+        ListFilter.All to R.string.vault_filter_all,
+        ListFilter.Favorites to R.string.vault_filter_favorites,
+        ListFilter.Weak to R.string.vault_filter_weak
+    ) + PasswordCategory.ALL.map { ListFilter.Category(it) to categoryLabel(it) }
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = AppSpacing.md, vertical = AppSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+    ) {
+        items(options) { (option, label) ->
+            val isSelected = option == selected
+            val shape = RoundedCornerShape(50)
+            Text(
+                text = stringResource(label),
+                style = AppTypography.labelMedium,
+                color = if (isSelected) AppColors.onPrimary else AppColors.textSecondary,
+                modifier = Modifier
+                    .clip(shape)
+                    .background(if (isSelected) AppColors.primary else AppColors.surface)
+                    .border(1.dp, if (isSelected) AppColors.primary else AppColors.surfaceVariant, shape)
+                    .clickable(role = Role.Tab) { onSelect(option) }
+                    .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm)
+            )
         }
     }
 }
@@ -250,152 +301,94 @@ fun PasswordCard(
     onFavoriteClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val bucket = entry.strengthBucket()
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = { showDeleteDialog = true }
-            ),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            .clip(RoundedCornerShape(AppCorners.large))
+            .background(AppColors.surface)
+            .combinedClickable(onClick = onClick, onLongClick = { showDeleteDialog = true })
+            .padding(start = AppSpacing.md, top = AppSpacing.sm, bottom = AppSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .size(40.dp)
+                .clip(RoundedCornerShape(AppCorners.medium))
+                .background(AppColors.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            text = entry.site.firstOrNull()?.uppercase() ?: "?",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = entry.site,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (entry.isFavorite) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = stringResource(R.string.favorite),
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = entry.username,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Surface(
-                            shape = CircleShape,
-                            color = when (entry.strengthLevel) {
-                                "VERY_WEAK", "WEAK" -> MaterialTheme.colorScheme.errorContainer
-                                "FAIR" -> MaterialTheme.colorScheme.tertiaryContainer
-                                "GOOD" -> MaterialTheme.colorScheme.primaryContainer
-                                "STRONG" -> MaterialTheme.colorScheme.secondaryContainer
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ) {
-                            Text(
-                                text = entry.strengthLevel?.replace("_", " ") ?: "",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = when (entry.strengthLevel) {
-                                    "VERY_WEAK", "WEAK" -> MaterialTheme.colorScheme.onErrorContainer
-                                    "FAIR" -> MaterialTheme.colorScheme.onTertiaryContainer
-                                    "GOOD" -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    "STRONG" -> MaterialTheme.colorScheme.onSecondaryContainer
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                        }
-
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            Text(
-                                text = entry.category.replaceFirstChar { it.uppercase() },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
+            Text(
+                text = entry.site.firstOrNull()?.uppercase() ?: "?",
+                style = AppTypography.titleMedium,
+                color = AppColors.primary
+            )
+        }
+        Spacer(modifier = Modifier.width(AppSpacing.md))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.site,
+                style = AppTypography.bodyMedium,
+                color = AppColors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = entry.username,
+                style = AppTypography.labelMedium,
+                color = AppColors.textTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        val label = entry.strengthLabel()
+        if (bucket != null && label != null) {
+            Spacer(modifier = Modifier.width(AppSpacing.sm))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(bucket.color.copy(alpha = 0.14f))
+                    .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(6.dp).background(bucket.color, CircleShape))
+                Spacer(modifier = Modifier.width(AppSpacing.xs))
+                Text(text = stringResource(label), style = AppTypography.labelMedium, color = bucket.color)
             }
-
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                IconButton(onClick = onFavoriteClick) {
-                    Icon(
-                        imageVector = if (entry.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = if (entry.isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = if (entry.isFavorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline
-                    )
-                }
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.delete),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+        }
+        IconButton(onClick = onFavoriteClick) {
+            Icon(
+                imageVector = if (entry.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = stringResource(
+                    if (entry.isFavorite) R.string.vault_favorite_remove else R.string.vault_favorite_add
+                ),
+                tint = if (entry.isFavorite) AppColors.warning else AppColors.textMuted
+            )
         }
     }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_password_2)) },
-            text = { Text("Are you sure you want to delete this password for ${entry.site}?") },
+            containerColor = AppColors.surface,
+            title = { Text(stringResource(R.string.delete_password_2), color = AppColors.textPrimary) },
+            text = { Text(stringResource(R.string.vault_delete_confirm, entry.site), color = AppColors.textSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
                         onDelete()
                         showDeleteDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.error, contentColor = AppColors.textPrimary)
                 ) {
                     Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(R.string.cancel), color = AppColors.textSecondary)
                 }
             }
         )

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.sp
 object AppColors {
     val background = Color(0xFF0F172A)
     val surface = Color(0xFF1E293B)
+    val console = Color(0xFF070B14) // scan console log panel
     val surfaceVariant = Color(0xFF334155)
 
     val textPrimary = Color(0xFFF1F5F9)

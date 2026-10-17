@@ -39,7 +39,8 @@ fun ScanScreen(
             .background(AppColors.background)
     ) {
         when (scanState.status) {
-            ScanStatus.Analyzing -> AnimatedLoadingState(
+            ScanStatus.Analyzing -> ScanConsoleState(
+                apps = scanState.selectedApps,
                 totalApps = scanState.totalApps.coerceAtLeast(scanState.selectedApps.size.coerceAtLeast(1)),
                 scannedApps = scanState.scannedApps,
                 analysisNote = scanState.analysisNote?.asString(),

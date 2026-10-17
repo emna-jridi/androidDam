@@ -103,7 +103,8 @@ fun HomeScreen(
                     HomeShieldHero(
                         score = homeState.overallScore.toInt(),
                         appsToCheck = homeState.highRiskCount,
-                        lastScanDate = homeState.lastScanDate,
+                        caption = homeState.lastScanDate?.let { stringResource(R.string.home_last_scan, it) },
+                        actionText = stringResource(R.string.home_run_scan),
                         onScanClick = onNavigateToScan
                     )
                 }

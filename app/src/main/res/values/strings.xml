@@ -368,6 +368,137 @@
     <string name="vault_auth_failed">Authentication failed</string>
     <string name="vault_no_recovery_title">No recovery option</string>
 
+    <!-- Scan flow redesign -->
+    <string name="scan_level_smart">Smart</string>
+    <string name="scan_level_smart_desc">Rapide</string>
+    <string name="scan_level_deep">Deep</string>
+    <string name="scan_level_deep_desc">Complet, plus lent</string>
+    <string name="scan_search_hint">Rechercher une app</string>
+    <string name="scan_selected_count">%1$d sur %2$d apps</string>
+    <string name="scan_select_all">Tout sélectionner</string>
+    <string name="scan_deselect_all">Tout désélectionner</string>
+    <plurals name="scan_analyze_n">
+        <item quantity="one">Analyser %d app</item>
+        <item quantity="other">Analyser %d apps</item>
+    </plurals>
+    <string name="scan_select_at_least_one">Sélectionne au moins une app</string>
+    <string name="scan_no_app_found">Aucune app ne correspond à ta recherche.</string>
+    <string name="scan_app_permissions">%1$d permissions</string>
+    <string name="scan_console_title">Analyse en cours</string>
+    <string name="scan_console_progress">Progression</string>
+    <string name="scan_console_count">%1$d / %2$d apps</string>
+    <string name="scan_console_permissions">%1$d permissions lues</string>
+    <string name="scan_console_trackers">%1$d trackers détectés</string>
+    <string name="scan_console_ai">IA ✦ calcul du score</string>
+    <string name="scan_console_done">%1$s terminé</string>
+    <string name="scan_console_waiting">Connexion au serveur d\'analyse…</string>
+    <string name="scan_results_caption">%1$d apps analysées</string>
+    <string name="scan_new_scan">Nouveau scan</string>
+    <string name="scan_ai_advice">Conseils de l\'IA</string>
+    <string name="scan_filter_all">Toutes</string>
+    <string name="scan_app_meta">Score %1$d · %2$d trackers</string>
+    <string name="scan_empty_filter">Aucune app dans cette catégorie.</string>
+
+    <!-- App detail redesign -->
+    <string name="detail_tab_summary">Résumé</string>
+    <string name="detail_tab_permissions">Permissions</string>
+    <string name="detail_tab_trackers">Trackers</string>
+    <string name="detail_tab_history">Historique</string>
+    <string name="detail_stat_permissions">Permissions</string>
+    <string name="detail_stat_sensitive">Sensibles</string>
+    <string name="detail_stat_trackers">Trackers</string>
+    <string name="detail_why_title">Pourquoi elle est signalée</string>
+    <plurals name="detail_why_trackers">
+        <item quantity="one">%d tracker qui suit ton activité</item>
+        <item quantity="other">%d trackers qui suivent ton activité</item>
+    </plurals>
+    <string name="detail_why_clean">Rien d\'inquiétant : aucune permission sensible ni tracker connu.</string>
+    <string name="detail_todo_title">À faire</string>
+    <string name="detail_todo_remove">Retirer : %1$s</string>
+    <string name="detail_todo_path">Réglages › Autorisations</string>
+    <string name="detail_open_settings">Ouvrir les réglages de l\'app</string>
+    <string name="detail_app_not_installed">Cette app n\'est pas installée sur ce téléphone.</string>
+    <string name="detail_group_critical">Critiques</string>
+    <string name="detail_group_high">Élevées</string>
+    <string name="detail_group_medium">Moyennes</string>
+    <plurals name="detail_group_normal">
+        <item quantity="one">%d permission normale</item>
+        <item quantity="other">%d permissions normales</item>
+    </plurals>
+    <string name="detail_show">Voir</string>
+    <string name="detail_hide">Masquer</string>
+    <string name="detail_no_permissions">Aucune permission déclarée.</string>
+    <string name="detail_no_trackers">Aucun tracker connu détecté.</string>
+    <string name="detail_tracker_ads">Publicité</string>
+    <string name="detail_tracker_analytics">Statistiques</string>
+    <string name="detail_tracker_other">Suivi</string>
+    <string name="detail_history_title">Évolution du score</string>
+    <string name="detail_history_delta">%1$+d depuis le premier scan</string>
+    <string name="detail_history_empty">Pas encore d\'historique pour cette app.</string>
+    <string name="perm_camera">Caméra</string>
+    <string name="perm_camera_desc">Peut prendre des photos et des vidéos</string>
+    <string name="perm_mic">Micro</string>
+    <string name="perm_mic_desc">Peut enregistrer l\'audio</string>
+    <string name="perm_location_fine">Position précise</string>
+    <string name="perm_location_fine_desc">Sait où tu es, à quelques mètres près</string>
+    <string name="perm_location_coarse">Position approximative</string>
+    <string name="perm_location_coarse_desc">Connaît ta zone générale</string>
+    <string name="perm_location_bg">Position en arrière-plan</string>
+    <string name="perm_location_bg_desc">Te localise même quand l\'app est fermée</string>
+    <string name="perm_contacts">Contacts</string>
+    <string name="perm_contacts_desc">Lit ton carnet d\'adresses</string>
+    <string name="perm_sms">SMS</string>
+    <string name="perm_sms_desc">Lit ou envoie des SMS</string>
+    <string name="perm_phone">Téléphone</string>
+    <string name="perm_phone_desc">Accède aux appels et à ton numéro</string>
+    <string name="perm_call_log">Journal d\'appels</string>
+    <string name="perm_call_log_desc">Voit qui tu appelles</string>
+    <string name="perm_storage">Photos et fichiers</string>
+    <string name="perm_storage_desc">Lit tes photos, vidéos et fichiers</string>
+    <string name="perm_calendar">Agenda</string>
+    <string name="perm_calendar_desc">Lit tes événements</string>
+    <string name="perm_sensors">Capteurs corporels</string>
+    <string name="perm_sensors_desc">Lit tes données de santé</string>
+    <string name="perm_bluetooth">Bluetooth</string>
+    <string name="perm_bluetooth_desc">Trouve les appareils autour de toi</string>
+    <string name="perm_accounts">Comptes</string>
+    <string name="perm_accounts_desc">Voit les comptes du téléphone</string>
+    <string name="perm_internet">Internet</string>
+    <string name="perm_internet_desc">Envoie et reçoit des données</string>
+    <string name="perm_other_desc">Permission Android standard</string>
+
+    <!-- Vault list redesign -->
+    <string name="vault_lock">Lock vault</string>
+    <string name="vault_health_title">Vault health</string>
+    <plurals name="vault_health_weak_n">
+        <item quantity="one">%d weak password to change</item>
+        <item quantity="other">%d weak passwords to change</item>
+    </plurals>
+    <string name="vault_health_all_good">All your passwords are strong enough</string>
+    <string name="vault_count_weak">Weak</string>
+    <string name="vault_count_fair">Fair</string>
+    <string name="vault_count_strong">Strong</string>
+    <string name="vault_filter_all">All</string>
+    <string name="vault_filter_favorites">Favorites</string>
+    <string name="vault_filter_weak">Weak</string>
+    <string name="vault_cat_social">Social</string>
+    <string name="vault_cat_email">Email</string>
+    <string name="vault_cat_banking">Banking</string>
+    <string name="vault_cat_work">Work</string>
+    <string name="vault_cat_shopping">Shopping</string>
+    <string name="vault_cat_entertainment">Entertainment</string>
+    <string name="vault_cat_other">Other</string>
+    <string name="vault_strength_very_weak">Very weak</string>
+    <string name="vault_strength_weak">Weak</string>
+    <string name="vault_strength_fair">Fair</string>
+    <string name="vault_strength_good">Good</string>
+    <string name="vault_strength_strong">Strong</string>
+    <string name="vault_add">Add</string>
+    <string name="vault_no_match">No password matches.</string>
+    <string name="vault_delete_confirm">Delete the password for %1$s? This can\'t be undone.</string>
+    <string name="vault_favorite_add">Add to favorites</string>
+    <string name="vault_favorite_remove">Remove from favorites</string>
+
     <!-- Home redesign -->
     <string name="home_score_label">SCORE</string>
     <string name="home_state_excellent">Excellente protection</string>

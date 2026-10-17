@@ -75,7 +75,8 @@ private enum class ProtectionLevel(@StringRes val label: Int, val color: Color) 
 fun HomeShieldHero(
     score: Int,
     appsToCheck: Int,
-    lastScanDate: String?,
+    caption: String?,
+    actionText: String,
     onScanClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -123,16 +124,16 @@ fun HomeShieldHero(
             color = AppColors.textSecondary,
             textAlign = TextAlign.Center
         )
-        lastScanDate?.let {
+        caption?.let {
             Text(
-                text = stringResource(R.string.home_last_scan, it),
+                text = it,
                 style = AppTypography.labelMedium,
                 color = AppColors.textTertiary,
                 textAlign = TextAlign.Center
             )
         }
         Spacer(modifier = Modifier.height(AppSpacing.lg))
-        AppPrimaryButton(text = stringResource(R.string.home_run_scan), onClick = onScanClick)
+        AppPrimaryButton(text = actionText, onClick = onScanClick)
     }
 }
 
@@ -359,7 +360,13 @@ private fun WatchlistItem(app: RiskyAppUi, onClick: () -> Unit) {
 @Composable
 private fun HomeShieldHeroPreview() {
     Column(modifier = Modifier.padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
-        HomeShieldHero(score = 72, appsToCheck = 3, lastScanDate = "16 octobre 2026 à 14:20", onScanClick = {})
+        HomeShieldHero(
+            score = 72,
+            appsToCheck = 3,
+            caption = "Dernier scan : 16 octobre 2026 à 14:20",
+            actionText = "Lancer un scan",
+            onScanClick = {}
+        )
         RiskCountsRow(high = 3, medium = 8, safe = 41)
         QuickToolsRow(onScanApk = {}, onSearch = {}, onAlerts = {}, onVault = {})
         WatchlistSection(

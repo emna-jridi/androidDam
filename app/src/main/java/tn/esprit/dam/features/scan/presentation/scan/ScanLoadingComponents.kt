@@ -42,6 +42,23 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tn.esprit.dam.core.ui.theme.AppColors
+import tn.esprit.dam.core.ui.theme.AppCorners
+import tn.esprit.dam.core.ui.theme.AppSpacing
+import tn.esprit.dam.core.ui.theme.AppTypography
+import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
 fun InitialLoadingScreen() {
@@ -143,136 +160,150 @@ fun InitialLoadingScreen() {
     }
 }
 
+private enum class ConsoleKind { Start, Info, Ai, Done, Note }
+
+private data class ConsoleLine(val text: String, val kind: ConsoleKind)
+
+/**
+ * Analysis step as a security console. Progress, the app list and each app's permission/tracker
+ * counts are real; the per-app sub-steps are paced locally because the backend only reports a count.
+ */
 @Composable
-fun AnimatedLoadingState(
+fun ScanConsoleState(
+    apps: List<LocalAppInfo>,
     totalApps: Int,
     scannedApps: Int,
     analysisNote: String?,
     modifier: Modifier = Modifier
 ) {
-    val progress = if (totalApps > 0) scannedApps.toFloat() / totalApps.toFloat() else 0f
-    val clampedProgress = progress.coerceIn(0f, 1f)
+    val progress = if (totalApps > 0) (scannedApps.toFloat() / totalApps).coerceIn(0f, 1f) else 0f
     val animatedProgress by animateFloatAsState(
-        targetValue = clampedProgress,
-        animationSpec = tween(durationMillis = 500),
-        label = "progressAnimation"
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 300),
+        label = "consoleProgress"
     )
 
-    val infinite = rememberInfiniteTransition(label = "loading")
-    val rotation by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 2500, easing = LinearEasing)),
-        label = "rotation"
-    )
-    val pulse by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
+    // Reveal the current app's lines one by one, then wait for the next count from the server.
+    var subStep by remember { mutableIntStateOf(0) }
+    LaunchedEffect(scannedApps) {
+        subStep = 0
+        while (subStep < 3) {
+            delay(550)
+            subStep++
+        }
+    }
 
-    val percent = (animatedProgress * 100).toInt()
-    val progressColor = when {
-        percent < 30 -> AppColors.error
-        percent < 70 -> AppColors.orange
-        else -> AppColors.success
+    val startLabel = stringResource(R.string.scan_console_waiting)
+    val permissionsFmt = stringResource(R.string.scan_console_permissions)
+    val trackersFmt = stringResource(R.string.scan_console_trackers)
+    val aiLabel = stringResource(R.string.scan_console_ai)
+    val doneFmt = stringResource(R.string.scan_console_done)
+
+    val lines = remember(apps, scannedApps, subStep, analysisNote) {
+        buildList {
+            add(ConsoleLine(startLabel, ConsoleKind.Info))
+            apps.take(scannedApps.coerceAtMost(apps.size)).forEach { app ->
+                add(ConsoleLine(app.packageName, ConsoleKind.Start))
+                add(ConsoleLine(String.format(permissionsFmt, app.permissions.size), ConsoleKind.Info))
+                add(ConsoleLine(String.format(trackersFmt, app.trackers.size), ConsoleKind.Info))
+                add(ConsoleLine(String.format(doneFmt, app.displayName), ConsoleKind.Done))
+            }
+            apps.getOrNull(scannedApps)?.let { current ->
+                add(ConsoleLine(current.packageName, ConsoleKind.Start))
+                if (subStep >= 1) add(ConsoleLine(String.format(permissionsFmt, current.permissions.size), ConsoleKind.Info))
+                if (subStep >= 2) add(ConsoleLine(String.format(trackersFmt, current.trackers.size), ConsoleKind.Info))
+                if (subStep >= 3) add(ConsoleLine(aiLabel, ConsoleKind.Ai))
+            }
+            analysisNote?.let { add(ConsoleLine(it, ConsoleKind.Note)) }
+        }.takeLast(MAX_CONSOLE_LINES)
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(AppColors.background)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(AppSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
-        Box(
-            modifier = Modifier.size(180.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.size(180.dp).rotate(rotation)) {
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            AppColors.primary.copy(alpha = 0.5f),
-                            AppColors.primaryLight,
-                            Color.Transparent
-                        )
-                    ),
-                    startAngle = 0f,
-                    sweepAngle = 300f,
-                    useCenter = false,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+        Text(
+            text = stringResource(R.string.scan_console_title),
+            style = AppTypography.titleLarge,
+            color = AppColors.textPrimary
+        )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.scan_console_progress),
+                    style = AppTypography.labelMedium,
+                    color = AppColors.textTertiary
+                )
+                Text(
+                    text = "${(animatedProgress * 100).toInt()}%",
+                    style = AppTypography.displayLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium),
+                    color = AppColors.textPrimary
                 )
             }
-
-            Canvas(modifier = Modifier.size(150.dp)) {
-                drawArc(
-                    color = AppColors.surfaceVariant,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-
-            Canvas(modifier = Modifier.size(150.dp)) {
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(progressColor, progressColor.copy(alpha = 0.7f))
-                    ),
-                    startAngle = -90f,
-                    sweepAngle = 360f * animatedProgress,
-                    useCenter = false,
-                    style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .scale(pulse)
-                    .background(AppColors.surface, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Security,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = AppColors.primary
-                )
-            }
+            Text(
+                text = stringResource(R.string.scan_console_count, scannedApps, totalApps),
+                style = AppTypography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                color = AppColors.textSecondary
+            )
         }
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            "$percent%",
-            style = MaterialTheme.typography.displaySmall,
-            color = progressColor,
-            fontWeight = FontWeight.Bold
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(50)),
+            color = AppColors.primary,
+            trackColor = AppColors.surfaceVariant
         )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            stringResource(R.string.security_analysis_in_progress),
-            style = MaterialTheme.typography.titleLarge,
-            color = AppColors.textPrimary,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "$scannedApps of $totalApps applications analyzed",
-            style = MaterialTheme.typography.bodyMedium,
-            color = AppColors.textSecondary
-        )
+        ConsolePanel(lines = lines, modifier = Modifier.weight(1f))
     }
 }
+
+@Composable
+private fun ConsolePanel(lines: List<ConsoleLine>, modifier: Modifier = Modifier) {
+    val cursorAlpha by rememberInfiniteTransition(label = "cursor").animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 500), RepeatMode.Reverse),
+        label = "cursorBlink"
+    )
+    val mono = AppTypography.labelMedium.copy(fontFamily = FontFamily.Monospace, lineHeight = 20.sp)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppCorners.large))
+            .background(AppColors.console)
+            .border(1.dp, AppColors.surfaceVariant, RoundedCornerShape(AppCorners.large))
+            .padding(AppSpacing.md),
+        verticalArrangement = Arrangement.Bottom
+    ) {
+        lines.forEachIndexed { index, line ->
+            val (prefix, color) = when (line.kind) {
+                ConsoleKind.Start -> "▶ " to AppColors.primary
+                ConsoleKind.Info -> "  " to AppColors.textTertiary
+                ConsoleKind.Ai -> "  " to AppColors.accentViolet
+                ConsoleKind.Done -> "✓ " to AppColors.success
+                ConsoleKind.Note -> "✦ " to AppColors.accentViolet
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = prefix + line.text,
+                    style = mono,
+                    color = color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (index == lines.lastIndex) {
+                    Text(text = " ▍", style = mono, color = AppColors.primary, modifier = Modifier.alpha(cursorAlpha))
+                }
+            }
+        }
+    }
+}
+
+private const val MAX_CONSOLE_LINES = 16
