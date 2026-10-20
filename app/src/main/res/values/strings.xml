@@ -99,7 +99,6 @@
     <string name="profile_error_load">Erreur de chargement du profil</string>
     <string name="profile_error_update">Erreur de mise à jour</string>
     <string name="profile_error_avatar_update">Erreur de mise à jour de l\'avatar</string>
-    <string name="avatar_error_generate">Erreur de génération</string>
 
     <!-- UI text moved out of Compose code -->
     <string name="retour">Retour</string>

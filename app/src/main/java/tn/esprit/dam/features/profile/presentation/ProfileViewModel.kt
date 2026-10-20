@@ -27,9 +27,6 @@ class ProfileViewModel @Inject constructor(
     private val _showEditDialog = MutableStateFlow(false)
     val showEditDialog: StateFlow<Boolean> = _showEditDialog.asStateFlow()
 
-    private val _showAvatarCustomizer = MutableStateFlow(false)
-    val showAvatarCustomizer: StateFlow<Boolean> = _showAvatarCustomizer.asStateFlow()
-
     fun loadProfile() {
         viewModelScope.launch {
             try {
@@ -107,7 +104,6 @@ class ProfileViewModel @Inject constructor(
                     user = updatedUser,
                     localAvatarPath = localAvatarPath
                 )
-                _showAvatarCustomizer.value = false
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(
@@ -127,7 +123,4 @@ class ProfileViewModel @Inject constructor(
 
     fun showEditDialog() { _showEditDialog.value = true }
     fun hideEditDialog() { _showEditDialog.value = false }
-
-    fun showAvatarCustomizer() { _showAvatarCustomizer.value = true }
-    fun hideAvatarCustomizer() { _showAvatarCustomizer.value = false }
 }

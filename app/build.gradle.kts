@@ -104,11 +104,6 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.firebase.messaging)
 
-    // ML
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
-    implementation(libs.tensorflow.lite.metadata)
-
     // Logging
     implementation(libs.timber)
 

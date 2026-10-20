@@ -23,8 +23,6 @@ securityCrypto = "1.1.0-alpha06"
 biometric = "1.1.0"
 firebaseMessaging = "23.4.0"
 googleServices = "4.4.2"
-tensorflowLite = "2.14.0"
-tensorflowLiteSupport = "0.4.4"
 timber = "5.0.1"
 
 [libraries]
@@ -69,11 +67,6 @@ coil-svg = { group = "io.coil-kt", name = "coil-svg", version.ref = "coil" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
-
-# ML
-tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
-tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
-tensorflow-lite-metadata = { group = "org.tensorflow", name = "tensorflow-lite-metadata", version.ref = "tensorflowLiteSupport" }
 
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
