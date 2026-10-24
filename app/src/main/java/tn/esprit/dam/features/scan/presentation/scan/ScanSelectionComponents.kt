@@ -53,7 +53,6 @@ import tn.esprit.dam.core.ui.theme.AppColors
 import tn.esprit.dam.core.ui.theme.AppCorners
 import tn.esprit.dam.core.ui.theme.AppSpacing
 import tn.esprit.dam.core.ui.theme.AppTypography
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
 
 /** Sticky footer with the one primary action of the selection step. */
@@ -87,12 +86,10 @@ fun SelectionContent(
     availableApps: List<LocalAppInfo>,
     selectedCount: Int,
     error: String?,
-    scanLevel: ScanLevel,
     onToggleApp: (String) -> Unit,
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
     onClearError: () -> Unit,
-    onLevelChange: (ScanLevel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var query by rememberSaveable { mutableStateOf("") }
@@ -107,8 +104,6 @@ fun SelectionContent(
         contentPadding = PaddingValues(AppSpacing.md),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
-        item { ScanLevelSegment(scanLevel = scanLevel, onLevelChange = onLevelChange) }
-
         item {
             ScanSearchField(query = query, onQueryChange = { query = it })
         }
@@ -154,60 +149,6 @@ fun SelectionContent(
         items(shownApps, key = { it.packageName }) { app ->
             AppRow(app = app, onToggle = { onToggleApp(app.packageName) })
         }
-    }
-}
-
-/** Two-option segmented control: Smart (fast) or Deep (thorough). */
-@Composable
-private fun ScanLevelSegment(scanLevel: ScanLevel, onLevelChange: (ScanLevel) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(AppCorners.large))
-            .background(AppColors.surface)
-            .padding(AppSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
-    ) {
-        LevelOption(
-            title = stringResource(R.string.scan_level_smart),
-            subtitle = stringResource(R.string.scan_level_smart_desc),
-            selected = scanLevel == ScanLevel.SMART,
-            onClick = { onLevelChange(ScanLevel.SMART) },
-            modifier = Modifier.weight(1f)
-        )
-        LevelOption(
-            title = stringResource(R.string.scan_level_deep),
-            subtitle = stringResource(R.string.scan_level_deep_desc),
-            selected = scanLevel == ScanLevel.DEEP,
-            onClick = { onLevelChange(ScanLevel.DEEP) },
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun LevelOption(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(AppCorners.medium)
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .background(if (selected) AppColors.primaryContainer else AppColors.surface)
-            .border(1.dp, if (selected) AppColors.primary.copy(alpha = 0.5f) else AppColors.surface, shape)
-            .clickable(role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm)
-    ) {
-        Text(
-            text = title,
-            style = AppTypography.labelLarge,
-            color = if (selected) AppColors.primary else AppColors.textPrimary
-        )
-        Text(text = subtitle, style = AppTypography.labelMedium, color = AppColors.textTertiary)
     }
 }
 

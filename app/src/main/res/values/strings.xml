@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">ShadowGuard</string>
     <string name="shadowguard_title">ShadowGuard</string>
     <string name="shadowguard_subtitle">Protection et confidentialité des données</string>
@@ -62,12 +62,9 @@
     <string name="error_app_not_found">Application non trouvée : %1$s</string>
     <string name="error_dashboard_load">Impossible de charger le tableau de bord</string>
     <string name="error_apk_scan">Erreur lors de l\'analyse APK</string>
-    <string name="error_scan_timeout_deep">Délai dépassé : l\'analyse cloud prend plus de 5 minutes. Vérifiez l\'état du serveur N8N.</string>
-    <string name="error_scan_timeout_smart">Délai dépassé : l\'analyse prend plus de 2 minutes. Vérifiez votre connexion réseau.</string>
     <string name="scan_note_quick">Analyse rapide des applications sélectionnées…</string>
     <string name="scan_note_apk">Validation et analyse APK en cours…</string>
     <string name="scan_note_done_no_details">Analyse terminée. Détails non disponibles.</string>
-    <string name="scan_note_deep_suggestion">Suggestion : lancez un scan DEEP pour approfondir (confiance %1$d %%).</string>
     <string name="error_unknown_en">Unknown error</string>
     <string name="error_unexpected">Erreur inattendue : %1$s</string>
     <string name="darkweb_error_check_failed">Check failed: %1$s</string>
@@ -376,10 +373,6 @@
     <string name="vault_no_recovery_title">No recovery option</string>
 
     <!-- Scan flow redesign -->
-    <string name="scan_level_smart">Smart</string>
-    <string name="scan_level_smart_desc">Rapide</string>
-    <string name="scan_level_deep">Deep</string>
-    <string name="scan_level_deep_desc">Complet, plus lent</string>
     <string name="scan_search_hint">Rechercher une app</string>
     <string name="scan_selected_count">%1$d sur %2$d apps</string>
     <string name="scan_select_all">Tout sélectionner</string>

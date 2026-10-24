@@ -1,7 +1,6 @@
 package tn.esprit.dam.features.scan.data.remote.dto
 
 import tn.esprit.dam.features.scan.domain.model.AnalysisType
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -13,8 +12,6 @@ data class ScanResultResponse(
     val packageName: String? = null,
     @SerialName("appName")
     val appName: String? = null,
-    @SerialName("level")
-    val level: ScanLevel? = null,
     @SerialName("analysisType")
     val analysisType: AnalysisType? = null,
     @SerialName("status")
@@ -29,8 +26,6 @@ data class ScanResultResponse(
     val overallScore: Float? = null,
     @SerialName("confidenceScore")
     val confidenceScore: Double? = null,
-    @SerialName("recommendDeepAnalysis")
-    val recommendDeepAnalysis: Boolean? = null,
     @SerialName("ml")
     val ml: ScanMLResult? = null,
     @SerialName("trackers")

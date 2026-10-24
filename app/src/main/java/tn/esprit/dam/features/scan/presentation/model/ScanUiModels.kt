@@ -3,7 +3,6 @@
 import android.graphics.drawable.Drawable
 import tn.esprit.dam.core.ui.UiText
 import tn.esprit.dam.features.scan.domain.SecurityUtils
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.domain.ScanRiskResult
 import tn.esprit.dam.features.scan.data.remote.dto.AppResult
 import tn.esprit.dam.features.scan.domain.RiskLevel
@@ -180,7 +179,6 @@ data class ScanState(
     val scanId: String? = null,
     val status: ScanStatus = ScanStatus.Idle,
     val selectedApps: List<LocalAppInfo> = emptyList(),
-    val scanLevel: ScanLevel = ScanLevel.SMART,
     val totalApps: Int = 0,
     val scannedApps: Int = 0,
     val highRiskCount: Int = 0,
@@ -188,7 +186,6 @@ data class ScanState(
     val lowRiskCount: Int = 0,
     val averageScore: Float = 0f,
     val confidenceScore: Int? = null,
-    val recommendDeepAnalysis: Boolean = false,
     val error: UiText? = null,
     val showSystemApps: Boolean = false,
     val analysisNote: UiText? = null,

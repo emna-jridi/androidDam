@@ -23,7 +23,6 @@ import tn.esprit.dam.features.scan.data.remote.dto.StartScanAppDto
 import tn.esprit.dam.features.scan.data.remote.dto.StartScanRequest
 import tn.esprit.dam.features.scan.data.remote.dto.StartScanResponse
 import tn.esprit.dam.features.scan.domain.model.AnalysisType
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.data.remote.dto.SearchAppResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
@@ -46,8 +45,7 @@ class ScanApi @Inject constructor(
     suspend fun startScan(
         apps: List<String>,
         deviceId: String,
-        includeSystemApps: Boolean = false,
-        level: ScanLevel = ScanLevel.SMART
+        includeSystemApps: Boolean = false
     ): ApiResult<StartScanResponse> {
         if (apps.isEmpty()) {
             return ApiResult.ApiError(context.getString(R.string.error_no_apps_selected), -1)
@@ -80,7 +78,6 @@ class ScanApi @Inject constructor(
             includeSystemApps = false,
             apps = appDtos,
             timestamp = timestamp,
-            level = level,
             analysisType = AnalysisType.INSTALLED_APP
         )
 

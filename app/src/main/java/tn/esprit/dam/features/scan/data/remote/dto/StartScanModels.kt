@@ -1,7 +1,6 @@
 package tn.esprit.dam.features.scan.data.remote.dto
 
 import tn.esprit.dam.features.scan.domain.model.AnalysisType
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -17,8 +16,6 @@ data class StartScanRequest(
     val apps: List<StartScanAppDto>,
     @SerialName("timestamp")
     val timestamp: String,
-    @SerialName("level")
-    val level: ScanLevel = ScanLevel.SMART,
     @SerialName("analysisType")
     val analysisType: AnalysisType = AnalysisType.INSTALLED_APP
 )
@@ -47,8 +44,6 @@ data class StartScanResponse(
     val platform: String? = null,
     @SerialName("createdAt")
     val createdAt: String? = null,
-    @SerialName("level")
-    val level: ScanLevel? = null,
     @SerialName("analysisType")
     val analysisType: AnalysisType? = null
 )

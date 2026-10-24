@@ -8,7 +8,6 @@ import tn.esprit.dam.features.scan.data.remote.dto.LatestScanResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanStatusResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
 import tn.esprit.dam.features.scan.data.remote.dto.StartScanResponse
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.data.remote.dto.SearchAppResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryResponse
 
@@ -18,10 +17,9 @@ class ScanRepositoryImpl @Inject constructor(
     override suspend fun startScan(
         apps: List<String>,
         deviceId: String,
-        includeSystemApps: Boolean,
-        level: ScanLevel
+        includeSystemApps: Boolean
     ): ApiResult<StartScanResponse> {
-        return apiService.startScan(apps, deviceId, includeSystemApps, level)
+        return apiService.startScan(apps, deviceId, includeSystemApps)
     }
 
     override suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse> {

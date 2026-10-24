@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import tn.esprit.dam.R
 import tn.esprit.dam.core.network.ApiResult
 import tn.esprit.dam.core.ui.UiText
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.data.repository.ScanRepository
 import tn.esprit.dam.features.scan.domain.usecase.GetScannableAppsUseCase
 import tn.esprit.dam.features.scan.domain.usecase.MultiScanEvent
@@ -30,7 +29,6 @@ import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
 import tn.esprit.dam.features.scan.presentation.model.ScanState
 import tn.esprit.dam.features.scan.presentation.model.ScanStatus
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
@@ -84,10 +82,6 @@ class ScanViewModel @Inject constructor(
         loadAvailableApps()
     }
 
-    fun setScanLevel(level: ScanLevel) {
-        _scanState.update { it.copy(scanLevel = level) }
-    }
-
     // --- scanning ------------------------------------------------------------------------------
 
     fun startScan() {
@@ -119,8 +113,7 @@ class ScanViewModel @Inject constructor(
                 highRiskCount = 0,
                 mediumRiskCount = 0,
                 lowRiskCount = 0,
-                averageScore = 0f,
-                recommendDeepAnalysis = false
+                averageScore = 0f
             )
         }
 
@@ -136,7 +129,6 @@ class ScanViewModel @Inject constructor(
                         selectedApps = event.apps,
                         averageScore = event.averageScore,
                         analysisNote = UiText.Raw(event.note),
-                        recommendDeepAnalysis = event.counts.high > 0,
                         error = null,
                         mlExplanation = event.explanation,
                         mlRecommendations = event.recommendations,
@@ -159,8 +151,7 @@ class ScanViewModel @Inject constructor(
         val result = repository.startScan(
             apps = selectedApps.map { it.packageName },
             deviceId = deviceId,
-            includeSystemApps = false,
-            level = _scanState.value.scanLevel
+            includeSystemApps = false
         )
         if (result !is ApiResult.Success) {
             fail(UiText.Raw(result.errorMessage().orEmpty()))
@@ -185,29 +176,21 @@ class ScanViewModel @Inject constructor(
 
     private fun startPolling(scanId: String) {
         pollingJob?.cancel()
-        val level = _scanState.value.scanLevel
         pollingJob = viewModelScope.launch {
-            pollScan(scanId, level).collect { event -> onPollEvent(event, level) }
+            pollScan(scanId).collect { event -> onPollEvent(event) }
         }
     }
 
-    private fun onPollEvent(event: ScanPollEvent, level: ScanLevel) {
+    private fun onPollEvent(event: ScanPollEvent) {
         when (event) {
             is ScanPollEvent.Progress -> {
                 val status = event.status
-                val deepScanHint = if (status.recommendDeepAnalysis == true && level == ScanLevel.SMART) {
-                    UiText.Res(R.string.scan_note_deep_suggestion, status.confidenceScore?.roundToInt() ?: 0)
-                } else {
-                    null
-                }
                 _scanState.update {
                     it.copy(
                         scannedApps = status.scannedApps ?: it.scannedApps,
                         totalApps = status.totalApps ?: it.totalApps,
                         averageScore = status.results?.averageScore ?: 0f,
-                        confidenceScore = status.results?.confidenceScore?.toInt(),
-                        recommendDeepAnalysis = status.results?.recommendDeepAnalysis ?: false,
-                        analysisNote = deepScanHint ?: it.analysisNote
+                        confidenceScore = status.results?.confidenceScore?.toInt()
                     ).withCounts(
                         RiskCounts(
                             high = status.results?.highRiskApps ?: 0,
@@ -225,7 +208,6 @@ class ScanViewModel @Inject constructor(
                     scannedApps = 1,
                     averageScore = event.app.riskResult?.score?.toFloat() ?: 0f,
                     confidenceScore = event.confidenceScore,
-                    recommendDeepAnalysis = event.recommendDeepAnalysis,
                     scanCompleted = true
                 ).withCounts(RiskCounts.of(listOf(event.app)))
             }
@@ -237,11 +219,7 @@ class ScanViewModel @Inject constructor(
                 )
             }
             ScanPollEvent.Failed -> fail(UiText.Res(R.string.error_scan_failed))
-            ScanPollEvent.TimedOut -> fail(
-                UiText.Res(
-                    if (level == ScanLevel.DEEP) R.string.error_scan_timeout_deep else R.string.error_scan_timeout_smart
-                )
-            )
+            ScanPollEvent.TimedOut -> fail(UiText.Res(R.string.error_scan_timeout))
         }
     }
 
@@ -251,7 +229,6 @@ class ScanViewModel @Inject constructor(
                 it.copy(
                     status = ScanStatus.Analyzing,
                     error = null,
-                    scanLevel = ScanLevel.DEEP,
                     analysisNote = UiText.Res(R.string.scan_note_apk),
                     selectedApps = emptyList(),
                     totalApps = 1,

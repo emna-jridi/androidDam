@@ -6,7 +6,6 @@ import tn.esprit.dam.features.scan.data.remote.dto.LatestScanResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanStatusResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
 import tn.esprit.dam.features.scan.data.remote.dto.StartScanResponse
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.data.remote.dto.SearchAppResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryResponse
 
@@ -14,8 +13,7 @@ interface ScanRepository {
     suspend fun startScan(
         apps: List<String>,
         deviceId: String,
-        includeSystemApps: Boolean = false,
-        level: ScanLevel = ScanLevel.SMART
+        includeSystemApps: Boolean = false
     ): ApiResult<StartScanResponse>
 
     suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse>

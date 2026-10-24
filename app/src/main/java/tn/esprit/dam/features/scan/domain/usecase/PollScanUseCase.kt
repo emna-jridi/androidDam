@@ -4,7 +4,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import tn.esprit.dam.core.network.ApiResult
-import tn.esprit.dam.features.scan.domain.model.ScanLevel
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanStatusResponse
 import tn.esprit.dam.features.scan.data.repository.ScanRepository
@@ -19,8 +18,7 @@ sealed interface ScanPollEvent {
 
     data class Completed(
         val app: LocalAppInfo,
-        val confidenceScore: Int?,
-        val recommendDeepAnalysis: Boolean
+        val confidenceScore: Int?
     ) : ScanPollEvent
 
     /** The server says the scan finished but the result could not be fetched. */
@@ -33,10 +31,8 @@ sealed interface ScanPollEvent {
 class PollScanUseCase @Inject constructor(
     private val repository: ScanRepository
 ) {
-    operator fun invoke(scanId: String, level: ScanLevel): Flow<ScanPollEvent> = flow {
-        val maxAttempts = if (level == ScanLevel.DEEP) DEEP_MAX_POLLS else SMART_MAX_POLLS
-
-        repeat(maxAttempts) {
+    operator fun invoke(scanId: String): Flow<ScanPollEvent> = flow {
+        repeat(MAX_POLLS) {
             delay(POLL_INTERVAL_MS)
             // Transient errors are ignored: the next poll simply tries again.
             val status = (repository.getScanStatus(scanId) as? ApiResult.Success)?.data ?: return@repeat
@@ -108,13 +104,12 @@ class PollScanUseCase @Inject constructor(
                 }
             )
         )
-        return ScanPollEvent.Completed(app, confidenceScore?.toInt(), recommendDeepAnalysis ?: false)
+        return ScanPollEvent.Completed(app, confidenceScore?.toInt())
     }
 
     private companion object {
         const val POLL_INTERVAL_MS = 3_000L
         const val RESULT_SETTLE_DELAY_MS = 300L
-        const val SMART_MAX_POLLS = 40
-        const val DEEP_MAX_POLLS = 100
+        const val MAX_POLLS = 100 // 5 min: APK upload + LightGBM + SAAT
     }
 }

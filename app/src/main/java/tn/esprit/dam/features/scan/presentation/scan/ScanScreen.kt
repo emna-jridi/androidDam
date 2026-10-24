@@ -60,12 +60,10 @@ fun ScanScreen(
                 availableApps = availableApps,
                 selectedCount = scanState.selectedApps.size,
                 error = scanState.error?.asString(),
-                scanLevel = scanState.scanLevel,
                 onToggleApp = { viewModel.toggleAppSelection(it) },
                 onSelectAll = { viewModel.selectAllApps() },
                 onDeselectAll = { viewModel.deselectAllApps() },
                 onClearError = { viewModel.clearError() },
-                onLevelChange = { viewModel.setScanLevel(it) },
                 modifier = Modifier.weight(1f)
             )
         }
