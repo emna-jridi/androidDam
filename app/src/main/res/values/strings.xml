@@ -36,16 +36,11 @@
     <string name="nav_profile">Profil</string>
     
     <!-- Error Messages -->
-    <string name="error_no_apps_selected">Aucune application sélectionnée</string>
-    <string name="error_too_many_apps">Trop d\'applications (maximum 100)</string>
     <string name="error_user_id_required">Identification utilisateur requise</string>
-    <string name="error_device_id_required">Identification appareil requise</string>
-    <string name="error_invalid_package">Nom de package invalide : %1$s</string>
     <string name="error_scan_id_required">Identifiant de scan requis</string>
     <string name="error_scan_id_invalid">Identifiant de scan invalide</string>
     <string name="error_cannot_read_apk">Impossible de lire le fichier APK</string>
     <string name="error_server">Erreur serveur (HTTP %1$d) : %2$s</string>
-    <string name="error_scan_id_empty">Erreur serveur : scanId vide</string>
     <string name="error_empty_response">Erreur serveur : données vides</string>
     <string name="error_network">Erreur de connexion</string>
     <string name="error_network_with_message">Erreur réseau : %1$s</string>
@@ -62,9 +57,10 @@
     <string name="error_app_not_found">Application non trouvée : %1$s</string>
     <string name="error_dashboard_load">Impossible de charger le tableau de bord</string>
     <string name="error_apk_scan">Erreur lors de l\'analyse APK</string>
-    <string name="scan_note_quick">Analyse rapide des applications sélectionnées…</string>
+    <string name="scan_note_quick">Envoi et analyse des applications sélectionnées…</string>
     <string name="scan_note_apk">Validation et analyse APK en cours…</string>
-    <string name="scan_note_done_no_details">Analyse terminée. Détails non disponibles.</string>
+    <string name="scan_note_done">Analyse terminée sur %1$d application(s).</string>
+    <string name="scan_note_done_local">Analyse terminée. %1$d application(s) analysée(s) en mode local (APK illisible ou serveur injoignable).</string>
     <string name="error_unknown_en">Unknown error</string>
     <string name="error_unexpected">Erreur inattendue : %1$s</string>
     <string name="darkweb_error_check_failed">Check failed: %1$s</string>

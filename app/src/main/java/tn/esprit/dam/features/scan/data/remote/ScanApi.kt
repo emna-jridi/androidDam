@@ -1,35 +1,32 @@
 package tn.esprit.dam.features.scan.data.remote
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.forms.InputProvider
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.forms.formData
-import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.contentType
+import io.ktor.utils.io.streams.asInput
 import tn.esprit.dam.R
 import tn.esprit.dam.core.network.ApiResult
 import tn.esprit.dam.core.network.safeApiCall
 import tn.esprit.dam.features.scan.data.remote.dto.AppDetailsResponse
 import tn.esprit.dam.features.scan.data.remote.dto.LatestScanResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanStatusResponse
-import tn.esprit.dam.features.scan.data.remote.dto.StartScanAppDto
-import tn.esprit.dam.features.scan.data.remote.dto.StartScanRequest
 import tn.esprit.dam.features.scan.data.remote.dto.StartScanResponse
-import tn.esprit.dam.features.scan.domain.model.AnalysisType
 import tn.esprit.dam.features.scan.data.remote.dto.SearchAppResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.io.InputStream
+import java.io.File
 import kotlinx.coroutines.delay
 
 @Singleton
@@ -39,54 +36,9 @@ class ScanApi @Inject constructor(
 ) {
     companion object {
         private const val APK_SCAN_POLL_INTERVAL_MS = 3_000L
-        private const val APK_SCAN_MAX_POLLS = 100
-    }
-
-    suspend fun startScan(
-        apps: List<String>,
-        deviceId: String,
-        includeSystemApps: Boolean = false
-    ): ApiResult<StartScanResponse> {
-        if (apps.isEmpty()) {
-            return ApiResult.ApiError(context.getString(R.string.error_no_apps_selected), -1)
-        }
-        if (apps.size > 100) {
-            return ApiResult.ApiError(context.getString(R.string.error_too_many_apps), -1)
-        }
-        if (deviceId.isBlank()) {
-            return ApiResult.ApiError(context.getString(R.string.error_device_id_required), -1)
-        }
-
-        val invalidPackages = apps.filter { !it.matches(Regex("^[a-zA-Z0-9._]+$")) }
-        if (invalidPackages.isNotEmpty()) {
-            return ApiResult.ApiError(context.getString(R.string.error_invalid_package, invalidPackages.first()), -1)
-        }
-
-        val appDtos = apps.map { packageName ->
-            StartScanAppDto(
-                packageName = packageName,
-                displayName = "",
-                category = null
-            )
-        }
-
-        val timestamp = java.time.Instant.now().toString()
-
-        val request = StartScanRequest(
-            deviceId = deviceId,
-            platform = "android",
-            includeSystemApps = false,
-            apps = appDtos,
-            timestamp = timestamp,
-            analysisType = AnalysisType.INSTALLED_APP
-        )
-
-        return safeApiCall {
-            client.post("/api/scan/start") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-        }
+        private const val APK_SCAN_MAX_POLLS = 100 // 5 min: upload + LightGBM + SAAT
+        private const val ANALYSIS_APK_UPLOAD = "apk_upload"
+        private const val ANALYSIS_INSTALLED_APP = "installed_app"
     }
 
     suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse> {
@@ -135,25 +87,57 @@ class ScanApi @Inject constructor(
         }
     }
 
+    /** Scans an APK the user picked (file manager, download...). */
     suspend fun scanApk(uri: Uri, deviceId: String?): ApiResult<AppDetailsResponse> {
         val contentResolver = context.contentResolver
         val fileName = queryFileName(uri) ?: "apk-${System.currentTimeMillis()}.apk"
 
-        val inputStream: InputStream = contentResolver.openInputStream(uri)
+        contentResolver.openInputStream(uri)?.close()
             ?: return ApiResult.ApiError(context.getString(R.string.error_cannot_read_apk), -1)
 
-        val bytes = inputStream.use { it.readBytes() }
+        val apk = InputProvider {
+            (contentResolver.openInputStream(uri) ?: error("APK no longer readable")).asInput()
+        }
+        return uploadAndPoll(fileName, ANALYSIS_APK_UPLOAD, deviceId, apk)
+    }
 
+    /** Scans an installed app by uploading its own APK (base.apk is readable by any app). */
+    suspend fun scanInstalledApp(packageName: String, deviceId: String?): ApiResult<AppDetailsResponse> {
+        val file = installedApkFile(packageName)
+            ?: return ApiResult.ApiError(context.getString(R.string.error_cannot_read_apk), -1)
+
+        val apk = InputProvider(file.length()) { file.inputStream().asInput() }
+        return uploadAndPoll("$packageName.apk", ANALYSIS_INSTALLED_APP, deviceId, apk)
+    }
+
+    private fun installedApkFile(packageName: String): File? = runCatching {
+        val pm = context.packageManager
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getApplicationInfo(packageName, 0)
+        }
+        File(info.sourceDir).takeIf { it.canRead() }
+    }.getOrNull()
+
+    /** Streams the APK to /scan/start (no full copy in memory), then polls until the scan ends. */
+    private suspend fun uploadAndPoll(
+        fileName: String,
+        analysisType: String,
+        deviceId: String?,
+        apk: InputProvider
+    ): ApiResult<AppDetailsResponse> {
         val started = safeApiCall<StartScanResponse> {
             client.submitFormWithBinaryData(
                 url = "/api/scan/start",
                 formData = formData {
                     deviceId?.let { append("deviceId", it) }
-                    append("analysisType", "apk_upload")
+                    append("analysisType", analysisType)
 
                     append(
                         key = "apkFile",
-                        value = bytes,
+                        value = apk,
                         headers = Headers.build {
                             append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
                             append(HttpHeaders.ContentType, "application/vnd.android.package-archive")

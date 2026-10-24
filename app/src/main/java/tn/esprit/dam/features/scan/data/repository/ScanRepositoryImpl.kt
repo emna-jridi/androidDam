@@ -7,21 +7,12 @@ import tn.esprit.dam.features.scan.data.remote.dto.AppDetailsResponse
 import tn.esprit.dam.features.scan.data.remote.dto.LatestScanResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanStatusResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanResultResponse
-import tn.esprit.dam.features.scan.data.remote.dto.StartScanResponse
 import tn.esprit.dam.features.scan.data.remote.dto.SearchAppResponse
 import tn.esprit.dam.features.scan.data.remote.dto.ScanHistoryResponse
 
 class ScanRepositoryImpl @Inject constructor(
     private val apiService: ScanApi
 ) : ScanRepository {
-    override suspend fun startScan(
-        apps: List<String>,
-        deviceId: String,
-        includeSystemApps: Boolean
-    ): ApiResult<StartScanResponse> {
-        return apiService.startScan(apps, deviceId, includeSystemApps)
-    }
-
     override suspend fun getScanStatus(scanId: String): ApiResult<ScanStatusResponse> {
         return apiService.getScanStatus(scanId)
     }
@@ -58,5 +49,12 @@ class ScanRepositoryImpl @Inject constructor(
         deviceId: String?
     ): ApiResult<AppDetailsResponse> {
         return apiService.scanApk(uri, deviceId)
+    }
+
+    override suspend fun scanInstalledApp(
+        packageName: String,
+        deviceId: String?
+    ): ApiResult<AppDetailsResponse> {
+        return apiService.scanInstalledApp(packageName, deviceId)
     }
 }

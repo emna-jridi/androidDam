@@ -5,32 +5,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class StartScanRequest(
-    @SerialName("deviceId")
-    val deviceId: String,
-    @SerialName("platform")
-    val platform: String = "android",
-    @SerialName("includeSystemApps")
-    val includeSystemApps: Boolean = false,
-    @SerialName("apps")
-    val apps: List<StartScanAppDto>,
-    @SerialName("timestamp")
-    val timestamp: String,
-    @SerialName("analysisType")
-    val analysisType: AnalysisType = AnalysisType.INSTALLED_APP
-)
-
-@Serializable
-data class StartScanAppDto(
-    @SerialName("packageName")
-    val packageName: String,
-    @SerialName("displayName")
-    val displayName: String,
-    @SerialName("category")
-    val category: String? = null
-)
-
-@Serializable
 data class StartScanResponse(
     @SerialName("scanId")
     val scanId: String,

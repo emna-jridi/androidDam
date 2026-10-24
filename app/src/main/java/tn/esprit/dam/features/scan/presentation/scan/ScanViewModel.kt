@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,14 +15,11 @@ import kotlinx.coroutines.launch
 import tn.esprit.dam.R
 import tn.esprit.dam.core.network.ApiResult
 import tn.esprit.dam.core.ui.UiText
-import tn.esprit.dam.features.scan.data.repository.ScanRepository
 import tn.esprit.dam.features.scan.domain.usecase.GetScannableAppsUseCase
 import tn.esprit.dam.features.scan.domain.usecase.MultiScanEvent
-import tn.esprit.dam.features.scan.domain.usecase.PollScanUseCase
 import tn.esprit.dam.features.scan.domain.usecase.QuickMultiScanUseCase
 import tn.esprit.dam.features.scan.domain.usecase.RiskCounts
 import tn.esprit.dam.features.scan.domain.usecase.ScanApkUseCase
-import tn.esprit.dam.features.scan.domain.usecase.ScanPollEvent
 import tn.esprit.dam.features.scan.domain.usecase.errorMessage
 import tn.esprit.dam.features.scan.presentation.model.LocalAppInfo
 import tn.esprit.dam.features.scan.presentation.model.ScanState
@@ -32,10 +28,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
-    private val repository: ScanRepository,
     private val getScannableApps: GetScannableAppsUseCase,
     private val quickMultiScan: QuickMultiScanUseCase,
-    private val pollScan: PollScanUseCase,
     private val scanApkUseCase: ScanApkUseCase
 ) : ViewModel() {
     private val _scanState = MutableStateFlow(ScanState())
@@ -45,8 +39,6 @@ class ScanViewModel @Inject constructor(
     val availableApps: StateFlow<List<LocalAppInfo>> = _availableApps.asStateFlow()
 
     private var deviceId: String? = null
-
-    private var pollingJob: Job? = null
 
     fun initialize(deviceId: String) {
         this.deviceId = deviceId
@@ -96,13 +88,11 @@ class ScanViewModel @Inject constructor(
             return
         }
 
-        launchScan {
-            if (selectedApps.size > 1) runQuickMultiScan(selectedApps)
-            else startServerScan(selectedApps, deviceId)
-        }
+        launchScan { runScan(selectedApps, deviceId) }
     }
 
-    private suspend fun runQuickMultiScan(selectedApps: List<LocalAppInfo>) {
+    /** One scan for 1 or N apps: each app's APK is uploaded and analyzed on the server. */
+    private suspend fun runScan(selectedApps: List<LocalAppInfo>, deviceId: String) {
         _scanState.update {
             it.copy(
                 status = ScanStatus.Analyzing,
@@ -117,7 +107,7 @@ class ScanViewModel @Inject constructor(
             )
         }
 
-        quickMultiScan(selectedApps).collect { event ->
+        quickMultiScan(selectedApps, deviceId).collect { event ->
             when (event) {
                 is MultiScanEvent.Progress -> _scanState.update {
                     it.copy(scannedApps = event.scannedApps, selectedApps = event.apps, averageScore = event.averageScore)
@@ -128,7 +118,7 @@ class ScanViewModel @Inject constructor(
                         status = ScanStatus.Completed,
                         selectedApps = event.apps,
                         averageScore = event.averageScore,
-                        analysisNote = UiText.Raw(event.note),
+                        analysisNote = event.note,
                         error = null,
                         mlExplanation = event.explanation,
                         mlRecommendations = event.recommendations,
@@ -141,86 +131,6 @@ class ScanViewModel @Inject constructor(
             }
         }
         delay(UI_SETTLE_DELAY_MS)
-    }
-
-    private suspend fun startServerScan(selectedApps: List<LocalAppInfo>, deviceId: String) {
-        _scanState.update {
-            it.copy(status = ScanStatus.Analyzing, error = null, analysisNote = null, selectedApps = selectedApps)
-        }
-
-        val result = repository.startScan(
-            apps = selectedApps.map { it.packageName },
-            deviceId = deviceId,
-            includeSystemApps = false
-        )
-        if (result !is ApiResult.Success) {
-            fail(UiText.Raw(result.errorMessage().orEmpty()))
-            return
-        }
-        val scanId = result.data.scanId
-        if (scanId.isNullOrBlank()) {
-            fail(UiText.Res(R.string.error_scan_id_empty))
-            return
-        }
-
-        _scanState.update {
-            it.copy(
-                scanId = scanId,
-                scannedApps = 0,
-                averageScore = 0f,
-                analysisNote = null
-            ).withCounts(RiskCounts())
-        }
-        startPolling(scanId)
-    }
-
-    private fun startPolling(scanId: String) {
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            pollScan(scanId).collect { event -> onPollEvent(event) }
-        }
-    }
-
-    private fun onPollEvent(event: ScanPollEvent) {
-        when (event) {
-            is ScanPollEvent.Progress -> {
-                val status = event.status
-                _scanState.update {
-                    it.copy(
-                        scannedApps = status.scannedApps ?: it.scannedApps,
-                        totalApps = status.totalApps ?: it.totalApps,
-                        averageScore = status.results?.averageScore ?: 0f,
-                        confidenceScore = status.results?.confidenceScore?.toInt()
-                    ).withCounts(
-                        RiskCounts(
-                            high = status.results?.highRiskApps ?: 0,
-                            medium = status.results?.mediumRiskApps ?: 0,
-                            low = status.results?.lowRiskApps ?: 0
-                        )
-                    )
-                }
-            }
-            is ScanPollEvent.Completed -> _scanState.update {
-                it.copy(
-                    status = ScanStatus.Completed,
-                    selectedApps = listOf(event.app),
-                    totalApps = 1,
-                    scannedApps = 1,
-                    averageScore = event.app.riskResult?.score?.toFloat() ?: 0f,
-                    confidenceScore = event.confidenceScore,
-                    scanCompleted = true
-                ).withCounts(RiskCounts.of(listOf(event.app)))
-            }
-            ScanPollEvent.CompletedWithoutDetails -> _scanState.update {
-                it.copy(
-                    status = ScanStatus.Completed,
-                    analysisNote = UiText.Res(R.string.scan_note_done_no_details),
-                    scanCompleted = true
-                )
-            }
-            ScanPollEvent.Failed -> fail(UiText.Res(R.string.error_scan_failed))
-            ScanPollEvent.TimedOut -> fail(UiText.Res(R.string.error_scan_timeout))
-        }
     }
 
     fun scanApk(uri: Uri) {
@@ -293,19 +203,8 @@ class ScanViewModel @Inject constructor(
     }
 
     fun resetScan() {
-        stopPolling()
         _availableApps.update { apps -> apps.map { it.copy(isSelected = false) } }
         _scanState.value = ScanState(totalApps = _availableApps.value.size)
-    }
-
-    private fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopPolling()
     }
 
     private companion object {
